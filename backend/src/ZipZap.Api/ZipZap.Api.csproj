@@ -13,6 +13,7 @@
     <ProjectReference Include="..\ZipZap.BuildingBlocks\ZipZap.BuildingBlocks.csproj" />
     <ProjectReference Include="..\Modules\ZipZap.Modules.Identity\ZipZap.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\ZipZap.Modules.Catalog\ZipZap.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\Modules\ZipZap.Modules.Ordering\ZipZap.Modules.Ordering.csproj" />
   </ItemGroup>
 
 </Project>

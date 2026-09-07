@@ -4,7 +4,7 @@ using ZipZap.BuildingBlocks.Domain;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Outbox;
-using ZipZap.Modules.Catalog.Contracts;
+using ZipZap.Contracts.Catalog;
 using ZipZap.Modules.Catalog.Domain;
 using ZipZap.Modules.Catalog.Infrastructure;
 

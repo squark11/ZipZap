@@ -12,6 +12,8 @@ using ZipZap.Modules.Identity;
 using ZipZap.Modules.Identity.Api;
 using ZipZap.Modules.Catalog;
 using ZipZap.Modules.Catalog.Api;
+using ZipZap.Modules.Ordering;
+using ZipZap.Modules.Ordering.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +23,7 @@ builder.Services.AddBuildingBlocks();
 // --- Moduły ---
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddCatalogModule(builder.Configuration);
-// builder.Services.AddOrderingModule(builder.Configuration);  // etap 4
+builder.Services.AddOrderingModule(builder.Configuration);
 
 // --- Uwierzytelnianie / autoryzacja (JWT) ---
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -122,6 +124,7 @@ app.MapGet("/health", () => Results.Ok(new
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
 app.MapCatalogEndpoints();
+app.MapOrderingEndpoints();
 
 app.Run();
 

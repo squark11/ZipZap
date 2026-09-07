@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
+using ZipZap.Contracts.Catalog;
 using ZipZap.Modules.Catalog.Application;
-using ZipZap.Modules.Catalog.Contracts;
 using ZipZap.Modules.Catalog.Infrastructure;
 
 namespace ZipZap.Modules.Catalog;

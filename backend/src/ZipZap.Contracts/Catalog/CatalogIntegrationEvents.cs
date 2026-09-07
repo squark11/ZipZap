@@ -1,11 +1,10 @@
 using ZipZap.BuildingBlocks.Messaging;
 
-namespace ZipZap.Modules.Catalog.Contracts;
+namespace ZipZap.Contracts.Catalog;
 
-/// <summary>
-/// PUBLICZNE kontrakty Catalog. Inne moduły (np. Ordering) budują z nich
-/// własny read-model — bez synchronicznego odpytywania Catalog ani wspólnych tabel.
-/// </summary>
+// Published language modułu Catalog. Wspólny projekt kontraktów pozwala innym
+// modułom konsumować te zdarzenia BEZ zależności od wnętrza modułu Catalog.
+
 public sealed record StoreRegistered(
     Guid StoreId, string Name, string Slug, decimal CommissionRate, string City, bool IsActive) : IntegrationEvent;
 

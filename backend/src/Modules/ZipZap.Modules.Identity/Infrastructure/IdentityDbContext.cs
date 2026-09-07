@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.Modules.Identity.Domain;
 
@@ -63,5 +64,11 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
             e.Property(m => m.Payload).IsRequired();
             e.HasIndex(m => m.ProcessedAtUtc);
         });
+
+        // Klucze Guid generujemy po stronie klienta (klasa Entity) — wyłączamy ValueGeneratedOnAdd.
+        foreach (var key in b.Model.GetEntityTypes().SelectMany(t => t.GetDeclaredKeys()))
+            foreach (var prop in key.Properties)
+                if (prop.ClrType == typeof(Guid))
+                    prop.ValueGenerated = ValueGenerated.Never;
     }
 }
