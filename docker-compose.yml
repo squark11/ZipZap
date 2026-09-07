@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: zipzap-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zipzap}
+      POSTGRES_USER: ${POSTGRES_USER:-zipzap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zipzap}
+    ports:
+      - "5432:5432"
+    volumes:
+      - zipzap-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zipzap} -d ${POSTGRES_DB:-zipzap}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: zipzap-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-zipzap};Username=${POSTGRES_USER:-zipzap};Password=${POSTGRES_PASSWORD:-zipzap}"
+      Jwt__SigningKey: ${JWT__SIGNINGKEY:-CHANGE_ME_DEV_ONLY_super_secret_key_at_least_32_chars_long}
+    ports:
+      - "5080:8080"
+
+volumes:
+  zipzap-pgdata:

@@ -1,0 +1,44 @@
+# ---------- .NET ----------
+bin/
+obj/
+out/
+*.user
+*.suo
+.vs/
+artifacts/
+publish/
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+# ---------- Node / Angular ----------
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-error.log*
+
+# ---------- Flutter / Dart ----------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# ---------- IDE ----------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# ---------- Env / secrets ----------
+.env
+.env.local
+*.local.env
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db

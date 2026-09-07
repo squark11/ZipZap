@@ -1,0 +1,38 @@
+/* ZipZap — paleta marki.
+   Import w aplikacjach (Angular/Flutter web) lub kopiuj tokeny do design systemu. */
+:root {
+  /* --- Kolory brandowe --- */
+  --zz-orange:        #F97316; /* primary — akcje, marchewka */
+  --zz-green:         #22C55E; /* secondary — świeżość, sukces, dostawa */
+  --zz-graphite:      #3A3F4B; /* wordmark, tekst główny */
+
+  /* --- Warianty (hover/active/na tłach) --- */
+  --zz-orange-50:     #FFF3EA;
+  --zz-orange-600:    #EA6A0C;
+  --zz-orange-700:    #C2560A;
+  --zz-green-50:      #E9FBF0;
+  --zz-green-600:     #16A34A;
+  --zz-green-700:     #128040;
+  --zz-graphite-700:  #2F343E;
+  --zz-graphite-900:  #23272F;
+
+  /* --- Neutralne / UI --- */
+  --zz-bg:            #FFFFFF;
+  --zz-surface:       #F7F8FA;
+  --zz-border:        #E5E7EB;
+  --zz-text:          #3A3F4B;
+  --zz-text-muted:    #6B7280;
+
+  /* --- Semantyczne statusy --- */
+  --zz-success:       var(--zz-green);
+  --zz-warning:       #F59E0B;
+  --zz-danger:        #EF4444;
+  --zz-info:          #3B82F6;
+
+  /* --- Radiusy / cień (spójny look) --- */
+  --zz-radius-sm:     6px;
+  --zz-radius-md:     10px;
+  --zz-radius-lg:     16px;
+  --zz-shadow-sm:     0 1px 2px rgba(58, 63, 75, 0.08);
+  --zz-shadow-md:     0 4px 12px rgba(58, 63, 75, 0.12);
+}

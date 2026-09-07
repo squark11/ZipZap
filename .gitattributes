@@ -1,0 +1,7 @@
+# Normalizuj końce linii do LF w repo (checkout na Windows i tak dostanie CRLF).
+* text=auto eol=lf
+
+# Binaria
+*.png binary
+*.jpg binary
+*.ico binary
