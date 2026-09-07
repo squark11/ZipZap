@@ -16,6 +16,21 @@ services:
       timeout: 5s
       retries: 10
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: zipzap-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-zipzap}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-zipzap}
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # panel zarządzania
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ./backend
@@ -24,11 +39,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-zipzap};Username=${POSTGRES_USER:-zipzap};Password=${POSTGRES_PASSWORD:-zipzap}"
       Jwt__SigningKey: ${JWT__SIGNINGKEY:-CHANGE_ME_DEV_ONLY_super_secret_key_at_least_32_chars_long}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__User: ${RABBITMQ_USER:-zipzap}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-zipzap}
     ports:
       - "5080:8080"
 

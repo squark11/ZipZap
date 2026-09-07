@@ -25,8 +25,8 @@ using ZipZap.Modules.Integrations.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Wspólny rdzeń (event bus in-process, outbox dispatcher, kontekst najemcy) ---
-builder.Services.AddBuildingBlocks();
+// --- Wspólny rdzeń (event bus in-process/RabbitMQ, outbox dispatcher, kontekst najemcy) ---
+builder.Services.AddBuildingBlocks(builder.Configuration);
 
 // --- Moduły ---
 builder.Services.AddIdentityModule(builder.Configuration);

@@ -21,9 +21,11 @@ Backend to **modularny monolit** na .NET 8 — jeden deployment, twarde granice 
 **Zasady granic (egzekwowane w kodzie):**
 - Każdy moduł ma **własny schemat PostgreSQL** + własny `DbContext` + własne migracje.
 - **Brak** cross-schema FK i wspólnych tabel; odwołania do innych modułów **tylko po ID**.
-- Komunikacja między modułami **wyłącznie** przez zdarzenia integracyjne na in-process **event busie**
+- Komunikacja między modułami **wyłącznie** przez zdarzenia integracyjne na **event busie**
   (kontrakty w osobnym projekcie `ZipZap.Contracts` — moduły nie zależą od siebie nawzajem).
-  Do wymiany na broker (RabbitMQ/Kafka) bez zmian w modułach.
+  Szyna jest wymienna: **RabbitMQ** (topic exchange `zipzap.events` + kolejka `zipzap.monolith`)
+  gdy skonfigurowany host, w innym wypadku **in-process** (lokalnie/testy) — moduły bez zmian
+  (wołają tylko `IEventBus` / `IIntegrationEventHandler`).
 - **Outbox pattern** — zdarzenia zapisywane w tej samej transakcji co zmiana domenowa (niezawodność).
 - **Multi-tenancy od 1. dnia** — każda encja niesie `StoreId` (row-level).
 - **JWT + refresh token**, RBAC: `CUSTOMER`, `STORE_EMPLOYEE`, `DRIVER`, `ADMIN`.
@@ -127,6 +129,7 @@ docker compose up --build
 ```
 - API: http://localhost:5080 · health: `/health` · **Swagger: http://localhost:5080/swagger**
 - PostgreSQL: `localhost:5432` (`zipzap` / `zipzap` / `zipzap`)
+- **RabbitMQ**: AMQP `localhost:5672` · panel zarządzania http://localhost:15672 (`zipzap` / `zipzap`)
 - Migracje wszystkich modułów wykonują się automatycznie przy starcie API.
 - W trybie Development zakładany jest domyślny admin: **`admin@zipzap.local` / `Admin123!`**.
 
@@ -174,4 +177,4 @@ Kolory: pomarańcz `#F97316`, zieleń `#22C55E`, grafit `#3A3F4B`. Zasoby: [`/br
 5. ✅ Szkielety (Payments/Delivery/Notifications/Integrations) + panel Angular + README z diagramem
 
 **Dalej:** aplikacja mobilna Flutter (klient), realne integracje (kasy fiskalne, POS/ERP),
-realna bramka płatności, broker komunikatów, rozbudowa panelu.
+realna bramka płatności, rozbudowa panelu. *(Broker komunikatów — RabbitMQ — już zintegrowany.)*

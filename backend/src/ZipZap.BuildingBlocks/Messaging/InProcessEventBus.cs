@@ -1,38 +1,15 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-
 namespace ZipZap.BuildingBlocks.Messaging;
 
 /// <summary>
-/// In-process implementacja szyny. Dla każdej publikacji tworzy nowy scope DI
-/// i wywołuje wszystkie zarejestrowane handlery danego typu zdarzenia.
+/// In-process implementacja szyny: publikacja = natychmiastowa dyspozycja do handlerów.
+/// Używana lokalnie / w testach (gdy broker nie jest skonfigurowany).
 /// </summary>
 public sealed class InProcessEventBus : IEventBus
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<InProcessEventBus> _logger;
+    private readonly IntegrationEventDispatcher _dispatcher;
 
-    public InProcessEventBus(IServiceScopeFactory scopeFactory, ILogger<InProcessEventBus> logger)
-    {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
-    }
+    public InProcessEventBus(IntegrationEventDispatcher dispatcher) => _dispatcher = dispatcher;
 
-    public async Task PublishAsync(IIntegrationEvent integrationEvent, CancellationToken ct = default)
-    {
-        var eventType = integrationEvent.GetType();
-        var handlerType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
-        var handleMethod = handlerType.GetMethod(nameof(IIntegrationEventHandler<IIntegrationEvent>.HandleAsync))!;
-
-        using var scope = _scopeFactory.CreateScope();
-        var handlers = scope.ServiceProvider.GetServices(handlerType).ToList();
-
-        _logger.LogDebug("Publikuję {EventType} do {Count} handlerów", eventType.Name, handlers.Count);
-
-        foreach (var handler in handlers)
-        {
-            if (handler is null) continue;
-            await (Task)handleMethod.Invoke(handler, new object[] { integrationEvent, ct })!;
-        }
-    }
+    public Task PublishAsync(IIntegrationEvent integrationEvent, CancellationToken ct = default)
+        => _dispatcher.DispatchAsync(integrationEvent, ct);
 }

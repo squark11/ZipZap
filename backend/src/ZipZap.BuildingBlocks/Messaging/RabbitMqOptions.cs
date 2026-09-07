@@ -1,0 +1,20 @@
+namespace ZipZap.BuildingBlocks.Messaging;
+
+/// <summary>
+/// Konfiguracja brokera. Brak <see cref="Host"/> = broker wyłączony (szyna in-process).
+/// W docker-compose ustawiane przez zmienną RabbitMq__Host=rabbitmq.
+/// </summary>
+public sealed class RabbitMqOptions
+{
+    public const string SectionName = "RabbitMq";
+
+    public string? Host { get; set; }
+    public int Port { get; set; } = 5672;
+    public string User { get; set; } = "guest";
+    public string Password { get; set; } = "guest";
+    public string VirtualHost { get; set; } = "/";
+    public string Exchange { get; set; } = "zipzap.events";
+    public string Queue { get; set; } = "zipzap.monolith";
+
+    public bool Enabled => !string.IsNullOrWhiteSpace(Host);
+}
