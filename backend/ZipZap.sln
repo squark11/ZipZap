@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{D0D5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Identity", "src\Modules\ZipZap.Modules.Identity\ZipZap.Modules.Identity.csproj", "{18F0D427-4F1C-4746-9382-1888D762014B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Catalog", "src\Modules\ZipZap.Modules.Catalog\ZipZap.Modules.Catalog.csproj", "{450C5301-5C06-4EF7-B08A-F3A432EE8EA2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{18F0D427-4F1C-4746-9382-1888D762014B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18F0D427-4F1C-4746-9382-1888D762014B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18F0D427-4F1C-4746-9382-1888D762014B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{450C5301-5C06-4EF7-B08A-F3A432EE8EA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{450C5301-5C06-4EF7-B08A-F3A432EE8EA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{450C5301-5C06-4EF7-B08A-F3A432EE8EA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{450C5301-5C06-4EF7-B08A-F3A432EE8EA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -37,5 +43,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{D0D59521-FF60-42C1-8F4F-EDC75567C417} = {880D0629-1481-427B-9020-F1616263BB58}
 		{18F0D427-4F1C-4746-9382-1888D762014B} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
+		{450C5301-5C06-4EF7-B08A-F3A432EE8EA2} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
 	EndGlobalSection
 EndGlobal

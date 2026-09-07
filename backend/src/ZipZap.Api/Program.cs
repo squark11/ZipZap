@@ -10,6 +10,8 @@ using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Persistence;
 using ZipZap.Modules.Identity;
 using ZipZap.Modules.Identity.Api;
+using ZipZap.Modules.Catalog;
+using ZipZap.Modules.Catalog.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +20,7 @@ builder.Services.AddBuildingBlocks();
 
 // --- Moduły ---
 builder.Services.AddIdentityModule(builder.Configuration);
-// builder.Services.AddCatalogModule(builder.Configuration);   // etap 3
+builder.Services.AddCatalogModule(builder.Configuration);
 // builder.Services.AddOrderingModule(builder.Configuration);  // etap 4
 
 // --- Uwierzytelnianie / autoryzacja (JWT) ---
@@ -96,6 +98,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Bootstrap pierwszego administratora (tylko dev).
+    await IdentityModule.SeedDevelopmentAdminAsync(
+        app.Services,
+        app.Configuration["Seed:AdminEmail"] ?? "admin@zipzap.local",
+        app.Configuration["Seed:AdminPassword"] ?? "Admin123!");
 }
 
 app.UseAuthentication();
@@ -113,6 +121,7 @@ app.MapGet("/health", () => Results.Ok(new
 
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
+app.MapCatalogEndpoints();
 
 app.Run();
 

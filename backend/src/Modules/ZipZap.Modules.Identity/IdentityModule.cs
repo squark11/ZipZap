@@ -6,6 +6,7 @@ using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
 using ZipZap.Modules.Identity.Application;
 using ZipZap.Modules.Identity.Contracts;
+using ZipZap.Modules.Identity.Domain;
 using ZipZap.Modules.Identity.Infrastructure;
 
 namespace ZipZap.Modules.Identity;
@@ -32,5 +33,24 @@ public static class IdentityModule
         services.RegisterIntegrationEventType<CustomerRegistered>();
 
         return services;
+    }
+
+    /// <summary>
+    /// DEV-only: zakłada domyślnego administratora, jeśli żaden nie istnieje.
+    /// Umożliwia bootstrap platformy (potem twórz kolejnych przez /api/identity/admin/users).
+    /// </summary>
+    public static async Task SeedDevelopmentAdminAsync(
+        IServiceProvider services, string email, string password)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+
+        var adminExists = await db.Users.AnyAsync(u => u.Roles.Any(r => r.Role == Role.Admin));
+        if (adminExists) return;
+
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var admin = User.Register(email, hasher.Hash(password), "ZipZap Admin", null, Role.Admin);
+        db.Users.Add(admin);
+        await db.SaveChangesAsync();
     }
 }
