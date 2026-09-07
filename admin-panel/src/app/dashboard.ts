@@ -6,9 +6,9 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
   selector: 'app-dashboard',
   imports: [CommonModule],
   template: `
-  <div class="row">
-    <h2>Pulpit</h2>
-    <div class="controls"><button class="ghost sm" (click)="load()">Odśwież</button></div>
+  <div class="page-head">
+    <h1>Pulpit</h1>
+    <div class="controls"><button class="btn ghost sm" (click)="load()">Odśwież</button></div>
   </div>
 
   <div class="tiles">
@@ -18,7 +18,7 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
       <div class="muted">{{ commission?.entries ?? 0 }} rozliczonych zamówień</div>
     </div>
     <div class="tile">
-      <div class="k">Zamówienia (łącznie)</div>
+      <div class="k">Zamówienia łącznie</div>
       <div class="v">{{ orders.length }}</div>
       <div class="muted">aktywne: {{ activeCount }}</div>
     </div>
@@ -27,10 +27,15 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
       <div class="v green">{{ deliveries.length }}</div>
       <div class="muted">czekają na kierowcę</div>
     </div>
+    <div class="tile">
+      <div class="k">Zrealizowane</div>
+      <div class="v blue">{{ doneCount }}</div>
+      <div class="muted">dostarczone / zakończone</div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2 style="font-size:16px">Dostępne dostawy</h2>
+  <div class="card pad">
+    <div class="page-head"><h1 style="font-size:16px">Dostępne dostawy</h1></div>
     @if (deliveries.length === 0) { <p class="muted">Brak dostaw oczekujących na odbiór.</p> }
     @else {
       <table>
@@ -39,8 +44,8 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
           @for (d of deliveries; track d.id) {
             <tr>
               <td class="mono">{{ d.id.substring(0,8) }}</td>
-              <td class="mono">{{ d.orderId.substring(0,8) }}</td>
-              <td><span class="badge" [attr.data-status]="d.status">{{ d.status }}</span></td>
+              <td class="mono num">{{ d.orderId.substring(0,8) }}</td>
+              <td><span class="pill" [attr.data-status]="d.status">{{ d.status }}</span></td>
               <td class="muted">{{ d.createdAtUtc | date:'MM-dd HH:mm' }}</td>
             </tr>
           }
@@ -62,9 +67,8 @@ export class DashboardComponent {
     effect(() => { const id = this.storeId(); if (id) this.load(); });
   }
 
-  get activeCount() {
-    return this.orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length;
-  }
+  get activeCount() { return this.orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length; }
+  get doneCount() { return this.orders.filter(o => o.status === 'Completed' || o.status === 'Delivered').length; }
 
   load() {
     const id = this.storeId();

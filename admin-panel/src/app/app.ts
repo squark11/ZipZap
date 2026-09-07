@@ -10,57 +10,91 @@ import { DashboardComponent } from './dashboard';
   selector: 'app-root',
   imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent],
   template: `
-  <header class="topbar">
-    <span class="logo">Zip<span class="zap">Zap</span></span>
-    <span class="subtitle">Panel administracyjny</span>
-    @if (api.isLoggedIn()) {
-      <span class="spacer"></span>
-      <span class="userbox">
-        {{ api.userEmail() }}
-        <button class="ghost sm" (click)="logout()">Wyloguj</button>
-      </span>
-    }
-  </header>
-
-  <main class="wrap">
-    @if (!api.isLoggedIn()) {
-      <form class="card login" (ngSubmit)="login()">
-        <h2>Logowanie</h2>
-        <label>E-mail<input name="email" [(ngModel)]="email" type="email" required /></label>
-        <label>Hasło<input name="password" [(ngModel)]="password" type="password" required /></label>
-        <button class="primary" type="submit" [disabled]="loading">Zaloguj</button>
-        @if (error) { <p class="error">{{ error }}</p> }
-        <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
-      </form>
-    } @else {
-      <div class="row">
-        <label style="flex-direction:row; align-items:center; gap:8px">
-          <span class="muted">Sklep:</span>
-          <select [(ngModel)]="selectedStoreId">
-            @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
-          </select>
-        </label>
+  @if (!api.isLoggedIn()) {
+    <div class="auth">
+      <div class="auth-brand">
+        <div class="logo">Zip<span class="zap">Zap</span></div>
+        <h1>Zakupy z lokalnych sklepów z dostawą</h1>
+        <p class="lead">Panel sprzedawcy do zarządzania zamówieniami, ofertą i dostawami — z jednego miejsca.</p>
+        <ul class="points">
+          <li><span class="dot">✓</span> Zamówienia i statusy w czasie rzeczywistym</li>
+          <li><span class="dot">✓</span> Zarządzanie ofertą sklepu</li>
+          <li><span class="dot">✓</span> Prowizje i dostawy pod kontrolą</li>
+        </ul>
+        <div class="mock"></div>
       </div>
 
-      @if (stores.length === 0) {
-        <div class="card"><p class="muted">Brak sklepów. Utwórz sklep przez API (POST /api/catalog/stores) jako admin.</p></div>
-      } @else {
-        <div class="tabs">
-          <button [class.active]="tab==='dashboard'" (click)="tab='dashboard'">Pulpit</button>
-          <button [class.active]="tab==='orders'" (click)="tab='orders'">Zamówienia</button>
-          <button [class.active]="tab==='catalog'" (click)="tab='catalog'">Oferta</button>
+      <div class="auth-form">
+        <form class="auth-card" (ngSubmit)="login()">
+          <h2>Zaloguj się do panelu</h2>
+          <div class="field">
+            <label>Login (e-mail)</label>
+            <input name="email" [(ngModel)]="email" type="email" required />
+          </div>
+          <div class="field">
+            <label>Hasło</label>
+            <input name="password" [(ngModel)]="password" type="password" required />
+          </div>
+          <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
+          @if (error) { <p class="error">{{ error }}</p> }
+          <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
+        </form>
+      </div>
+    </div>
+  } @else {
+    <div class="app-shell">
+      <aside class="rail">
+        <div class="rail-logo">Z</div>
+        <button class="rail-btn" [class.active]="tab==='dashboard'" (click)="tab='dashboard'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span class="tip">Pulpit</span>
+        </button>
+        <button class="rail-btn" [class.active]="tab==='orders'" (click)="tab='orders'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
+          <span class="tip">Zamówienia</span>
+        </button>
+        <button class="rail-btn" [class.active]="tab==='catalog'" (click)="tab='catalog'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
+          <span class="tip">Oferta</span>
+        </button>
+        <div class="spacer"></div>
+        <button class="rail-btn" (click)="logout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+          <span class="tip">Wyloguj</span>
+        </button>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input placeholder="Szukaj zamówień (numer, klient)…" [(ngModel)]="search" />
+          </div>
+          <div class="store-select">
+            <select [(ngModel)]="selectedStoreId">
+              @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
+            </select>
+          </div>
+          <div class="userchip">
+            <div class="avatar">{{ initials }}</div>
+            <div class="who"><b>Administrator</b><span>{{ api.userEmail() }}</span></div>
+          </div>
         </div>
 
-        <div class="card">
-          @switch (tab) {
-            @case ('dashboard') { <app-dashboard [storeId]="selectedStoreId" /> }
-            @case ('orders') { <app-orders [storeId]="selectedStoreId" /> }
-            @case ('catalog') { <app-catalog [storeId]="selectedStoreId" /> }
+        <div class="content">
+          @if (stores.length === 0) {
+            <div class="card pad"><p class="muted">Brak sklepów. Utwórz sklep przez API (POST /api/catalog/stores) jako admin.</p></div>
+          } @else {
+            @switch (tab) {
+              @case ('dashboard') { <app-dashboard [storeId]="selectedStoreId" /> }
+              @case ('orders') { <app-orders [storeId]="selectedStoreId" [query]="search" /> }
+              @case ('catalog') { <app-catalog [storeId]="selectedStoreId" /> }
+            }
           }
         </div>
-      }
-    }
-  </main>
+      </div>
+    </div>
+  }
   `,
 })
 export class App {
@@ -70,10 +104,16 @@ export class App {
   password = 'Admin123!';
   error = '';
   loading = false;
+  search = '';
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
   tab: 'dashboard' | 'orders' | 'catalog' = 'dashboard';
+
+  get initials(): string {
+    const e = this.api.userEmail();
+    return e ? e.substring(0, 2).toUpperCase() : 'ZZ';
+  }
 
   login() {
     this.loading = true;
