@@ -1,1 +1,90 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --zz-orange: #F97316;
+  --zz-green: #22C55E;
+  --zz-graphite: #3A3F4B;
+  --zz-surface: #F7F8FA;
+  --zz-border: #E5E7EB;
+  --zz-muted: #6B7280;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+  color: var(--zz-graphite);
+  background: var(--zz-surface);
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 24px; background: #fff; border-bottom: 1px solid var(--zz-border);
+}
+.logo { font-weight: 700; font-size: 22px; color: var(--zz-orange); }
+.logo .zap { color: var(--zz-graphite); }
+.subtitle { color: var(--zz-muted); font-size: 14px; }
+.spacer { margin-left: auto; }
+.userbox { font-size: 13px; color: var(--zz-muted); display: flex; align-items: center; gap: 10px; }
+
+.wrap { max-width: 1040px; margin: 28px auto; padding: 0 16px; }
+
+.card {
+  background: #fff; border: 1px solid var(--zz-border); border-radius: 12px;
+  padding: 22px; box-shadow: 0 1px 2px rgba(58,63,75,.06);
+}
+.login { max-width: 380px; margin: 48px auto; display: flex; flex-direction: column; gap: 14px; }
+h2 { margin: 0 0 4px; }
+
+label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+input, select {
+  padding: 9px 12px; border: 1px solid var(--zz-border); border-radius: 8px; font-size: 14px;
+  background: #fff; color: var(--zz-graphite);
+}
+input:focus, select:focus { outline: 2px solid var(--zz-orange); border-color: transparent; }
+
+button { border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; font-size: 14px; }
+button.primary { background: var(--zz-orange); color: #fff; }
+button.primary:disabled { opacity: .6; cursor: default; }
+button.ghost { background: transparent; border: 1px solid var(--zz-border); color: var(--zz-graphite); }
+button.success { background: var(--zz-green); color: #fff; }
+button.danger { background: #fff; border: 1px solid #FCA5A5; color: #DC2626; }
+button.sm { padding: 5px 10px; font-size: 13px; }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+.tabs button {
+  background: #fff; border: 1px solid var(--zz-border); color: var(--zz-muted);
+  border-radius: 999px; padding: 8px 16px;
+}
+.tabs button.active { background: var(--zz-graphite); color: #fff; border-color: var(--zz-graphite); }
+
+.row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--zz-border); vertical-align: middle; }
+th { color: var(--zz-muted); font-weight: 600; }
+.mono { font-family: ui-monospace, monospace; }
+.muted { color: var(--zz-muted); }
+.right { text-align: right; }
+.error { color: #EF4444; font-size: 14px; margin: 6px 0 0; }
+.hint { color: #9CA3AF; font-size: 12px; margin: 0; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #EEF2F7; color: var(--zz-graphite); }
+.badge[data-status="Delivered"], .badge[data-status="Completed"] { background: #E9FBF0; color: #16A34A; }
+.badge[data-status="Cancelled"] { background: #FEECEC; color: #EF4444; }
+.badge[data-status="Placed"], .badge[data-status="Confirmed"] { background: #FFF3EA; color: var(--zz-orange); }
+.badge[data-status="Picking"], .badge[data-status="ReadyForPickup"], .badge[data-status="InDelivery"] { background: #EFF6FF; color: #2563EB; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.tile { background: #fff; border: 1px solid var(--zz-border); border-radius: 12px; padding: 18px; }
+.tile .k { color: var(--zz-muted); font-size: 13px; }
+.tile .v { font-size: 26px; font-weight: 700; margin-top: 4px; }
+.tile .v.accent { color: var(--zz-orange); }
+.tile .v.green { color: #16A34A; }
+
+.detail { background: var(--zz-surface); border-radius: 8px; padding: 10px 12px; margin: 6px 0 2px; font-size: 13px; }
+.detail ul { margin: 6px 0; padding-left: 18px; }
+
+.formgrid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+@media (max-width: 720px) { .formgrid { grid-template-columns: 1fr 1fr; } }
