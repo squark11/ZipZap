@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ZipZap.BuildingBlocks.Domain;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
-using ZipZap.Modules.Identity.Contracts;
+using ZipZap.Contracts.Identity;
 using ZipZap.Modules.Identity.Domain;
 using ZipZap.Modules.Identity.Infrastructure;
 

@@ -22,6 +22,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{82ABE2D1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Ordering.Tests", "tests\ZipZap.Modules.Ordering.Tests\ZipZap.Modules.Ordering.Tests.csproj", "{FE6883D3-8D8E-4C28-A4AB-8BE006DC81B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Payments", "src\Modules\ZipZap.Modules.Payments\ZipZap.Modules.Payments.csproj", "{5D323420-8D58-409E-803A-F897B568C997}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Delivery", "src\Modules\ZipZap.Modules.Delivery\ZipZap.Modules.Delivery.csproj", "{51BAA7DC-5EF3-49CE-98A2-50A098654130}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Notifications", "src\Modules\ZipZap.Modules.Notifications\ZipZap.Modules.Notifications.csproj", "{9844DB13-1125-4A3D-A2BD-0DCD178D6A42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Integrations", "src\Modules\ZipZap.Modules.Integrations\ZipZap.Modules.Integrations.csproj", "{3D8E6B59-BDBC-4631-9346-F6F59CDD8C95}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +64,22 @@ Global
 		{FE6883D3-8D8E-4C28-A4AB-8BE006DC81B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE6883D3-8D8E-4C28-A4AB-8BE006DC81B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE6883D3-8D8E-4C28-A4AB-8BE006DC81B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D323420-8D58-409E-803A-F897B568C997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D323420-8D58-409E-803A-F897B568C997}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D323420-8D58-409E-803A-F897B568C997}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D323420-8D58-409E-803A-F897B568C997}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51BAA7DC-5EF3-49CE-98A2-50A098654130}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51BAA7DC-5EF3-49CE-98A2-50A098654130}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51BAA7DC-5EF3-49CE-98A2-50A098654130}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51BAA7DC-5EF3-49CE-98A2-50A098654130}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9844DB13-1125-4A3D-A2BD-0DCD178D6A42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9844DB13-1125-4A3D-A2BD-0DCD178D6A42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9844DB13-1125-4A3D-A2BD-0DCD178D6A42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9844DB13-1125-4A3D-A2BD-0DCD178D6A42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D8E6B59-BDBC-4631-9346-F6F59CDD8C95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D8E6B59-BDBC-4631-9346-F6F59CDD8C95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D8E6B59-BDBC-4631-9346-F6F59CDD8C95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D8E6B59-BDBC-4631-9346-F6F59CDD8C95}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,5 +91,9 @@ Global
 		{88480B24-32F7-4615-A6C9-BCE31CBC0CE4} = {880D0629-1481-427B-9020-F1616263BB58}
 		{EF7C4BD6-6397-4DD2-B43D-74C7A082933B} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
 		{FE6883D3-8D8E-4C28-A4AB-8BE006DC81B4} = {82ABE2D1-82D3-4906-99A7-20A8061EC60F}
+		{5D323420-8D58-409E-803A-F897B568C997} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
+		{51BAA7DC-5EF3-49CE-98A2-50A098654130} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
+		{9844DB13-1125-4A3D-A2BD-0DCD178D6A42} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
+		{3D8E6B59-BDBC-4631-9346-F6F59CDD8C95} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
 	EndGlobalSection
 EndGlobal

@@ -6,6 +6,7 @@ using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
 using ZipZap.Contracts.Catalog;
 using ZipZap.Contracts.Ordering;
+using ZipZap.Contracts.Payments;
 using ZipZap.Modules.Ordering.Application;
 using ZipZap.Modules.Ordering.Application.EventHandlers;
 using ZipZap.Modules.Ordering.Infrastructure;
@@ -35,6 +36,10 @@ public static class OrderingModule
         services.AddScoped<CatalogProductProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<ProductPublished>>(sp => sp.GetRequiredService<CatalogProductProjectionHandler>());
         services.AddScoped<IIntegrationEventHandler<ProductUpdated>>(sp => sp.GetRequiredService<CatalogProductProjectionHandler>());
+
+        // Choreografia płatności: PaymentAuthorized → potwierdzenie zamówienia.
+        services.AddScoped<PaymentAuthorizedHandler>();
+        services.AddScoped<IIntegrationEventHandler<PaymentAuthorized>>(sp => sp.GetRequiredService<PaymentAuthorizedHandler>());
 
         // Produkowane zdarzenia (dla outboxa).
         services.RegisterIntegrationEventType<OrderPlaced>();

@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
+using ZipZap.Contracts.Identity;
 using ZipZap.Modules.Identity.Application;
-using ZipZap.Modules.Identity.Contracts;
 using ZipZap.Modules.Identity.Domain;
 using ZipZap.Modules.Identity.Infrastructure;
 

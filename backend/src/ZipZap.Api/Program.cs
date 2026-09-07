@@ -14,6 +14,14 @@ using ZipZap.Modules.Catalog;
 using ZipZap.Modules.Catalog.Api;
 using ZipZap.Modules.Ordering;
 using ZipZap.Modules.Ordering.Api;
+using ZipZap.Modules.Payments;
+using ZipZap.Modules.Payments.Api;
+using ZipZap.Modules.Delivery;
+using ZipZap.Modules.Delivery.Api;
+using ZipZap.Modules.Notifications;
+using ZipZap.Modules.Notifications.Api;
+using ZipZap.Modules.Integrations;
+using ZipZap.Modules.Integrations.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +32,10 @@ builder.Services.AddBuildingBlocks();
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddCatalogModule(builder.Configuration);
 builder.Services.AddOrderingModule(builder.Configuration);
+builder.Services.AddPaymentsModule(builder.Configuration);
+builder.Services.AddDeliveryModule(builder.Configuration);
+builder.Services.AddNotificationsModule(builder.Configuration);
+builder.Services.AddIntegrationsModule();
 
 // --- Uwierzytelnianie / autoryzacja (JWT) ---
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -58,6 +70,11 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// CORS dla panelu Angular w dev (JWT w nagłówku — bez ciasteczek).
+const string DevCorsPolicy = "dev-cors";
+builder.Services.AddCors(o => o.AddPolicy(DevCorsPolicy, p =>
+    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 // --- Swagger (z obsługą Bearer) ---
 builder.Services.AddEndpointsApiExplorer();
@@ -108,6 +125,9 @@ if (app.Environment.IsDevelopment())
         app.Configuration["Seed:AdminPassword"] ?? "Admin123!");
 }
 
+if (app.Environment.IsDevelopment())
+    app.UseCors(DevCorsPolicy);
+
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
@@ -125,6 +145,10 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapIdentityEndpoints();
 app.MapCatalogEndpoints();
 app.MapOrderingEndpoints();
+app.MapPaymentsEndpoints();
+app.MapDeliveryEndpoints();
+app.MapNotificationsEndpoints();
+app.MapIntegrationsEndpoints();
 
 app.Run();
 

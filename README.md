@@ -14,76 +14,164 @@ Model: sklep płaci **prowizję** od wartości koszyka, klient płaci **osobną 
 
 ---
 
-## Architektura (skrót)
+## Architektura
 
 Backend to **modularny monolit** na .NET 8 — jeden deployment, twarde granice modułów.
 
-| Moduł | Odpowiedzialność | Status MVP |
-|---|---|---|
-| **Identity** | Użytkownicy, JWT + refresh, role (RBAC) | 🟡 Etap 2 |
-| **Catalog** | Sklepy, kategorie, produkty | 🟡 Etap 3 |
-| **Ordering** | Koszyk, zamówienie, statusy, strefy + sloty | 🟡 Etap 4 |
-| **Delivery** | Kierowca, odbiór/dostawa | ⚪ Szkielet |
-| **Payments** | Płatności, prowizja | ⚪ Szkielet |
-| **Notifications** | Powiadomienia (reakcja na zdarzenia) | ⚪ Szkielet |
-| **Integrations** | Porty: kasy fiskalne / POS (Novitus, Elzab, Posnet, Comarch) | ⚪ Tylko porty |
-
-**Zasady granic:**
+**Zasady granic (egzekwowane w kodzie):**
 - Każdy moduł ma **własny schemat PostgreSQL** + własny `DbContext` + własne migracje.
 - **Brak** cross-schema FK i wspólnych tabel; odwołania do innych modułów **tylko po ID**.
-- Komunikacja **wyłącznie** przez zdarzenia integracyjne na in-process **event busie**
-  (do wymiany na broker bez zmian w modułach).
-- **Outbox pattern** — zdarzenia zapisywane w tej samej transakcji co zmiana domenowa
-  (niezawodna zmiana statusu zamówienia).
+- Komunikacja między modułami **wyłącznie** przez zdarzenia integracyjne na in-process **event busie**
+  (kontrakty w osobnym projekcie `ZipZap.Contracts` — moduły nie zależą od siebie nawzajem).
+  Do wymiany na broker (RabbitMQ/Kafka) bez zmian w modułach.
+- **Outbox pattern** — zdarzenia zapisywane w tej samej transakcji co zmiana domenowa (niezawodność).
 - **Multi-tenancy od 1. dnia** — każda encja niesie `StoreId` (row-level).
+- **JWT + refresh token**, RBAC: `CUSTOMER`, `STORE_EMPLOYEE`, `DRIVER`, `ADMIN`.
+
+### Moduły
+
+| Moduł | Odpowiedzialność | Schemat | Status |
+|---|---|---|---|
+| **Identity** | Użytkownicy, JWT + refresh, role (RBAC) | `identity` | ✅ pełny |
+| **Catalog** | Sklepy, kategorie, produkty | `catalog` | ✅ pełny |
+| **Ordering** | Koszyk, zamówienie, statusy, strefy + sloty, prowizja | `ordering` | ✅ pełny + testy |
+| **Payments** | Płatność (mock), księga prowizji | `payments` | 🟡 szkielet |
+| **Delivery** | Projekcja cyklu dostawy | `delivery` | 🟡 szkielet |
+| **Notifications** | Powiadomienia (mock kanał) | `notifications` | 🟡 szkielet |
+| **Integrations** | Porty `IFiscalPrinterDriver` / `IPosConnector` + no-op | — | 🟡 tylko porty |
+
+### Diagram modułów
+
+```mermaid
+flowchart TB
+  subgraph Host["ZipZap.Api (host: JWT · RBAC · Swagger · CORS)"]
+    direction LR
+    ID["Identity"]:::full
+    CT["Catalog"]:::full
+    OR["Ordering"]:::full
+    PM["Payments"]:::skel
+    DL["Delivery"]:::skel
+    NT["Notifications"]:::skel
+    IN["Integrations<br/>(ports + no-op)"]:::skel
+  end
+  BUS(["In-process Event Bus + Outbox dispatcher"])
+  DB[("PostgreSQL<br/>schemat-per-moduł")]
+
+  ID --- BUS
+  CT --- BUS
+  OR --- BUS
+  PM --- BUS
+  DL --- BUS
+  NT --- BUS
+  Host --- DB
+
+  classDef full fill:#FFF3EA,stroke:#F97316,color:#3A3F4B;
+  classDef skel fill:#F7F8FA,stroke:#9CA3AF,color:#3A3F4B,stroke-dasharray:4 3;
+```
+
+### Choreografia zdarzeń (cykl zamówienia)
+
+```mermaid
+flowchart LR
+  CT["Catalog"] -->|StoreRegistered / ProductPublished| OR["Ordering<br/>(read-model)"]
+  ID["Identity"] -->|CustomerRegistered| NT["Notifications"]
+  OR -->|OrderPlaced| PM["Payments"]
+  OR -->|OrderPlaced| NT
+  PM -->|PaymentAuthorized| OR
+  PM -->|PaymentAuthorized| NT
+  OR -->|OrderReadyForPickup| DL["Delivery"]
+  OR -->|OrderReadyForPickup| NT
+  OR -->|OrderPickedUp| DL
+  OR -->|OrderDelivered| DL
+  OR -->|OrderDelivered| PM
+  OR -->|OrderDelivered| NT
+```
+
+Ordering utrzymuje **lokalny read-model** produktów/sklepów budowany ze zdarzeń Catalog — dzięki temu
+przy składaniu zamówienia ma autorytatywną cenę i prowizję **bez** sięgania do schematu `catalog`.
+
+### Maszyna stanów zamówienia
 
 ```
-ZipZap.Api (host: JWT, RBAC, Swagger, DI)
-   ├── Modules: Identity · Catalog · Ordering · Delivery · Payments · Notifications · Integrations
-   └── BuildingBlocks: IEventBus (in-process) · Outbox dispatcher · Tenant/User context · Result/Error
-                       PostgreSQL (schemat-per-moduł)
+DRAFT(koszyk) → PLACED → CONFIRMED → PICKING → READY_FOR_PICKUP → IN_DELIVERY → DELIVERED → COMPLETED
+                   └──────────────── CANCELLED (do momentu odbioru) ───────────────┘
 ```
-
-Szczegółowy diagram modułów i przepływ zdarzeń zamówienia — dodawany w etapie 5.
+`PLACED → CONFIRMED` następuje automatycznie po `PaymentAuthorized` (mock bramki płatności).
 
 ## Struktura repo (monorepo)
 
 ```
-/backend        .NET 8 — modularny monolit (API + moduły + testy)
-/admin-panel    Angular — panel sklepu/kierowcy/administratora (etap 5)
-/mobile         Flutter — aplikacja klienta (osobny etap)
-/branding       logo, paleta kolorów, typografia
+/backend
+  /src
+    ZipZap.Api                 # host: DI, auth, Swagger, migracje przy starcie
+    ZipZap.BuildingBlocks      # event bus, outbox, multi-tenancy, Result/Error, migrator
+    ZipZap.Contracts           # published language (zdarzenia integracyjne)
+    /Modules                   # Identity · Catalog · Ordering · Payments · Delivery · Notifications · Integrations
+  /tests
+    ZipZap.Modules.Ordering.Tests   # testy jednostkowe domeny Ordering
+/admin-panel                   # Angular (logowanie + lista zamówień sklepu)
+/mobile                        # Flutter (klient) — osobny etap
+/branding                      # logo, paleta, typografia
 docker-compose.yml
 ```
 
 ## Uruchomienie lokalne
 
 ### Wymagania
-- **Docker** (wystarczy do zbudowania i uruchomienia backendu + PostgreSQL).
-- Opcjonalnie: **.NET 8 SDK** (do developmentu/testów bez Dockera).
+- **Docker** (backend + PostgreSQL). Opcjonalnie **.NET 8 SDK** i **Node 20+** do developmentu.
 
-### Szybki start (Docker)
+### Cała platforma (Docker)
 ```bash
-cp .env.example .env        # opcjonalnie — domyślne wartości działają out-of-the-box
+cp .env.example .env          # opcjonalnie — domyślne wartości działają
 docker compose up --build
 ```
-- API: http://localhost:5080 — health: http://localhost:5080/health, Swagger: http://localhost:5080/swagger
-- PostgreSQL: `localhost:5432` (db/user/pass: `zipzap` / `zipzap` / `zipzap`)
+- API: http://localhost:5080 · health: `/health` · **Swagger: http://localhost:5080/swagger**
+- PostgreSQL: `localhost:5432` (`zipzap` / `zipzap` / `zipzap`)
+- Migracje wszystkich modułów wykonują się automatycznie przy starcie API.
+- W trybie Development zakładany jest domyślny admin: **`admin@zipzap.local` / `Admin123!`**.
 
-### Development bez Dockera (wymaga .NET 8 SDK)
+### Panel administracyjny (Angular)
 ```bash
-docker compose up -d postgres          # sama baza
+cd admin-panel
+npm install
+npm start                     # http://localhost:4200
+```
+
+### Backend bez Dockera (wymaga .NET 8 SDK)
+```bash
+docker compose up -d postgres
 cd backend
 dotnet run --project src/ZipZap.Api
 ```
 
+### Testy
+```bash
+cd backend
+dotnet test
+```
+
+## Szybki przegląd API
+
+| Obszar | Przykłady |
+|---|---|
+| **Identity** | `POST /api/identity/register` · `login` · `refresh` · `GET /me` |
+| **Catalog** (publiczne odczyty) | `GET /api/catalog/stores` · `/stores/{id}/products` |
+| **Catalog** (zarządzanie) | `POST /api/catalog/stores` (Admin) · `/stores/{id}/products` (StoreEmployee) |
+| **Ordering** | `POST /api/ordering/carts` → `/items` → `/checkout` · `POST /orders/{id}/{ready\|delivered\|…}` |
+| **Payments** | `GET /api/payments/stores/{id}/commission` |
+| **Delivery** | `GET /api/delivery/available` (Driver) |
+| **Notifications** | `GET /api/notifications` (Admin) |
+| **Integrations** | `GET /api/integrations/drivers` (Admin) |
+
 ## Marka
-Kolory: pomarańcz `#F97316`, zieleń `#22C55E`, grafit `#3A3F4B`.
-Zasoby: [`/branding`](branding/README.md).
+Kolory: pomarańcz `#F97316`, zieleń `#22C55E`, grafit `#3A3F4B`. Zasoby: [`/branding`](branding/README.md).
 
 ## Roadmapa MVP
 1. ✅ Fundament: struktura, BuildingBlocks (event bus + outbox), docker-compose, branding
-2. ⏳ Identity — rejestracja/logowanie, JWT + refresh, role
-3. ⏳ Catalog — sklepy, kategorie, produkty
-4. ⏳ Ordering — koszyk, zamówienie, statusy, strefy + sloty, prowizja + testy
-5. ⏳ Szkielety (Delivery/Payments/Notifications/Integrations) + panel Angular + diagram w README
+2. ✅ Identity — rejestracja/logowanie, JWT + refresh, role
+3. ✅ Catalog — sklepy, kategorie, produkty
+4. ✅ Ordering — koszyk, zamówienie, statusy, strefy + sloty, prowizja + testy
+5. ✅ Szkielety (Payments/Delivery/Notifications/Integrations) + panel Angular + README z diagramem
+
+**Dalej:** aplikacja mobilna Flutter (klient), realne integracje (kasy fiskalne, POS/ERP),
+realna bramka płatności, broker komunikatów, rozbudowa panelu.

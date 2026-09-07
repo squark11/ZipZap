@@ -1,0 +1,70 @@
+:host {
+  --zz-orange: #F97316;
+  --zz-green: #22C55E;
+  --zz-graphite: #3A3F4B;
+  --zz-surface: #F7F8FA;
+  --zz-border: #E5E7EB;
+  display: block;
+  font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+  color: var(--zz-graphite);
+  background: var(--zz-surface);
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: #fff;
+  border-bottom: 1px solid var(--zz-border);
+}
+.logo { font-weight: 700; font-size: 22px; color: var(--zz-orange); }
+.logo .zap { color: var(--zz-graphite); }
+.subtitle { color: #6B7280; font-size: 14px; }
+.topbar .ghost { margin-left: auto; }
+
+.wrap { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+
+.card {
+  background: #fff;
+  border: 1px solid var(--zz-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(58,63,75,.06);
+}
+.login { max-width: 380px; margin: 40px auto; display: flex; flex-direction: column; gap: 14px; }
+.login h2, .card h2 { margin: 0; }
+
+label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+input, select {
+  padding: 10px 12px;
+  border: 1px solid var(--zz-border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+input:focus, select:focus { outline: 2px solid var(--zz-orange); border-color: transparent; }
+
+button { border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+button.primary { background: var(--zz-orange); color: #fff; }
+button.primary:disabled { opacity: .6; cursor: default; }
+button.ghost { background: transparent; border: 1px solid var(--zz-border); color: var(--zz-graphite); }
+
+.row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.controls { margin-left: auto; display: flex; gap: 8px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--zz-border); }
+th { color: #6B7280; font-weight: 600; }
+.mono { font-family: ui-monospace, monospace; }
+.muted { color: #6B7280; }
+.error { color: #EF4444; font-size: 14px; margin: 0; }
+.hint { color: #9CA3AF; font-size: 12px; margin: 0; }
+
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: #EEF2F7; color: var(--zz-graphite);
+}
+.badge[data-status="Delivered"], .badge[data-status="Completed"] { background: #E9FBF0; color: var(--zz-green); }
+.badge[data-status="Cancelled"] { background: #FEecec; color: #EF4444; }
+.badge[data-status="Placed"], .badge[data-status="Confirmed"] { background: #FFF3EA; color: var(--zz-orange); }

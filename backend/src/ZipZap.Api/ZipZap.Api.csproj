@@ -14,6 +14,10 @@
     <ProjectReference Include="..\Modules\ZipZap.Modules.Identity\ZipZap.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\ZipZap.Modules.Catalog\ZipZap.Modules.Catalog.csproj" />
     <ProjectReference Include="..\Modules\ZipZap.Modules.Ordering\ZipZap.Modules.Ordering.csproj" />
+    <ProjectReference Include="..\Modules\ZipZap.Modules.Payments\ZipZap.Modules.Payments.csproj" />
+    <ProjectReference Include="..\Modules\ZipZap.Modules.Delivery\ZipZap.Modules.Delivery.csproj" />
+    <ProjectReference Include="..\Modules\ZipZap.Modules.Notifications\ZipZap.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\ZipZap.Modules.Integrations\ZipZap.Modules.Integrations.csproj" />
   </ItemGroup>
 
 </Project>
