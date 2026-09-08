@@ -60,7 +60,7 @@ public static class OrderingEndpoints
             .RequireAuthorization();
 
         group.MapGet("/stores/{storeId:guid}/orders", async (Guid storeId, string? status, OrderingService svc, CancellationToken ct) =>
-            Results.Ok(await svc.ListStoreOrdersAsync(storeId, status, ct)))
+            Respond(await svc.ListStoreOrdersAsync(storeId, status, ct)))
             .RequireAuthorization("StoreEmployee");
 
         // Przejścia statusów (autoryzacja per-akcja w serwisie)

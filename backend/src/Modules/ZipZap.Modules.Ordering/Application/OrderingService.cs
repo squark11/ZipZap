@@ -229,15 +229,19 @@ public sealed class OrderingService
         return orders.Select(OrderDto.From).ToList();
     }
 
-    public async Task<IReadOnlyList<OrderDto>> ListStoreOrdersAsync(Guid storeId, string? status, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<OrderDto>>> ListStoreOrdersAsync(Guid storeId, string? status, CancellationToken ct)
     {
+        // Izolacja najemcy: tylko admin lub pracownik TEGO sklepu.
+        var guard = EnsureCanManageStore(storeId);
+        if (guard.IsFailure) return guard.Error;
+
         var query = _db.Orders.AsNoTracking().Include(o => o.Items).Include(o => o.History)
             .Where(o => o.StoreId == storeId);
         if (Enum.TryParse<OrderStatus>(status, ignoreCase: true, out var parsed))
             query = query.Where(o => o.Status == parsed);
 
         var orders = await query.OrderByDescending(o => o.PlacedAtUtc).ToListAsync(ct);
-        return orders.Select(OrderDto.From).ToList();
+        return Result.Success<IReadOnlyList<OrderDto>>(orders.Select(OrderDto.From).ToList());
     }
 
     public async Task<Result<OrderDto>> ChangeStatusAsync(Guid orderId, OrderAction action, CancellationToken ct)
