@@ -1,11 +1,14 @@
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ZipZap.Api.Middleware;
 using ZipZap.Api.Security;
 using ZipZap.BuildingBlocks.DependencyInjection;
+using ZipZap.BuildingBlocks.Inbox;
 using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Persistence;
 using ZipZap.Modules.Identity;
@@ -76,6 +79,19 @@ const string DevCorsPolicy = "dev-cors";
 builder.Services.AddCors(o => o.AddPolicy(DevCorsPolicy, p =>
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
+// Jednolita koperta błędu (RFC7807 + code + traceId) dla wszystkich odpowiedzi
+// błędnych, w tym nieobsłużonych wyjątków (żadnych stack trace do klienta).
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        var traceId = Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier;
+        ctx.ProblemDetails.Extensions["traceId"] = traceId;
+        ctx.ProblemDetails.Extensions["code"] =
+            ctx.ProblemDetails.Title ?? (ctx.ProblemDetails.Status == 500 ? "internal_error" : "error");
+    };
+});
+
 // --- Swagger (z obsługą Bearer) ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -113,6 +129,21 @@ await using (var scope = app.Services.CreateAsyncScope())
     }
 }
 
+// Globalny handler wyjątków → spójna koperta ProblemDetails (bez stack trace do klienta).
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
+// Correlation id: z nagłówka X-Correlation-Id lub generowany; odsyłany w odpowiedzi.
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers.TryGetValue("X-Correlation-Id", out var incoming)
+                        && !string.IsNullOrWhiteSpace(incoming)
+        ? incoming.ToString()
+        : Activity.Current?.Id ?? context.TraceIdentifier;
+    context.Response.Headers["X-Correlation-Id"] = correlationId;
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -132,14 +163,19 @@ app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new
+// Liveness — proces żyje.
+app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "ZipZap.Api", timeUtc = DateTime.UtcNow }))
+    .WithName("Health").WithTags("System");
+app.MapGet("/health/live", () => Results.Ok(new { status = "live" })).WithTags("System");
+
+// Readiness — zależności (baza) osiągalne.
+app.MapGet("/health/ready", async (MessagingDbContext db, CancellationToken ct) =>
 {
-    status = "ok",
-    service = "ZipZap.Api",
-    timeUtc = DateTime.UtcNow
-}))
-.WithName("Health")
-.WithTags("System");
+    var dbOk = await db.Database.CanConnectAsync(ct);
+    return dbOk
+        ? Results.Ok(new { status = "ready", database = "up" })
+        : Results.Json(new { status = "not-ready", database = "down" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+}).WithTags("System");
 
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
