@@ -27,9 +27,11 @@ public static class IdentityModule
 
         services.Configure<JwtOptions>(config.GetSection(JwtOptions.SectionName));
         services.Configure<IdentityOptions>(config.GetSection(IdentityOptions.SectionName));
+        services.Configure<GoogleOptions>(config.GetSection(GoogleOptions.SectionName));
         services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IEmailSender, LoggingEmailSender>();
+        services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
         services.AddScoped<IdentityService>();
 
         services.RegisterIntegrationEventType<CustomerRegistered>();

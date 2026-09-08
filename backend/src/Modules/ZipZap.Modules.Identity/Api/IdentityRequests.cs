@@ -6,6 +6,8 @@ public sealed record LoginRequest(string Email, string Password);
 
 public sealed record RefreshRequest(string RefreshToken);
 
+public sealed record GoogleLoginRequest(string IdToken);
+
 public sealed record LogoutRequest(string? RefreshToken);
 
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

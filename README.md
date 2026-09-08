@@ -153,6 +153,19 @@ cd backend
 dotnet test
 ```
 
+### Logowanie Google (opcjonalne)
+Backend weryfikuje **ID token Google** (`Google.Apis.Auth`) względem skonfigurowanego Client ID
+i tworzy/łączy konto po e-mailu (potwierdzonym przez Google), a następnie wydaje JWT ZipZap.
+Endpoint: `POST /api/identity/google` z ciałem `{ "idToken": "<google-id-token>" }`.
+Aby włączyć, ustaw **Client ID** z Google Cloud Console (OAuth 2.0):
+```bash
+# zmienna środowiskowa (docker-compose / hosting)
+Google__ClientId=<twoj-client-id>.apps.googleusercontent.com
+```
+Bez `Google:ClientId` endpoint zwraca `401` (logowanie Google wyłączone). Klient (Flutter/web)
+przeprowadza standardowy flow Google i przekazuje uzyskany **ID token** do tego endpointu —
+backend nie przechowuje sekretu Google.
+
 ## Szybki przegląd API
 
 | Obszar | Przykłady |

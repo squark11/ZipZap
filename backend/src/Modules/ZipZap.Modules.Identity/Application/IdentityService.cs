@@ -22,6 +22,7 @@ public sealed class IdentityService
     private readonly IIntegrationEventTypeRegistry _eventRegistry;
     private readonly IEmailSender _email;
     private readonly IdentityOptions _options;
+    private readonly IGoogleTokenValidator _google;
 
     public IdentityService(
         IdentityDbContext db,
@@ -29,7 +30,8 @@ public sealed class IdentityService
         ITokenService tokens,
         IIntegrationEventTypeRegistry eventRegistry,
         IEmailSender email,
-        IOptions<IdentityOptions> options)
+        IOptions<IdentityOptions> options,
+        IGoogleTokenValidator google)
     {
         _db = db;
         _hasher = hasher;
@@ -37,6 +39,7 @@ public sealed class IdentityService
         _eventRegistry = eventRegistry;
         _email = email;
         _options = options.Value;
+        _google = google;
     }
 
     public async Task<Result<AuthResult>> RegisterCustomerAsync(
@@ -155,6 +158,34 @@ public sealed class IdentityService
 
         if (user is null || !user.IsActive || !_hasher.Verify(password, user.PasswordHash))
             return Error.Unauthorized("Nieprawidłowy e-mail lub hasło.");
+
+        var auth = IssueTokens(user);
+        await _db.SaveChangesAsync(ct);
+        return auth;
+    }
+
+    /// <summary>Logowanie Google: weryfikuje token ID, tworzy/łączy konto (e-mail potwierdzony), wydaje JWT.</summary>
+    public async Task<Result<AuthResult>> LoginWithGoogleAsync(string idToken, CancellationToken ct)
+    {
+        var info = await _google.ValidateAsync(idToken, ct);
+        if (info is null)
+            return Result.Failure<AuthResult>(Error.Unauthorized("Nieprawidłowy token Google lub logowanie Google nie jest skonfigurowane."));
+        if (!info.EmailVerified)
+            return Result.Failure<AuthResult>(Error.Unauthorized("Adres e-mail Google nie jest potwierdzony."));
+
+        var normalized = User.Normalize(info.Email);
+        var user = await _db.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Email == normalized, ct);
+        if (user is null)
+        {
+            user = User.Register(info.Email, _hasher.Hash(Guid.NewGuid().ToString("N")), info.Name, null, Role.Customer);
+            user.MarkEmailVerified();
+            _db.Users.Add(user);
+            _db.AddOutboxMessage(new CustomerRegistered(user.Id, user.Email, user.FullName), _eventRegistry);
+        }
+        else if (!user.IsActive)
+        {
+            return Result.Failure<AuthResult>(Error.Unauthorized("Konto jest zablokowane."));
+        }
 
         var auth = IssueTokens(user);
         await _db.SaveChangesAsync(ct);

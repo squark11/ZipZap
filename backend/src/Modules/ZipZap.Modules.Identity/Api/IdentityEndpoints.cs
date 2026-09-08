@@ -32,6 +32,13 @@ public static class IdentityEndpoints
             return result.IsSuccess ? Results.Ok(ToResponse(result.Value)) : Problem(result.Error);
         });
 
+        group.MapPost("/google", async (GoogleLoginRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.LoginWithGoogleAsync(req.IdToken, ct);
+            return result.IsSuccess ? Results.Ok(ToResponse(result.Value)) : Problem(result.Error);
+        })
+        .WithSummary("Logowanie Google — klient przesyła zweryfikowany ID token.");
+
         group.MapGet("/me", (ClaimsPrincipal principal) =>
         {
             var id = principal.FindFirstValue("sub") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
