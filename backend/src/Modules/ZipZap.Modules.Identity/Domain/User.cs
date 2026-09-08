@@ -12,6 +12,7 @@ public sealed class User : AggregateRoot
     public string FullName { get; private set; } = default!;
     public string? Phone { get; private set; }
     public bool IsActive { get; private set; }
+    public bool IsEmailVerified { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
@@ -51,6 +52,8 @@ public sealed class User : AggregateRoot
     public bool HasRole(Role role) => _roles.Any(r => r.Role == role);
 
     public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
+
+    public void MarkEmailVerified() => IsEmailVerified = true;
 
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;

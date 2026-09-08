@@ -12,6 +12,12 @@ public sealed record ChangePasswordRequest(string CurrentPassword, string NewPas
 
 public sealed record SetActiveRequest(bool IsActive);
 
+public sealed record VerifyEmailRequest(string Token);
+
+public sealed record ForgotPasswordRequest(string Email);
+
+public sealed record ResetPasswordRequest(string Token, string NewPassword);
+
 public sealed record CreateUserRequest(
     string Email, string Password, string FullName, string? Phone, string Role, Guid? StoreId);
 

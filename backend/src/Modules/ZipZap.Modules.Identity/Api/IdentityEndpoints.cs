@@ -89,6 +89,36 @@ public static class IdentityEndpoints
         .RequireAuthorization("Admin")
         .WithSummary("Blokada/odblokowanie konta (tylko ADMIN).");
 
+        group.MapPost("/email/verify", async (VerifyEmailRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.VerifyEmailAsync(req.Token, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .WithSummary("Potwierdzenie adresu e-mail tokenem z wiadomości.");
+
+        group.MapPost("/email/resend-verification", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.ResendVerificationAsync(userId, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Ponowne wysłanie e-maila weryfikacyjnego.");
+
+        group.MapPost("/password/forgot", async (ForgotPasswordRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            await svc.ForgotPasswordAsync(req.Email, ct);
+            return Ok(); // zawsze 200 — nie ujawnia istnienia konta
+        })
+        .WithSummary("Wysyła link resetu hasła (jeśli konto istnieje).");
+
+        group.MapPost("/password/reset", async (ResetPasswordRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.ResetPasswordAsync(req.Token, req.NewPassword, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .WithSummary("Ustawia nowe hasło tokenem resetu (unieważnia sesje).");
+
         return app;
     }
 

@@ -26,8 +26,10 @@ public static class IdentityModule
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<IdentityDbContext>>();
 
         services.Configure<JwtOptions>(config.GetSection(JwtOptions.SectionName));
+        services.Configure<IdentityOptions>(config.GetSection(IdentityOptions.SectionName));
         services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<IEmailSender, LoggingEmailSender>();
         services.AddScoped<IdentityService>();
 
         services.RegisterIntegrationEventType<CustomerRegistered>();

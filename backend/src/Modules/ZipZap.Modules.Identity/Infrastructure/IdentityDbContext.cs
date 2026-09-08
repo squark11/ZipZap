@@ -15,6 +15,7 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<UserToken> UserTokens => Set<UserToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -31,6 +32,7 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
             e.Property(u => u.FullName).IsRequired().HasMaxLength(200);
             e.Property(u => u.Phone).HasMaxLength(32);
             e.Property(u => u.IsActive);
+            e.Property(u => u.IsEmailVerified);
             e.Property(u => u.CreatedAtUtc);
             e.Ignore(u => u.DomainEvents);
 
@@ -53,6 +55,17 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
             e.HasKey(t => t.Id);
             e.Property(t => t.TokenHash).IsRequired().HasMaxLength(128);
             e.HasIndex(t => t.TokenHash);
+            e.HasOne<User>().WithMany().HasForeignKey(t => t.UserId);
+        });
+
+        b.Entity<UserToken>(e =>
+        {
+            e.ToTable("user_tokens");
+            e.HasKey(t => t.Id);
+            e.Property(t => t.Type).HasConversion<string>().HasMaxLength(32).IsRequired();
+            e.Property(t => t.TokenHash).IsRequired().HasMaxLength(128);
+            e.HasIndex(t => t.TokenHash);
+            e.HasIndex(t => new { t.UserId, t.Type });
             e.HasOne<User>().WithMany().HasForeignKey(t => t.UserId);
         });
 
