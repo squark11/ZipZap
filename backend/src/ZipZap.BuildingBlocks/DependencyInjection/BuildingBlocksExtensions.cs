@@ -1,8 +1,11 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ZipZap.BuildingBlocks.Inbox;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Outbox;
+using ZipZap.BuildingBlocks.Persistence;
 
 namespace ZipZap.BuildingBlocks.DependencyInjection;
 
@@ -37,6 +40,16 @@ public static class BuildingBlocksExtensions
         else
         {
             services.AddSingleton<IEventBus, InProcessEventBus>();
+        }
+
+        // Inbox konsumenta (deduplikacja) — schemat `messaging`, migrowany jak inne moduły.
+        var conn = configuration.GetConnectionString("Postgres");
+        if (!string.IsNullOrWhiteSpace(conn))
+        {
+            services.AddDbContext<MessagingDbContext>(o =>
+                o.UseNpgsql(conn, npg => npg.MigrationsHistoryTable("__ef_migrations_history", MessagingDbContext.Schema)));
+            services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<MessagingDbContext>>();
+            services.AddScoped<IInboxStore, EfInboxStore>();
         }
 
         services.AddScoped<CurrentTenant>();

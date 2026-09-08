@@ -32,6 +32,7 @@ public sealed class RabbitMqEventBus : IEventBus
 
         var props = channel.CreateBasicProperties();
         props.Type = typeName;
+        props.MessageId = integrationEvent.Id.ToString();
         props.ContentType = "application/json";
         props.DeliveryMode = 2; // trwałe
 
