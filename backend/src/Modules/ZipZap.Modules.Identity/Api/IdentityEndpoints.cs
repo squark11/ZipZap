@@ -55,6 +55,40 @@ public static class IdentityEndpoints
         .RequireAuthorization("Admin")
         .WithSummary("Utworzenie użytkownika z rolą (tylko ADMIN).");
 
+        group.MapPost("/logout", async (LogoutRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.LogoutAsync(req.RefreshToken, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Wylogowanie — unieważnia podany refresh token.");
+
+        group.MapPost("/logout-all", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.RevokeAllTokensAsync(userId, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Wyloguj wszędzie — unieważnia wszystkie refresh tokeny użytkownika.");
+
+        group.MapPost("/password/change", async (ChangePasswordRequest req, ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.ChangePasswordAsync(userId, req.CurrentPassword, req.NewPassword, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Zmiana hasła (unieważnia wszystkie sesje).");
+
+        group.MapPost("/admin/users/{userId:guid}/active", async (Guid userId, SetActiveRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.SetUserActiveAsync(userId, req.IsActive, ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Blokada/odblokowanie konta (tylko ADMIN).");
+
         return app;
     }
 
@@ -65,4 +99,10 @@ public static class IdentityEndpoints
 
     private static IResult Problem(Error error)
         => Results.Problem(detail: error.Message, statusCode: error.ToStatusCode(), title: error.Code);
+
+    private static IResult Ok() => Results.Ok(new { status = "ok" });
+
+    private static Guid? CurrentUserId(ClaimsPrincipal principal)
+        => Guid.TryParse(principal.FindFirstValue("sub") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+            ? id : null;
 }

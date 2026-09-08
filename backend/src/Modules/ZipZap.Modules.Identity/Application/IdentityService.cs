@@ -108,6 +108,65 @@ public sealed class IdentityService
         return UserDto.From(user);
     }
 
+    /// <summary>Wylogowanie: unieważnia podany refresh token.</summary>
+    public async Task<Result> LogoutAsync(string? refreshToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken)) return Result.Success();
+        var hash = _tokens.HashRefreshToken(refreshToken);
+        var token = await _db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
+        if (token is not null && token.IsActive)
+        {
+            token.Revoke();
+            await _db.SaveChangesAsync(ct);
+        }
+        return Result.Success();
+    }
+
+    /// <summary>Unieważnia wszystkie aktywne refresh tokeny użytkownika (wyloguj wszędzie).</summary>
+    public async Task<Result> RevokeAllTokensAsync(Guid userId, CancellationToken ct)
+    {
+        var tokens = await _db.RefreshTokens.Where(t => t.UserId == userId && t.RevokedAtUtc == null).ToListAsync(ct);
+        foreach (var token in tokens) token.Revoke();
+        if (tokens.Count > 0) await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    /// <summary>Zmiana hasła (uwierzytelniona) — po zmianie unieważnia wszystkie sesje.</summary>
+    public async Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            return Result.Failure(Error.Validation("Nowe hasło musi mieć co najmniej 6 znaków."));
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        if (!_hasher.Verify(currentPassword, user.PasswordHash))
+            return Result.Failure(Error.Unauthorized("Nieprawidłowe bieżące hasło."));
+
+        user.ChangePassword(_hasher.Hash(newPassword));
+        var tokens = await _db.RefreshTokens.Where(t => t.UserId == userId && t.RevokedAtUtc == null).ToListAsync(ct);
+        foreach (var token in tokens) token.Revoke();
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    /// <summary>Administracyjna blokada/odblokowanie konta — blokada unieważnia sesje.</summary>
+    public async Task<Result> SetUserActiveAsync(Guid userId, bool isActive, CancellationToken ct)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+
+        if (isActive) user.Activate();
+        else user.Deactivate();
+
+        if (!isActive)
+        {
+            var tokens = await _db.RefreshTokens.Where(t => t.UserId == userId && t.RevokedAtUtc == null).ToListAsync(ct);
+            foreach (var token in tokens) token.Revoke();
+        }
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     private AuthResult IssueTokens(User user)
     {
         var access = _tokens.CreateAccessToken(user);

@@ -50,7 +50,10 @@ public sealed class User : AggregateRoot
 
     public bool HasRole(Role role) => _roles.Any(r => r.Role == role);
 
+    public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
+
     public void Deactivate() => IsActive = false;
+    public void Activate() => IsActive = true;
 
     public static string Normalize(string email) => email.Trim().ToLowerInvariant();
 }
