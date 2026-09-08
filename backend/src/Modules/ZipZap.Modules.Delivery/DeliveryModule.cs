@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ZipZap.BuildingBlocks.Messaging;
+using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
 using ZipZap.Contracts.Ordering;
 using ZipZap.Modules.Delivery.Application;
@@ -19,12 +20,17 @@ public static class DeliveryModule
         services.AddDbContext<DeliveryDbContext>(o =>
             o.UseNpgsql(conn, npg => npg.MigrationsHistoryTable("__ef_migrations_history", DeliveryDbContext.Schema)));
 
+        services.AddScoped<IOutboxProcessor, OutboxProcessor<DeliveryDbContext>>();
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<DeliveryDbContext>>();
+        services.AddScoped<DeliveryService>();
 
+        // Konsumuje: gotowość do odbioru → utworzenie dostawy w puli.
         services.AddScoped<DeliveryEventHandlers>();
         services.AddScoped<IIntegrationEventHandler<OrderReadyForPickup>>(sp => sp.GetRequiredService<DeliveryEventHandlers>());
-        services.AddScoped<IIntegrationEventHandler<OrderPickedUp>>(sp => sp.GetRequiredService<DeliveryEventHandlers>());
-        services.AddScoped<IIntegrationEventHandler<OrderDelivered>>(sp => sp.GetRequiredService<DeliveryEventHandlers>());
+
+        // Produkuje: odbiór i dostarczenie (Ordering je konsumuje, by przesunąć stan).
+        services.RegisterIntegrationEventType<OrderPickedUp>();
+        services.RegisterIntegrationEventType<OrderDelivered>();
 
         return services;
     }

@@ -68,11 +68,11 @@ public static class OrderingEndpoints
             .RequireAuthorization("StoreEmployee");
 
         // Przejścia statusów (autoryzacja per-akcja w serwisie)
+        // Akcje sklepu/administracji. Odbiór i dostarczenie prowadzi kierowca
+        // przez moduł Delivery (POST /api/delivery/{id}/pick-up | /delivered).
         MapTransition(group, "confirm", OrderAction.Confirm);
         MapTransition(group, "start-picking", OrderAction.StartPicking);
         MapTransition(group, "ready", OrderAction.Ready);
-        MapTransition(group, "pick-up", OrderAction.PickUp);
-        MapTransition(group, "delivered", OrderAction.Delivered);
         MapTransition(group, "complete", OrderAction.Complete);
         MapTransition(group, "cancel", OrderAction.Cancel);
 

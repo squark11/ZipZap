@@ -6,13 +6,11 @@ using ZipZap.Modules.Delivery.Infrastructure;
 namespace ZipZap.Modules.Delivery.Application;
 
 /// <summary>
-/// Szkielet dostaw: projekcja cyklu życia zamówienia do tabeli `deliveries`.
-/// (Realne przypisania kierowców / trasy = przyszła implementacja.)
+/// Gdy zamówienie jest gotowe do odbioru, tworzy dostawę w puli dostępnych.
+/// Dalej dostawę prowadzi kierowca (Accept → PickUp → Deliver), a Delivery
+/// PRODUKUJE zdarzenia OrderPickedUp / OrderDelivered.
 /// </summary>
-public sealed class DeliveryEventHandlers :
-    IIntegrationEventHandler<OrderReadyForPickup>,
-    IIntegrationEventHandler<OrderPickedUp>,
-    IIntegrationEventHandler<OrderDelivered>
+public sealed class DeliveryEventHandlers : IIntegrationEventHandler<OrderReadyForPickup>
 {
     private readonly DeliveryDbContext _db;
 
@@ -20,24 +18,8 @@ public sealed class DeliveryEventHandlers :
 
     public async Task HandleAsync(OrderReadyForPickup e, CancellationToken ct = default)
     {
-        if (await _db.Deliveries.AnyAsync(d => d.OrderId == e.OrderId, ct)) return;
+        if (await _db.Deliveries.AnyAsync(d => d.OrderId == e.OrderId, ct)) return; // idempotencja
         _db.Deliveries.Add(new Domain.Delivery(e.OrderId, e.StoreId));
-        await _db.SaveChangesAsync(ct);
-    }
-
-    public async Task HandleAsync(OrderPickedUp e, CancellationToken ct = default)
-    {
-        var delivery = await _db.Deliveries.FirstOrDefaultAsync(d => d.OrderId == e.OrderId, ct);
-        if (delivery is null) return;
-        delivery.MarkInTransit();
-        await _db.SaveChangesAsync(ct);
-    }
-
-    public async Task HandleAsync(OrderDelivered e, CancellationToken ct = default)
-    {
-        var delivery = await _db.Deliveries.FirstOrDefaultAsync(d => d.OrderId == e.OrderId, ct);
-        if (delivery is null) return;
-        delivery.MarkDelivered();
         await _db.SaveChangesAsync(ct);
     }
 }

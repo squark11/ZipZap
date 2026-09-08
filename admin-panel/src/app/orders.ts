@@ -163,8 +163,8 @@ export class OrdersComponent {
       case 'Placed': return [a('Potwierdź', 'confirm', 'primary'), a('Anuluj', 'cancel', 'danger')];
       case 'Confirmed': return [a('Kompletuj', 'start-picking', 'primary'), a('Anuluj', 'cancel', 'danger')];
       case 'Picking': return [a('Gotowe do odbioru', 'ready', 'success'), a('Anuluj', 'cancel', 'danger')];
-      case 'ReadyForPickup': return [a('Odebrane', 'pick-up', 'primary'), a('Anuluj', 'cancel', 'danger')];
-      case 'InDelivery': return [a('Dostarczone', 'delivered', 'success')];
+      case 'ReadyForPickup': return [a('Anuluj', 'cancel', 'danger')]; // odbiór realizuje kierowca
+      case 'InDelivery': return []; // dostarczenie realizuje kierowca
       case 'Delivered': return [a('Zakończ', 'complete', 'success')];
       default: return [];
     }

@@ -41,6 +41,11 @@ public static class OrderingModule
         services.AddScoped<PaymentAuthorizedHandler>();
         services.AddScoped<IIntegrationEventHandler<PaymentAuthorized>>(sp => sp.GetRequiredService<PaymentAuthorizedHandler>());
 
+        // Postęp dostawy (produkowany przez Delivery) → przesunięcie stanu zamówienia.
+        services.AddScoped<OrderDeliveryProgressHandler>();
+        services.AddScoped<IIntegrationEventHandler<OrderPickedUp>>(sp => sp.GetRequiredService<OrderDeliveryProgressHandler>());
+        services.AddScoped<IIntegrationEventHandler<OrderDelivered>>(sp => sp.GetRequiredService<OrderDeliveryProgressHandler>());
+
         // Produkowane zdarzenia (dla outboxa).
         services.RegisterIntegrationEventType<OrderPlaced>();
         services.RegisterIntegrationEventType<OrderReadyForPickup>();
