@@ -69,6 +69,17 @@ public static class PaymentsEndpoints
             });
         }).RequireAuthorization();
 
+        // --- Odczyt WŁASNEJ płatności przez klienta (status + URL do zapłaty) ---
+        // Płatność pozostaje webhook-autorytatywna: klient odpytuje status, nie ustawia go.
+        group.MapGet("/orders/{orderId:guid}/mine", async (Guid orderId, PaymentsDbContext db, ICurrentUser user, CancellationToken ct) =>
+        {
+            if (user.UserId is not Guid uid) return Results.Unauthorized();
+            var p = await db.Payments.AsNoTracking().FirstOrDefaultAsync(x => x.OrderId == orderId, ct);
+            if (p is null) return Results.NotFound();
+            if (p.CustomerId != uid) return Forbidden();
+            return Results.Ok(new { p.OrderId, Status = p.Status.ToString(), p.RedirectUrl, p.Amount, p.DeliveryFee });
+        }).RequireAuthorization();
+
         group.MapGet("/stores/{storeId:guid}/commission", async (Guid storeId, PaymentsDbContext db, ICurrentUser user, CancellationToken ct) =>
         {
             if (!CanViewStore(user, storeId)) return Forbidden();

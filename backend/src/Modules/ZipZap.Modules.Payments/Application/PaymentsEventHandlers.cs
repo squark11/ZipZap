@@ -29,7 +29,7 @@ public sealed class PaymentsEventHandlers :
     {
         if (await _db.Payments.AnyAsync(p => p.OrderId == e.OrderId, ct)) return; // idempotencja
 
-        var payment = new Payment(e.OrderId, e.StoreId, e.Total, e.DeliveryFee, e.CommissionAmount);
+        var payment = new Payment(e.OrderId, e.StoreId, e.CustomerId, e.Total, e.DeliveryFee, e.CommissionAmount);
 
         var provider = _providers.Default;
         var session = await provider.CreateSessionAsync(

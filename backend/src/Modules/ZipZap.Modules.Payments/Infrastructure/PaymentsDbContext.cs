@@ -24,6 +24,7 @@ public sealed class PaymentsDbContext : DbContext, IOutboxDbContext
             e.ToTable("payments");
             e.HasKey(p => p.Id);
             e.HasIndex(p => p.OrderId).IsUnique();
+            e.HasIndex(p => p.CustomerId);
             e.Property(p => p.Amount).HasColumnType("numeric(12,2)");
             e.Property(p => p.DeliveryFee).HasColumnType("numeric(12,2)");
             e.Property(p => p.CommissionAmount).HasColumnType("numeric(12,2)");

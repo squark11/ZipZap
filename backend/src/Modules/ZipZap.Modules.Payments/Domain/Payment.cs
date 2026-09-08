@@ -12,6 +12,7 @@ public sealed class Payment : Entity
 {
     public Guid OrderId { get; private set; }
     public Guid StoreId { get; private set; }
+    public Guid CustomerId { get; private set; }
     public decimal Amount { get; private set; }
     public decimal DeliveryFee { get; private set; }
     public decimal CommissionAmount { get; private set; }
@@ -27,10 +28,11 @@ public sealed class Payment : Entity
 
     private Payment() { } // EF
 
-    public Payment(Guid orderId, Guid storeId, decimal amount, decimal deliveryFee, decimal commissionAmount)
+    public Payment(Guid orderId, Guid storeId, Guid customerId, decimal amount, decimal deliveryFee, decimal commissionAmount)
     {
         OrderId = orderId;
         StoreId = storeId;
+        CustomerId = customerId;
         Amount = amount;
         DeliveryFee = deliveryFee;
         CommissionAmount = commissionAmount;
