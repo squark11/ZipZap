@@ -23,12 +23,14 @@ public static class NotificationsModule
 
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<NotificationsDbContext>>();
         services.AddSingleton<INotificationChannel, LoggingNotificationChannel>();
+        services.AddSingleton<IPushSender, LoggingPushSender>();
 
         services.AddScoped<NotificationsEventHandlers>();
         services.AddScoped<IIntegrationEventHandler<CustomerRegistered>>(sp => sp.GetRequiredService<NotificationsEventHandlers>());
         services.AddScoped<IIntegrationEventHandler<OrderPlaced>>(sp => sp.GetRequiredService<NotificationsEventHandlers>());
         services.AddScoped<IIntegrationEventHandler<PaymentAuthorized>>(sp => sp.GetRequiredService<NotificationsEventHandlers>());
         services.AddScoped<IIntegrationEventHandler<OrderReadyForPickup>>(sp => sp.GetRequiredService<NotificationsEventHandlers>());
+        services.AddScoped<IIntegrationEventHandler<OrderPickedUp>>(sp => sp.GetRequiredService<NotificationsEventHandlers>());
         services.AddScoped<IIntegrationEventHandler<OrderDelivered>>(sp => sp.GetRequiredService<NotificationsEventHandlers>());
 
         return services;
