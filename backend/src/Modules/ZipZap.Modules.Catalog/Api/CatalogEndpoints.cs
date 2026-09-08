@@ -40,13 +40,14 @@ public static class CatalogEndpoints
         group.MapPost("/stores", async (CreateStoreRequest req, CatalogService svc, CancellationToken ct) =>
         {
             var result = await svc.CreateStoreAsync(
-                req.Name, req.Slug, req.Description, req.City, req.Address, req.CommissionRate, ct);
+                req.Name, req.Slug, req.Description, req.City, req.Address, req.Phone,
+                req.CommissionRate, req.MinimumOrderValue, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("Admin");
 
         group.MapPatch("/stores/{storeId:guid}", async (Guid storeId, UpdateStoreRequest req, CatalogService svc, CancellationToken ct) =>
         {
-            var result = await svc.UpdateStoreAsync(storeId, req.CommissionRate, req.IsActive, ct);
+            var result = await svc.UpdateStoreAsync(storeId, req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 

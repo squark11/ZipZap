@@ -34,6 +34,9 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.HasKey(s => s.Id);
             e.Property(s => s.Name).IsRequired().HasMaxLength(200);
             e.Property(s => s.CommissionRate).HasColumnType("numeric(5,4)");
+            e.Property(s => s.MinimumOrderValue).HasColumnType("numeric(12,2)");
+            e.Property(s => s.Status).HasMaxLength(24);
+            e.Ignore(s => s.IsAcceptingOrders);
         });
 
         b.Entity<CatalogProductView>(e =>
@@ -83,8 +86,12 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(o => o.Currency).HasMaxLength(3);
             e.Property(o => o.DeliveryAddress).IsRequired().HasMaxLength(500);
             e.Property(o => o.ContactPhone).IsRequired().HasMaxLength(32);
+            e.Property(o => o.IdempotencyKey).HasMaxLength(80);
             e.HasIndex(o => new { o.StoreId, o.Status });
             e.HasIndex(o => o.CustomerId);
+            // Idempotencja checkoutu: para (klient, klucz) unikalna, gdy klucz podany.
+            e.HasIndex(o => new { o.CustomerId, o.IdempotencyKey }).IsUnique()
+                .HasFilter("\"IdempotencyKey\" IS NOT NULL");
             e.Ignore(o => o.DomainEvents);
 
             e.HasMany(o => o.Items).WithOne().HasForeignKey(i => i.OrderId);

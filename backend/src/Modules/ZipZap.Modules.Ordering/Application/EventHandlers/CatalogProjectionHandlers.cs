@@ -28,14 +28,18 @@ public sealed class CatalogStoreProjectionHandler :
                 Id = e.StoreId,
                 Name = e.Name,
                 CommissionRate = e.CommissionRate,
+                MinimumOrderValue = e.MinimumOrderValue,
                 IsActive = e.IsActive,
+                Status = e.Status,
             });
         }
         else
         {
             view.Name = e.Name;
             view.CommissionRate = e.CommissionRate;
+            view.MinimumOrderValue = e.MinimumOrderValue;
             view.IsActive = e.IsActive;
+            view.Status = e.Status;
         }
         await _db.SaveChangesAsync(ct);
     }
@@ -45,7 +49,9 @@ public sealed class CatalogStoreProjectionHandler :
         var view = await _db.CatalogStores.FirstOrDefaultAsync(s => s.Id == e.StoreId, ct);
         if (view is null) return;
         view.CommissionRate = e.CommissionRate;
+        view.MinimumOrderValue = e.MinimumOrderValue;
         view.IsActive = e.IsActive;
+        view.Status = e.Status;
         await _db.SaveChangesAsync(ct);
     }
 }

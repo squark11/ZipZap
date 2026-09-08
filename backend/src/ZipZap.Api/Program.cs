@@ -81,6 +81,7 @@ builder.Services.AddCors(o => o.AddPolicy(DevCorsPolicy, p =>
 
 // Jednolita koperta błędu (RFC7807 + code + traceId) dla wszystkich odpowiedzi
 // błędnych, w tym nieobsłużonych wyjątków (żadnych stack trace do klienta).
+builder.Services.AddExceptionHandler<ZipZap.Api.BadRequestExceptionHandler>();
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = ctx =>

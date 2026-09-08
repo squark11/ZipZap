@@ -36,6 +36,7 @@ public sealed class Order : AggregateRoot
     public Guid TimeSlotId { get; private set; }
     public string DeliveryAddress { get; private set; } = default!;
     public string ContactPhone { get; private set; } = default!;
+    public string? IdempotencyKey { get; private set; }
     public DateTime PlacedAtUtc { get; private set; }
 
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
@@ -96,6 +97,8 @@ public sealed class Order : AggregateRoot
     public void MarkDelivered(Guid? by = null) => ChangeStatus(OrderStatus.Delivered, by);
     public void Complete(Guid? by = null) => ChangeStatus(OrderStatus.Completed, by);
     public void Cancel(Guid? by = null) => ChangeStatus(OrderStatus.Cancelled, by);
+
+    public void SetIdempotencyKey(string? key) => IdempotencyKey = key;
 
     public bool CanTransitionTo(OrderStatus target) => Transitions[Status].Contains(target);
 

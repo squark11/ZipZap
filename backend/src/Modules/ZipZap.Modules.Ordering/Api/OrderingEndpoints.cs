@@ -47,9 +47,13 @@ public static class OrderingEndpoints
 
         // ---------- Zamówienia ----------
 
-        group.MapPost("/carts/{cartId:guid}/checkout", async (Guid cartId, PlaceOrderRequest req, OrderingService svc, CancellationToken ct) =>
-            Respond(await svc.PlaceOrderAsync(cartId, req.Token, req.DeliveryZoneId, req.TimeSlotId, req.DeliveryAddress, req.ContactPhone, ct)))
-            .RequireAuthorization(); // wymaga zalogowanego klienta (rejestracja przy płatności)
+        group.MapPost("/carts/{cartId:guid}/checkout", async (Guid cartId, PlaceOrderRequest req, HttpContext http, OrderingService svc, CancellationToken ct) =>
+        {
+            var idempotencyKey = http.Request.Headers.TryGetValue("Idempotency-Key", out var k) ? k.ToString() : null;
+            return Respond(await svc.PlaceOrderAsync(cartId, req.Token, req.DeliveryZoneId, req.TimeSlotId,
+                req.DeliveryAddress, req.ContactPhone, idempotencyKey, ct));
+        })
+        .RequireAuthorization(); // wymaga zalogowanego klienta (rejestracja przy płatności)
 
         group.MapGet("/orders/mine", async (OrderingService svc, CancellationToken ct) =>
             Results.Ok(await svc.ListMyOrdersAsync(ct)))

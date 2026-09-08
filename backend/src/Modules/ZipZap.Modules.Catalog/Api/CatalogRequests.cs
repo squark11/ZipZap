@@ -1,9 +1,11 @@
 namespace ZipZap.Modules.Catalog.Api;
 
 public sealed record CreateStoreRequest(
-    string Name, string? Slug, string? Description, string City, string? Address, decimal CommissionRate);
+    string Name, string? Slug, string? Description, string City, string? Address, string? Phone,
+    decimal CommissionRate, decimal MinimumOrderValue);
 
-public sealed record UpdateStoreRequest(decimal? CommissionRate, bool? IsActive);
+public sealed record UpdateStoreRequest(
+    decimal? CommissionRate, bool? IsActive, string? Status, decimal? MinimumOrderValue);
 
 public sealed record CreateCategoryRequest(string Name, int SortOrder, Guid? ParentId);
 

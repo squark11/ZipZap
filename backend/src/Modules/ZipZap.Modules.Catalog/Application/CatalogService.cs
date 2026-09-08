@@ -70,28 +70,27 @@ public sealed class CatalogService
     // ---------- Zapisy ----------
 
     public async Task<Result<StoreDto>> CreateStoreAsync(
-        string name, string? slug, string? description, string city, string? address,
-        decimal commissionRate, CancellationToken ct)
+        string name, string? slug, string? description, string city, string? address, string? phone,
+        decimal commissionRate, decimal minimumOrderValue, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(name)) return Error.Validation("Nazwa sklepu jest wymagana.");
         if (commissionRate is < 0 or > 1) return Error.Validation("Prowizja musi być w zakresie 0–1 (np. 0.10).");
+        if (minimumOrderValue < 0) return Error.Validation("Minimalna wartość zamówienia nie może być ujemna.");
 
         var finalSlug = Slugify(string.IsNullOrWhiteSpace(slug) ? name : slug!);
         if (await _db.Stores.IgnoreQueryFilters().AnyAsync(s => s.Slug == finalSlug, ct))
             return Error.Conflict($"Sklep o slug '{finalSlug}' już istnieje.");
 
-        var store = Store.Create(name, finalSlug, description, city, address, commissionRate);
+        var store = Store.Create(name, finalSlug, description, city, address, phone, commissionRate, minimumOrderValue);
         _db.Stores.Add(store);
-        _db.AddOutboxMessage(
-            new StoreRegistered(store.Id, store.Name, store.Slug, store.CommissionRate, store.City, store.IsActive),
-            _events);
+        PublishStoreState(store, isRegistration: true);
 
         await _db.SaveChangesAsync(ct);
         return StoreDto.From(store);
     }
 
     public async Task<Result<StoreDto>> UpdateStoreAsync(
-        Guid storeId, decimal? commissionRate, bool? isActive, CancellationToken ct)
+        Guid storeId, decimal? commissionRate, bool? isActive, string? status, decimal? minimumOrderValue, CancellationToken ct)
     {
         var guard = EnsureCanManageStore(storeId);
         if (guard.IsFailure) return guard.Error;
@@ -104,14 +103,35 @@ public sealed class CatalogService
             if (commissionRate is < 0 or > 1) return Error.Validation("Prowizja musi być w zakresie 0–1.");
             store.UpdateCommissionRate(commissionRate.Value);
         }
+        if (minimumOrderValue.HasValue)
+        {
+            if (minimumOrderValue < 0) return Error.Validation("Minimalna wartość zamówienia nie może być ujemna.");
+            store.UpdateMinimumOrderValue(minimumOrderValue.Value);
+        }
         if (isActive.HasValue)
         {
             if (isActive.Value) store.Activate(); else store.Deactivate();
         }
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<StoreStatus>(status, ignoreCase: true, out var parsed))
+                return Error.Validation($"Nieznany status '{status}' (Open/Closed/TemporarilyUnavailable).");
+            store.SetStatus(parsed);
+        }
 
-        _db.AddOutboxMessage(new StoreUpdated(store.Id, store.CommissionRate, store.IsActive), _events);
+        PublishStoreState(store, isRegistration: false);
         await _db.SaveChangesAsync(ct);
         return StoreDto.From(store);
+    }
+
+    private void PublishStoreState(Store store, bool isRegistration)
+    {
+        if (isRegistration)
+            _db.AddOutboxMessage(new StoreRegistered(store.Id, store.Name, store.Slug, store.CommissionRate,
+                store.City, store.IsActive, store.Status.ToString(), store.MinimumOrderValue), _events);
+        else
+            _db.AddOutboxMessage(new StoreUpdated(store.Id, store.CommissionRate, store.IsActive,
+                store.Status.ToString(), store.MinimumOrderValue), _events);
     }
 
     public async Task<Result<CategoryDto>> CreateCategoryAsync(

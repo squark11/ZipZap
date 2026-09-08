@@ -6,10 +6,12 @@ namespace ZipZap.Contracts.Catalog;
 // modułom konsumować te zdarzenia BEZ zależności od wnętrza modułu Catalog.
 
 public sealed record StoreRegistered(
-    Guid StoreId, string Name, string Slug, decimal CommissionRate, string City, bool IsActive) : IntegrationEvent;
+    Guid StoreId, string Name, string Slug, decimal CommissionRate, string City, bool IsActive,
+    string Status, decimal MinimumOrderValue) : IntegrationEvent;
 
 public sealed record StoreUpdated(
-    Guid StoreId, decimal CommissionRate, bool IsActive) : IntegrationEvent;
+    Guid StoreId, decimal CommissionRate, bool IsActive,
+    string Status, decimal MinimumOrderValue) : IntegrationEvent;
 
 public sealed record ProductPublished(
     Guid ProductId, Guid StoreId, string Name, decimal Price, string Currency, string Unit, bool IsAvailable) : IntegrationEvent;

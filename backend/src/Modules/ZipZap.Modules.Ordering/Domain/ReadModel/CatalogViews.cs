@@ -9,7 +9,11 @@ public sealed class CatalogStoreView
     public Guid Id { get; set; }              // = StoreId
     public string Name { get; set; } = default!;
     public decimal CommissionRate { get; set; }
+    public decimal MinimumOrderValue { get; set; }
     public bool IsActive { get; set; }
+    public string Status { get; set; } = "Open";
+
+    public bool IsAcceptingOrders => IsActive && Status == "Open";
 }
 
 /// <summary>

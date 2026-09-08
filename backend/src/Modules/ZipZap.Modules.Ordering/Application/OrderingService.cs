@@ -144,12 +144,20 @@ public sealed class OrderingService
     // ---------------- Zamówienie ----------------
 
     public async Task<Result<OrderDto>> PlaceOrderAsync(Guid cartId, string token, Guid deliveryZoneId,
-        Guid timeSlotId, string deliveryAddress, string contactPhone, CancellationToken ct)
+        Guid timeSlotId, string deliveryAddress, string contactPhone, string? idempotencyKey, CancellationToken ct)
     {
         if (_user.UserId is not Guid customerId)
             return Error.Unauthorized("Złożenie zamówienia wymaga zalogowania.");
         if (string.IsNullOrWhiteSpace(deliveryAddress)) return Error.Validation("Adres dostawy jest wymagany.");
         if (string.IsNullOrWhiteSpace(contactPhone)) return Error.Validation("Telefon kontaktowy jest wymagany.");
+
+        // Idempotencja: ten sam klucz od tego samego klienta zwraca istniejące zamówienie (bez duplikatu).
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            var existing = await _db.Orders.AsNoTracking().Include(o => o.Items).Include(o => o.History)
+                .FirstOrDefaultAsync(o => o.CustomerId == customerId && o.IdempotencyKey == idempotencyKey, ct);
+            if (existing is not null) return OrderDto.From(existing);
+        }
 
         var cart = await LoadCartAsync(cartId, ct);
         if (cart is null) return Error.NotFound("Koszyk nie istnieje.");
@@ -158,7 +166,10 @@ public sealed class OrderingService
         if (cart.Items.Count == 0) return Error.Validation("Koszyk jest pusty.");
 
         var store = await _db.CatalogStores.FirstOrDefaultAsync(s => s.Id == cart.StoreId, ct);
-        if (store is null || !store.IsActive) return Error.Validation("Sklep jest niedostępny.");
+        if (store is null) return Error.Validation("Sklep jest niedostępny.");
+        if (!store.IsAcceptingOrders) return Error.Validation("Sklep aktualnie nie przyjmuje zamówień (zamknięty lub niedostępny).");
+        if (cart.Subtotal < store.MinimumOrderValue)
+            return Error.Validation($"Minimalna wartość zamówienia to {store.MinimumOrderValue:0.00}. Wartość koszyka: {cart.Subtotal:0.00}.");
 
         var zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.Id == deliveryZoneId && z.StoreId == cart.StoreId, ct);
         if (zone is null || !zone.IsActive) return Error.NotFound("Strefa dostaw nie istnieje.");
@@ -185,6 +196,7 @@ public sealed class OrderingService
 
         var order = Order.Place(cart.StoreId, customerId, lines, store.CommissionRate, zone.DeliveryFee,
             deliveryZoneId, timeSlotId, deliveryAddress.Trim(), contactPhone.Trim());
+        order.SetIdempotencyKey(string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey);
 
         cart.AssignCustomer(customerId);
         cart.MarkCheckedOut();
