@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
@@ -23,6 +24,13 @@ public static class PaymentsModule
 
         services.AddScoped<IOutboxProcessor, OutboxProcessor<PaymentsDbContext>>();
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<PaymentsDbContext>>();
+
+        // Dostawcy płatności (abstrakcja) + rejestr z domyślnym kluczem z konfiguracji.
+        services.Configure<PaymentsOptions>(config.GetSection(PaymentsOptions.SectionName));
+        services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
+        services.AddSingleton(sp => new PaymentProviderRegistry(
+            sp.GetServices<IPaymentProvider>(),
+            sp.GetRequiredService<IOptions<PaymentsOptions>>().Value.Provider));
 
         services.AddScoped<PaymentsEventHandlers>();
         services.AddScoped<IIntegrationEventHandler<OrderPlaced>>(sp => sp.GetRequiredService<PaymentsEventHandlers>());

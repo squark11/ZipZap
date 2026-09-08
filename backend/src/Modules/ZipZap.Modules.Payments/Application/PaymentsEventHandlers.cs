@@ -1,40 +1,44 @@
 using Microsoft.EntityFrameworkCore;
 using ZipZap.BuildingBlocks.Messaging;
-using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.Contracts.Ordering;
-using ZipZap.Contracts.Payments;
 using ZipZap.Modules.Payments.Domain;
 using ZipZap.Modules.Payments.Infrastructure;
 
 namespace ZipZap.Modules.Payments.Application;
 
 /// <summary>
-/// Szkielet płatności: mockowa bramka autoryzuje płatność po złożeniu zamówienia
-/// i księguje prowizję po dostawie. Realny provider = przyszły adapter.
+/// Reakcje płatności na zdarzenia zamówienia:
+///  - OrderPlaced → utwórz płatność Pending + sesję u dostawcy (autoryzacja
+///    NASTĘPUJE dopiero po zweryfikowanym webhooku, nie tutaj),
+///  - OrderDelivered → zaksięguj prowizję i rozlicz płatność.
 /// </summary>
 public sealed class PaymentsEventHandlers :
     IIntegrationEventHandler<OrderPlaced>,
     IIntegrationEventHandler<OrderDelivered>
 {
     private readonly PaymentsDbContext _db;
-    private readonly IIntegrationEventTypeRegistry _events;
+    private readonly PaymentProviderRegistry _providers;
 
-    public PaymentsEventHandlers(PaymentsDbContext db, IIntegrationEventTypeRegistry events)
+    public PaymentsEventHandlers(PaymentsDbContext db, PaymentProviderRegistry providers)
     {
         _db = db;
-        _events = events;
+        _providers = providers;
     }
 
     public async Task HandleAsync(OrderPlaced e, CancellationToken ct = default)
     {
         if (await _db.Payments.AnyAsync(p => p.OrderId == e.OrderId, ct)) return; // idempotencja
 
-        var payment = new Payment(e.OrderId, e.StoreId, e.Total, e.CommissionAmount);
-        payment.Authorize($"MOCK-{Guid.NewGuid():N}"); // mock: bramka od razu autoryzuje
-        _db.Payments.Add(payment);
+        var payment = new Payment(e.OrderId, e.StoreId, e.Total, e.DeliveryFee, e.CommissionAmount);
 
-        _db.AddOutboxMessage(new PaymentAuthorized(e.OrderId, e.StoreId, e.Total), _events);
+        var provider = _providers.Default;
+        var session = await provider.CreateSessionAsync(
+            new PaymentSessionRequest(payment.Id, e.OrderId, e.Total, "PLN", $"ZipZap zamówienie {e.OrderId:N}"), ct);
+        payment.AttachSession(provider.Key, session.SessionId, session.RedirectUrl);
+
+        _db.Payments.Add(payment);
         await _db.SaveChangesAsync(ct);
+        // Brak PaymentAuthorized — autorytatywnym źródłem jest webhook dostawcy.
     }
 
     public async Task HandleAsync(OrderDelivered e, CancellationToken ct = default)

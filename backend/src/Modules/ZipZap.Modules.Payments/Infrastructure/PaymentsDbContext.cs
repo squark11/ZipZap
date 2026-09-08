@@ -25,9 +25,14 @@ public sealed class PaymentsDbContext : DbContext, IOutboxDbContext
             e.HasKey(p => p.Id);
             e.HasIndex(p => p.OrderId).IsUnique();
             e.Property(p => p.Amount).HasColumnType("numeric(12,2)");
+            e.Property(p => p.DeliveryFee).HasColumnType("numeric(12,2)");
             e.Property(p => p.CommissionAmount).HasColumnType("numeric(12,2)");
             e.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
-            e.Property(p => p.ProviderRef).HasMaxLength(64);
+            e.Property(p => p.Provider).HasMaxLength(32);
+            e.Property(p => p.SessionId).HasMaxLength(128);
+            e.Property(p => p.RedirectUrl).HasMaxLength(500);
+            e.Property(p => p.ProviderRef).HasMaxLength(128);
+            e.HasIndex(p => p.SessionId);
         });
 
         b.Entity<CommissionLedgerEntry>(e =>
