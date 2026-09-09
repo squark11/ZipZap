@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/cart/cart_controller.dart';
+import '../widgets/zz_icon.dart';
 
 /// Powłoka z dolną nawigacją dla głównych zakładek (Sklepy/Koszyk/Zamówienia/Konto).
 class MainScaffold extends ConsumerWidget {
@@ -29,31 +30,23 @@ class MainScaffold extends ConsumerWidget {
         onDestinationSelected: (i) => context.go(_tabs[i]),
         destinations: [
           const NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
+            icon: ZzIcon('store'),
             label: 'Sklepy',
           ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: cartCount > 0,
               label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_cart_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: cartCount > 0,
-              label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_cart),
+              child: const ZzIcon('cart'),
             ),
             label: 'Koszyk',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
+            icon: ZzIcon('orders'),
             label: 'Zamówienia',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: ZzIcon('account'),
             label: 'Konto',
           ),
         ],

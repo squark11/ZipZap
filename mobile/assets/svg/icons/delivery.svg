@@ -1,0 +1,9 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#3A3F4B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img">
+  <title>Dostawa</title>
+  <circle cx="6" cy="17" r="2.6"/>
+  <circle cx="18" cy="17" r="2.6"/>
+  <path d="M8.6 17H15.4"/>
+  <path d="M4 8.5H7.2L10.5 17"/>
+  <path d="M10.5 10H14L16.4 14.6"/>
+  <path d="M16 17L18.4 9H21"/>
+</svg>
