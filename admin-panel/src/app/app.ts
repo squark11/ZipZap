@@ -65,18 +65,22 @@ import { DeliveriesComponent } from './deliveries';
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
           <span class="tip">Oferta</span>
         </button>
+        @if (api.isAdmin()) {
         <button class="rail-btn" [class.active]="tab==='team'" (click)="tab='team'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span class="tip">Zespół</span>
         </button>
+        }
         <button class="rail-btn" [class.active]="tab==='finance'" (click)="tab='finance'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
           <span class="tip">Rozliczenia</span>
         </button>
+        @if (api.isAdmin()) {
         <button class="rail-btn" [class.active]="tab==='stores'" (click)="tab='stores'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>
           <span class="tip">Sklepy</span>
         </button>
+        }
         <div class="spacer"></div>
         <button class="rail-btn" (click)="logout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -97,7 +101,7 @@ import { DeliveriesComponent } from './deliveries';
           </div>
           <div class="userchip">
             <div class="avatar">{{ initials }}</div>
-            <div class="who"><b>Administrator</b><span>{{ api.userEmail() }}</span></div>
+            <div class="who"><b>{{ api.isAdmin() ? 'Administrator' : 'Pracownik sklepu' }}</b><span>{{ api.userEmail() }}</span></div>
           </div>
         </div>
 
@@ -149,10 +153,14 @@ export class App {
   }
 
   loadStores() {
-    this.api.getPublic<StoreDto[]>('/catalog/stores?onlyActive=false').subscribe(s => {
+    this.api.getPublic<StoreDto[]>('/catalog/stores?onlyActive=false').subscribe(all => {
+      // Pracownik sklepu widzi tylko swój sklep; admin — wszystkie.
+      const s = this.api.isAdmin() ? all : all.filter(x => this.api.storeIds().includes(x.id));
       this.stores = s;
       const stillThere = s.some(x => x.id === this.selectedStoreId);
       if (!stillThere && s.length) { this.selectedStoreId = s[0].id; }
+      // Pracownik nie ma dostępu do zakładek administracyjnych.
+      if (!this.api.isAdmin() && (this.tab === 'stores' || this.tab === 'team')) this.tab = 'dashboard';
     });
   }
 

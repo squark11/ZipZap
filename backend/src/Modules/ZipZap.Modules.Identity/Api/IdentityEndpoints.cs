@@ -137,7 +137,7 @@ public static class IdentityEndpoints
     private static AuthResponse ToResponse(AuthResult a)
         => new(a.AccessToken, a.AccessTokenExpiresAtUtc, a.RefreshToken, ToUser(a.User));
 
-    private static UserResponse ToUser(UserDto u) => new(u.Id, u.Email, u.FullName, u.Roles);
+    private static UserResponse ToUser(UserDto u) => new(u.Id, u.Email, u.FullName, u.Roles, u.StoreIds);
 
     private static IResult Problem(Error error)
         => Results.Problem(detail: error.Message, statusCode: error.ToStatusCode(), title: error.Code);

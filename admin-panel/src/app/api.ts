@@ -43,15 +43,23 @@ export class Api {
 
   readonly token = signal<string | null>(null);
   readonly userEmail = signal<string>('');
+  readonly roles = signal<string[]>([]);
+  readonly storeIds = signal<string[]>([]);
   readonly isLoggedIn = computed(() => !!this.token());
+  readonly isAdmin = computed(() => this.roles().includes('Admin'));
 
   login(email: string, password: string): Observable<{ accessToken: string }> {
-    return this.http.post<{ accessToken: string; user: { email: string } }>(
+    return this.http.post<{ accessToken: string; user: { email: string; roles: string[]; storeIds: string[] } }>(
       `${this.base}/identity/login`, { email, password }
-    ).pipe(tap(r => { this.token.set(r.accessToken); this.userEmail.set(r.user?.email ?? email); }));
+    ).pipe(tap(r => {
+      this.token.set(r.accessToken);
+      this.userEmail.set(r.user?.email ?? email);
+      this.roles.set(r.user?.roles ?? []);
+      this.storeIds.set(r.user?.storeIds ?? []);
+    }));
   }
 
-  logout() { this.token.set(null); this.userEmail.set(''); }
+  logout() { this.token.set(null); this.userEmail.set(''); this.roles.set([]); this.storeIds.set([]); }
 
   private opts() { return { headers: { Authorization: `Bearer ${this.token()}` } }; }
 
