@@ -26,6 +26,11 @@ export interface PaymentDto {
   status: string; provider?: string; redirectUrl?: string; providerRef?: string;
 }
 export interface CommissionDto { storeId: string; totalCommission: number; entries: number; }
+export interface PaymentsSummaryDto {
+  storeId: string; pending: number; paid: number; settled: number; failed: number;
+  grossPaid: number; settledCommission: number;
+}
+export interface LedgerEntryDto { orderId: string; amount: number; createdAtUtc: string; }
 export interface TeamMemberDto {
   id: string; email: string; fullName: string; phone?: string;
   isActive: boolean; isEmailVerified: boolean; role: string; storeId: string;

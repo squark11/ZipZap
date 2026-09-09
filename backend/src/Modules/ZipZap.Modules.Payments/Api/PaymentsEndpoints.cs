@@ -7,6 +7,7 @@ using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.Contracts.Payments;
 using ZipZap.Modules.Payments.Application;
+using ZipZap.Modules.Payments.Domain;
 using ZipZap.Modules.Payments.Infrastructure;
 
 namespace ZipZap.Modules.Payments.Api;
@@ -86,6 +87,35 @@ public static class PaymentsEndpoints
             var total = await db.CommissionLedger.Where(l => l.StoreId == storeId).SumAsync(l => (decimal?)l.Amount, ct) ?? 0m;
             var count = await db.CommissionLedger.CountAsync(l => l.StoreId == storeId, ct);
             return Results.Ok(new { StoreId = storeId, TotalCommission = total, Entries = count });
+        }).RequireAuthorization("StoreEmployee");
+
+        // Podsumowanie płatności sklepu (liczniki wg statusu + kwoty).
+        group.MapGet("/stores/{storeId:guid}/summary", async (Guid storeId, PaymentsDbContext db, ICurrentUser user, CancellationToken ct) =>
+        {
+            if (!CanViewStore(user, storeId)) return Forbidden();
+            var payments = db.Payments.AsNoTracking().Where(p => p.StoreId == storeId);
+            var pending = await payments.CountAsync(p => p.Status == PaymentStatus.Pending, ct);
+            var paid = await payments.CountAsync(p => p.Status == PaymentStatus.Authorized || p.Status == PaymentStatus.Settled, ct);
+            var settled = await payments.CountAsync(p => p.Status == PaymentStatus.Settled, ct);
+            var failed = await payments.CountAsync(p => p.Status == PaymentStatus.Failed, ct);
+            var grossPaid = await payments
+                .Where(p => p.Status == PaymentStatus.Authorized || p.Status == PaymentStatus.Settled)
+                .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
+            var settledCommission = await db.CommissionLedger.Where(l => l.StoreId == storeId).SumAsync(l => (decimal?)l.Amount, ct) ?? 0m;
+            return Results.Ok(new { storeId, pending, paid, settled, failed, grossPaid, settledCommission });
+        }).RequireAuthorization("StoreEmployee");
+
+        // Księga prowizji sklepu (rozliczone zamówienia).
+        group.MapGet("/stores/{storeId:guid}/ledger", async (Guid storeId, PaymentsDbContext db, ICurrentUser user, CancellationToken ct) =>
+        {
+            if (!CanViewStore(user, storeId)) return Forbidden();
+            var entries = await db.CommissionLedger.AsNoTracking()
+                .Where(l => l.StoreId == storeId)
+                .OrderByDescending(l => l.CreatedAtUtc)
+                .Take(200)
+                .Select(l => new { l.OrderId, l.Amount, l.CreatedAtUtc })
+                .ToListAsync(ct);
+            return Results.Ok(entries);
         }).RequireAuthorization("StoreEmployee");
 
         return app;
