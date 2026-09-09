@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using ZipZap.BuildingBlocks.Auditing;
 using ZipZap.BuildingBlocks.Domain;
 using ZipZap.Modules.Catalog.Application;
 
@@ -55,9 +56,12 @@ public static class CatalogEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("Admin");
 
-        group.MapPatch("/stores/{storeId:guid}", async (Guid storeId, UpdateStoreRequest req, CatalogService svc, CancellationToken ct) =>
+        group.MapPatch("/stores/{storeId:guid}", async (Guid storeId, UpdateStoreRequest req, CatalogService svc, IAuditLogger audit, CancellationToken ct) =>
         {
             var result = await svc.UpdateStoreAsync(storeId, req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, ct);
+            if (result.IsSuccess)
+                await audit.LogAsync("store.updated", "store", storeId.ToString(), storeId,
+                    new { req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue }, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 

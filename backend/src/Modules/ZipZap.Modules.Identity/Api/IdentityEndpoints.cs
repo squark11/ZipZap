@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using ZipZap.BuildingBlocks.Auditing;
 using ZipZap.BuildingBlocks.Domain;
 using ZipZap.Modules.Identity.Application;
 using ZipZap.Modules.Identity.Domain;
@@ -50,13 +51,16 @@ public static class IdentityEndpoints
         .RequireAuthorization()
         .WithSummary("Dane bieżącego użytkownika (wymaga JWT).");
 
-        group.MapPost("/admin/users", async (CreateUserRequest req, IdentityService svc, CancellationToken ct) =>
+        group.MapPost("/admin/users", async (CreateUserRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
         {
             if (!Enum.TryParse<Role>(req.Role, ignoreCase: true, out var role))
                 return Problem(Error.Validation($"Nieznana rola '{req.Role}'."));
 
             var result = await svc.CreateUserAsync(
                 req.Email, req.Password, req.FullName, req.Phone, role, req.StoreId, ct);
+            if (result.IsSuccess)
+                await audit.LogAsync("user.created", "user", result.Value.Id.ToString(), req.StoreId,
+                    new { req.Email, req.Role, req.StoreId }, ct);
             return result.IsSuccess ? Results.Ok(ToUser(result.Value)) : Problem(result.Error);
         })
         .RequireAuthorization("Admin")
@@ -93,9 +97,12 @@ public static class IdentityEndpoints
         .RequireAuthorization()
         .WithSummary("Zmiana hasła (unieważnia wszystkie sesje).");
 
-        group.MapPost("/admin/users/{userId:guid}/active", async (Guid userId, SetActiveRequest req, IdentityService svc, CancellationToken ct) =>
+        group.MapPost("/admin/users/{userId:guid}/active", async (Guid userId, SetActiveRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
         {
             var result = await svc.SetUserActiveAsync(userId, req.IsActive, ct);
+            if (result.IsSuccess)
+                await audit.LogAsync(req.IsActive ? "user.activated" : "user.blocked", "user",
+                    userId.ToString(), details: new { req.IsActive }, ct: ct);
             return result.IsSuccess ? Ok() : Problem(result.Error);
         })
         .RequireAuthorization("Admin")

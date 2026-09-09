@@ -25,6 +25,8 @@ using ZipZap.Modules.Notifications;
 using ZipZap.Modules.Notifications.Api;
 using ZipZap.Modules.Integrations;
 using ZipZap.Modules.Integrations.Api;
+using ZipZap.Modules.Audit;
+using ZipZap.Modules.Audit.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +74,7 @@ builder.Services.AddPaymentsModule(builder.Configuration);
 builder.Services.AddDeliveryModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 builder.Services.AddIntegrationsModule();
+builder.Services.AddAuditModule(builder.Configuration);
 
 // --- Uwierzytelnianie / autoryzacja (JWT) ---
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -219,6 +222,7 @@ app.MapPaymentsEndpoints();
 app.MapDeliveryEndpoints();
 app.MapNotificationsEndpoints();
 app.MapIntegrationsEndpoints();
+app.MapAuditEndpoints();
 
 app.Run();
 

@@ -36,6 +36,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Payments.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Api.IntegrationTests", "tests\ZipZap.Api.IntegrationTests\ZipZap.Api.IntegrationTests.csproj", "{1F281317-9C79-464D-8296-021674A10EC7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZipZap.Modules.Audit", "src\Modules\ZipZap.Modules.Audit\ZipZap.Modules.Audit.csproj", "{5CF72AB0-7A39-43F2-8920-133C0E7BBEEA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -98,6 +100,10 @@ Global
 		{1F281317-9C79-464D-8296-021674A10EC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F281317-9C79-464D-8296-021674A10EC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F281317-9C79-464D-8296-021674A10EC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CF72AB0-7A39-43F2-8920-133C0E7BBEEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CF72AB0-7A39-43F2-8920-133C0E7BBEEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CF72AB0-7A39-43F2-8920-133C0E7BBEEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CF72AB0-7A39-43F2-8920-133C0E7BBEEA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -116,5 +122,6 @@ Global
 		{1ACF39B2-92FC-4716-8CF8-61518FB5DDF1} = {82ABE2D1-82D3-4906-99A7-20A8061EC60F}
 		{763CEFCB-17BA-405A-8424-33368B98BC44} = {82ABE2D1-82D3-4906-99A7-20A8061EC60F}
 		{1F281317-9C79-464D-8296-021674A10EC7} = {82ABE2D1-82D3-4906-99A7-20A8061EC60F}
+		{5CF72AB0-7A39-43F2-8920-133C0E7BBEEA} = {D0D59521-FF60-42C1-8F4F-EDC75567C417}
 	EndGlobalSection
 EndGlobal
