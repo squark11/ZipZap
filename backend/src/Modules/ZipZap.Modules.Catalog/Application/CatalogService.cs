@@ -124,6 +124,21 @@ public sealed class CatalogService
         return StoreDto.From(store);
     }
 
+    /// <summary>
+    /// Re-emituje StoreUpdated dla wszystkich sklepów, odświeżając read-modele
+    /// konsumentów (np. Ordering). Naprawia rekordy sprzed rozszerzenia zdarzeń
+    /// o Status/MinimumOrderValue (stary sklep z pustym Status = nie przyjmuje
+    /// zamówień). Tylko admin. Idempotentne.
+    /// </summary>
+    public async Task<Result<int>> ResyncStoreProjectionsAsync(CancellationToken ct)
+    {
+        var stores = await _db.Stores.AsNoTracking().IgnoreQueryFilters().ToListAsync(ct);
+        foreach (var store in stores)
+            PublishStoreState(store, isRegistration: false);
+        await _db.SaveChangesAsync(ct);
+        return stores.Count;
+    }
+
     private void PublishStoreState(Store store, bool isRegistration)
     {
         if (isRegistration)

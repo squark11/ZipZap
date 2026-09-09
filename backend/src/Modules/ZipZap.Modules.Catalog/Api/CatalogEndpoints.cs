@@ -37,6 +37,16 @@ public static class CatalogEndpoints
 
         // ---------- Zarządzanie sklepem (ADMIN) ----------
 
+        // Re-emisja StoreUpdated dla wszystkich sklepów — odświeża read-modele
+        // konsumentów (naprawa rekordów sprzed rozszerzenia zdarzeń o Status).
+        group.MapPost("/admin/resync-projections", async (CatalogService svc, CancellationToken ct) =>
+        {
+            var result = await svc.ResyncStoreProjectionsAsync(ct);
+            return result.IsSuccess
+                ? Results.Ok(new { resynced = result.Value })
+                : Problem(result.Error);
+        }).RequireAuthorization("Admin");
+
         group.MapPost("/stores", async (CreateStoreRequest req, CatalogService svc, CancellationToken ct) =>
         {
             var result = await svc.CreateStoreAsync(
