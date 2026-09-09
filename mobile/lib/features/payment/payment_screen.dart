@@ -144,6 +144,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          // Wyjście — użytkownik nie może utknąć na płatności (np. mock/porzucenie).
+          TextButton(
+            onPressed: () => context.go('/orders/${widget.orderId}'),
+            child: const Text('Zapłacę później — śledź zamówienie'),
+          ),
         ],
       ),
     );
