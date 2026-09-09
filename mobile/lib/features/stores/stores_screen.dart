@@ -7,6 +7,7 @@ import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/notifications_bell.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/zz_icon.dart';
 import '../../models/store.dart';
 
 final storesProvider = FutureProvider.autoDispose<List<Store>>(
@@ -80,7 +81,8 @@ class _StoreCard extends StatelessWidget {
                   color: ZzColors.orange50,
                   borderRadius: BorderRadius.circular(ZzRadius.md),
                 ),
-                child: const Icon(Icons.storefront, color: ZzColors.orange),
+                alignment: Alignment.center,
+                child: const ZzIcon('store', size: 24, color: ZzColors.orange),
               ),
               const SizedBox(width: 14),
               Expanded(

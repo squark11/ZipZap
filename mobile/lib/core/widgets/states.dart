@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/zz_theme.dart';
+import 'zz_icon.dart';
 
 class LoadingView extends StatelessWidget {
   final String? label;
@@ -103,35 +104,42 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, label) = _style(status);
+    final (bg, fg, label, icon) = _style(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.sm)),
-      child: Text(label,
-          style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ZzIcon(icon, size: 14, color: fg),
+          const SizedBox(width: 5),
+          Text(label,
+              style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 
-  static (Color, Color, String) _style(String s) {
+  static (Color, Color, String, String) _style(String s) {
     switch (s) {
       case 'Placed':
-        return (ZzColors.orange50, ZzColors.orange600, 'Złożone');
+        return (ZzColors.orange50, ZzColors.orange600, 'Złożone', 'clock');
       case 'Confirmed':
-        return (ZzColors.orange50, ZzColors.orange600, 'Potwierdzone');
+        return (ZzColors.orange50, ZzColors.orange600, 'Potwierdzone', 'check');
       case 'Picking':
-        return (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Kompletowane');
+        return (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Kompletowane', 'cart');
       case 'ReadyForPickup':
-        return (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Gotowe do odbioru');
+        return (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Gotowe do odbioru', 'package');
       case 'InDelivery':
-        return (ZzColors.orange50, ZzColors.orange600, 'W dostawie');
+        return (ZzColors.orange50, ZzColors.orange600, 'W dostawie', 'delivery');
       case 'Delivered':
-        return (ZzColors.green50, const Color(0xFF128040), 'Dostarczone');
+        return (ZzColors.green50, const Color(0xFF128040), 'Dostarczone', 'check_circle');
       case 'Completed':
-        return (ZzColors.green50, const Color(0xFF128040), 'Zakończone');
+        return (ZzColors.green50, const Color(0xFF128040), 'Zakończone', 'check_circle');
       case 'Cancelled':
-        return (const Color(0xFFFEECEC), ZzColors.danger, 'Anulowane');
+        return (const Color(0xFFFEECEC), ZzColors.danger, 'Anulowane', 'x_circle');
       default:
-        return (ZzColors.surface, ZzColors.textMuted, s);
+        return (ZzColors.surface, ZzColors.textMuted, s, 'info');
     }
   }
 }

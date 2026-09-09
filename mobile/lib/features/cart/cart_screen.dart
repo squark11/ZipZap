@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/zz_icon.dart';
 import '../catalog/store_detail_screen.dart';
 import 'cart_controller.dart';
 
@@ -43,6 +44,7 @@ class CartScreen extends ConsumerWidget {
                     itemBuilder: (_, i) {
                       final it = c.items[i];
                       return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Column(
@@ -50,18 +52,38 @@ class CartScreen extends ConsumerWidget {
                               children: [
                                 Text(it.productName,
                                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                                Text('${zl(it.unitPrice)} × ${it.quantity}',
+                                const SizedBox(height: 2),
+                                Text('${zl(it.unitPrice)} / szt.',
                                     style: const TextStyle(
                                         color: ZzColors.textMuted, fontSize: 13)),
+                                const SizedBox(height: 8),
+                                _QtyStepper(
+                                  quantity: it.quantity,
+                                  onMinus: () => controller.setQuantity(
+                                      it.productId, it.quantity - 1),
+                                  onPlus: () => controller.setQuantity(
+                                      it.productId, it.quantity + 1),
+                                ),
                               ],
                             ),
                           ),
-                          Text(zl(it.lineTotal),
-                              style: const TextStyle(fontWeight: FontWeight.w700)),
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, color: ZzColors.textMuted),
-                            onPressed: () =>
-                                controller.setQuantity(it.productId, it.quantity - 1),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(zl(it.lineTotal),
+                                  style: const TextStyle(fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => controller.remove(it.productId),
+                                borderRadius: BorderRadius.circular(ZzRadius.sm),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(4),
+                                  child: ZzIcon('trash',
+                                      size: 20, color: ZzColors.textMuted),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       );
@@ -73,6 +95,48 @@ class CartScreen extends ConsumerWidget {
             ),
     );
   }
+}
+
+/// Stepper ilości: [−] liczba [+] (marka: ikony ZzIcon, obrys).
+class _QtyStepper extends StatelessWidget {
+  final int quantity;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+  const _QtyStepper(
+      {required this.quantity, required this.onMinus, required this.onPlus});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: ZzColors.border),
+        borderRadius: BorderRadius.circular(ZzRadius.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _btn('minus', onMinus),
+          SizedBox(
+            width: 34,
+            child: Center(
+              child: Text('$quantity',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            ),
+          ),
+          _btn('plus', onPlus),
+        ],
+      ),
+    );
+  }
+
+  Widget _btn(String icon, VoidCallback onTap) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(ZzRadius.sm),
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: ZzIcon(icon, size: 18, color: ZzColors.graphite),
+        ),
+      );
 }
 
 class _CartFooter extends ConsumerWidget {

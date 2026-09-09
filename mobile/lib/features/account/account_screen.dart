@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/widgets/zz_icon.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -25,7 +26,7 @@ class AccountScreen extends ConsumerWidget {
                   const CircleAvatar(
                     radius: 26,
                     backgroundColor: ZzColors.orange50,
-                    child: Icon(Icons.person, color: ZzColors.orange),
+                    child: ZzIcon('account', size: 26, color: ZzColors.orange),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -48,16 +49,16 @@ class AccountScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.receipt_long_outlined, color: ZzColors.graphite),
+                  leading: const ZzIcon('orders', size: 22, color: ZzColors.graphite),
                   title: const Text('Moje zamówienia'),
-                  trailing: const Icon(Icons.chevron_right, color: ZzColors.textMuted),
+                  trailing: const ZzIcon('chevron_right', size: 20, color: ZzColors.textMuted),
                   onTap: () => context.push('/orders'),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.notifications_outlined, color: ZzColors.graphite),
+                  leading: const ZzIcon('bell', size: 22, color: ZzColors.graphite),
                   title: const Text('Powiadomienia'),
-                  trailing: const Icon(Icons.chevron_right, color: ZzColors.textMuted),
+                  trailing: const ZzIcon('chevron_right', size: 20, color: ZzColors.textMuted),
                   onTap: () => context.push('/notifications'),
                 ),
               ],
