@@ -235,6 +235,21 @@ public sealed class IdentityService
         return UserDto.From(user);
     }
 
+    /// <summary>Zespół sklepu: pracownicy i kierowcy przypisani do danego sklepu.</summary>
+    public async Task<IReadOnlyList<TeamMemberDto>> ListStoreTeamAsync(Guid storeId, CancellationToken ct)
+    {
+        var users = await _db.Users.AsNoTracking().Include(u => u.Roles)
+            .Where(u => u.Roles.Any(r => r.StoreId == storeId && (r.Role == Role.StoreEmployee || r.Role == Role.Driver)))
+            .OrderBy(u => u.FullName)
+            .ToListAsync(ct);
+
+        return users.SelectMany(u => u.Roles
+                .Where(r => r.StoreId == storeId && (r.Role == Role.StoreEmployee || r.Role == Role.Driver))
+                .Select(r => new TeamMemberDto(u.Id, u.Email, u.FullName, u.Phone,
+                    u.IsActive, u.IsEmailVerified, r.Role.ToString(), storeId)))
+            .ToList();
+    }
+
     /// <summary>Wylogowanie: unieważnia podany refresh token.</summary>
     public async Task<Result> LogoutAsync(string? refreshToken, CancellationToken ct)
     {

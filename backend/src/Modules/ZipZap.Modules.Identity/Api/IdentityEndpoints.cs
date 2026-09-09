@@ -62,6 +62,11 @@ public static class IdentityEndpoints
         .RequireAuthorization("Admin")
         .WithSummary("Utworzenie użytkownika z rolą (tylko ADMIN).");
 
+        group.MapGet("/admin/stores/{storeId:guid}/team", async (Guid storeId, IdentityService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListStoreTeamAsync(storeId, ct)))
+        .RequireAuthorization("Admin")
+        .WithSummary("Zespół sklepu — pracownicy i kierowcy (tylko ADMIN).");
+
         group.MapPost("/logout", async (LogoutRequest req, IdentityService svc, CancellationToken ct) =>
         {
             var result = await svc.LogoutAsync(req.RefreshToken, ct);

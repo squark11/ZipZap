@@ -17,3 +17,8 @@ public sealed record AuthResult(
     string RefreshToken,
     Guid RefreshTokenId,
     UserDto User);
+
+/// <summary>Członek zespołu sklepu (pracownik/kierowca) — do panelu admina.</summary>
+public sealed record TeamMemberDto(
+    Guid Id, string Email, string FullName, string? Phone,
+    bool IsActive, bool IsEmailVerified, string Role, Guid StoreId);

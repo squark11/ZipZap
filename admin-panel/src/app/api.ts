@@ -26,6 +26,10 @@ export interface PaymentDto {
   status: string; provider?: string; redirectUrl?: string; providerRef?: string;
 }
 export interface CommissionDto { storeId: string; totalCommission: number; entries: number; }
+export interface TeamMemberDto {
+  id: string; email: string; fullName: string; phone?: string;
+  isActive: boolean; isEmailVerified: boolean; role: string; storeId: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class Api {
