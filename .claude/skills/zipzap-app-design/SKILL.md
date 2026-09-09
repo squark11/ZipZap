@@ -20,6 +20,10 @@ apply ZipZap's brand.
   (orange `#F97316`, green `#22C55E` success, graphite `#3A3F4B` text). Fonts:
   **Poppins** headings, **Inter** UI/body.
 - Delivery fee is ALWAYS shown as a **separate line** from cart value (business rule).
+- **Show the store's delivery method + schedule** on the store card and store page (and
+  reflect it in checkout slots): ZipZap runs **scheduled waves** (e.g. „Dostawa ZipZap ·
+  dziś 16:00"), a merchant-delivery store shows its own („Dostawa sklepu · na bieżąco" or
+  a time). We are NOT on-demand like Glovo — the customer must know *when* they'll receive it.
 - Every screen ships its four states: **loading (skeleton) · empty · error · offline**.
 - Touch targets ≥ 48px; contrast ≥ 4.5:1; support light **and** dark.
 - Money `pl_PL` (`23,50 zł`); one primary CTA per screen.

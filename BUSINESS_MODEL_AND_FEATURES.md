@@ -16,6 +16,13 @@ Trzy strony rynku: **klient · kurier · merchant (sklep/restauracja)**. Strumie
 merchanta (prowizja). To hybryda modeli 1–2. Docelowo warto dołożyć: service fee (opcjonalnie),
 promowanie, subskrypcję „ZipZap+".
 
+**Ważne — „nie startujemy jak Glovo" (nie on‑demand).** Na starcie dostawa ZipZap
+(Plan A) jeździ do lokalnych sklepów **falami o ustalonych godzinach** (np. 10:00 i 16:00,
+ustawiane w panelu admina) — zamówienia grupowane, wiezione w najbliższym oknie (tańsze,
+planowane trasy). **Plan B** (kurier merchanta) — to sklep decyduje: o konkretnej godzinie
+lub na bieżąco. **Klient musi jasno widzieć sposób i harmonogram dostawy sklepu.**
+Szczegóły: [ANALYSIS_TWO_PLANS.md](ANALYSIS_TWO_PLANS.md) §10.
+
 ## 2. Typy użytkowników i ich potrzeby
 - **Klient** — odkrywanie (kategorie, wyszukiwarka, „w pobliżu", promocje), szybkie
   zamówienie, płatność (BLIK/karta), śledzenie na mapie, konto (adresy, historia), oceny,
@@ -83,7 +90,8 @@ Legenda: ✅ mamy · 🟡 częściowo · ⬜ brak.
 
 ## 5. Priorytetowy backlog funkcji (P0→P2)
 - **P0 (domknięcie klienta):** kategorie+ikony, wyszukiwarka+filtry, onboarding, zapisane
-  adresy, oceny, realna płatność (Przelewy24), realny push (FCM), obsługa błędów/zwrotów.
+  adresy, oceny, realna płatność (Przelewy24), realny push (FCM), obsługa błędów/zwrotów,
+  **jawny sposób + harmonogram dostawy sklepu** (fale ZipZap „dziś 16:00" vs „na bieżąco").
 - **P0 (merchant):** menu z wariantami/dodatkami, godziny otwarcia, akceptacja zamówienia
   (dźwięk/push), integracja POS (GOPOS) + fiskalizacja.
 - **P1:** geolokalizacja + „w pobliżu" + dystans, mapa śledzenia + ETA, aplikacja/PWA kuriera,

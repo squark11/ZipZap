@@ -123,6 +123,18 @@ przychód wg typu.
   B — merchant (jego kurier).
 - **Domyślny plan dla istniejących sklepów: „dostawa ZipZap" (Plan A).**
 
+### Model czasowy dostaw (ważne — „nie startujemy jak Glovo")
+- **Plan A (dostawa ZipZap): fale o ustalonych godzinach, NIE on‑demand.** Kurier ZipZap
+  jeździ do lokalnych sklepów o **stałych porach** (np. 10:00 i 16:00), **ustawianych
+  w panelu admina**; zamówienia są **grupowane** i wiezione w najbliższym oknie.
+  → Naturalnie mapuje się na istniejące **sloty czasowe** w Ordering: okna dostaw = sloty
+  wybieralne dla Planu A.
+- **Plan B (dostawa merchanta): to sklep wybiera strategię** — o konkretnej godzinie
+  albo na bieżąco (gdy tylko wpadnie zamówienie).
+- **Klient musi jasno widzieć sposób i harmonogram dostawy** sklepu — na karcie sklepu
+  i w checkoucie (np. „Dostawa ZipZap: dziś 16:00" vs „Dostawa sklepu: na bieżąco").
+  To wymóg **P0 UX** (bez tego klient nie wie, kiedy dostanie zamówienie).
+
 ### Do doprecyzowania przed wdrożeniem
 1. **Numeracja planów:** w odpowiedzi padło „ZipZap ma stałe 25 zł od dostawy w
    planie drugim", a jednocześnie „Plan A = dostawa ZipZap". Mechanika 25 zł + nadwyżka
