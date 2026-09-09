@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/auth_state.dart';
 import '../providers.dart';
 import '../../features/account/login_screen.dart';
+import '../../features/account/forgot_password_screen.dart';
 import '../../features/account/account_screen.dart';
 import '../../features/cart/cart_screen.dart';
 import '../../features/catalog/store_detail_screen.dart';
@@ -70,6 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (_, s) => LoginScreen(redirect: s.uri.queryParameters['redirect']),
       ),
+      GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordScreen()),
     ],
   );
 });

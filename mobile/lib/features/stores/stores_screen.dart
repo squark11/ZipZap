@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/cart_button.dart';
+import '../../core/widgets/notifications_bell.dart';
 import '../../core/widgets/states.dart';
 import '../../models/store.dart';
 
@@ -24,6 +25,7 @@ class StoresScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('ZipZap'),
         actions: [
+          if (auth.isAuthenticated) const NotificationsBell(),
           const CartButton(),
           IconButton(
             icon: Icon(auth.isAuthenticated ? Icons.person : Icons.login),

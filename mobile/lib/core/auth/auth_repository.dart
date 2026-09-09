@@ -48,4 +48,8 @@ class AuthRepository {
 
   Future<void> logout(String? refreshToken) =>
       _api.post('/identity/logout', body: {'refreshToken': refreshToken});
+
+  /// Zawsze kończy się sukcesem po stronie backendu (bez enumeracji kont).
+  Future<void> forgotPassword(String email) =>
+      _api.post('/identity/password/forgot', body: {'email': email});
 }

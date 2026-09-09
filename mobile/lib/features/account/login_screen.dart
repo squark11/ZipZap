@@ -111,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             icon: const Icon(Icons.g_mobiledata, size: 28),
             label: const Text('Kontynuuj z Google'),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Center(
             child: TextButton(
               onPressed: () => setState(() => _register = !_register),
@@ -120,6 +120,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : 'Nie masz konta? Zarejestruj się'),
             ),
           ),
+          if (!_register)
+            Center(
+              child: TextButton(
+                onPressed: () => context.push('/forgot-password'),
+                child: const Text('Nie pamiętasz hasła?'),
+              ),
+            ),
         ],
       ),
     );
