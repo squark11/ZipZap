@@ -8,10 +8,11 @@ import { DashboardComponent } from './dashboard';
 import { StoresComponent } from './stores';
 import { TeamComponent } from './team';
 import { FinanceComponent } from './finance';
+import { DeliveriesComponent } from './deliveries';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent],
+  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent],
   template: `
   @if (!api.isLoggedIn()) {
     <div class="auth">
@@ -55,6 +56,10 @@ import { FinanceComponent } from './finance';
         <button class="rail-btn" [class.active]="tab==='orders'" (click)="tab='orders'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
           <span class="tip">Zamówienia</span>
+        </button>
+        <button class="rail-btn" [class.active]="tab==='deliveries'" (click)="tab='deliveries'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <span class="tip">Dostawy</span>
         </button>
         <button class="rail-btn" [class.active]="tab==='catalog'" (click)="tab='catalog'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
@@ -103,6 +108,7 @@ import { FinanceComponent } from './finance';
             @switch (tab) {
               @case ('dashboard') { <app-dashboard [storeId]="selectedStoreId" /> }
               @case ('orders') { <app-orders [storeId]="selectedStoreId" [query]="search" /> }
+              @case ('deliveries') { <app-deliveries [storeId]="selectedStoreId" /> }
               @case ('catalog') { <app-catalog [storeId]="selectedStoreId" /> }
               @case ('team') { <app-team [storeId]="selectedStoreId" /> }
               @case ('finance') { <app-finance [storeId]="selectedStoreId" /> }
@@ -126,7 +132,7 @@ export class App {
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
-  tab: 'dashboard' | 'orders' | 'catalog' | 'team' | 'finance' | 'stores' = 'dashboard';
+  tab: 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'team' | 'finance' | 'stores' = 'dashboard';
 
   get initials(): string {
     const e = this.api.userEmail();

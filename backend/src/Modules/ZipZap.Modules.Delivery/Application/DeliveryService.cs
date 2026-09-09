@@ -44,6 +44,23 @@ public sealed class DeliveryService
             .OrderByDescending(d => d.CreatedAtUtc).Select(d => DeliveryDto.From(d)).ToListAsync(ct);
     }
 
+    /// <summary>Wszystkie dostawy sklepu (widok operacyjny sklepu/administracji).</summary>
+    public async Task<Result<IReadOnlyList<DeliveryDto>>> ListForStoreAsync(Guid storeId, CancellationToken ct)
+    {
+        if (!CanViewStore(storeId))
+            return Result.Failure<IReadOnlyList<DeliveryDto>>(Error.Forbidden("Brak dostępu do dostaw tego sklepu."));
+
+        var items = await _db.Deliveries.AsNoTracking()
+            .Where(d => d.StoreId == storeId)
+            .OrderByDescending(d => d.CreatedAtUtc)
+            .Select(d => DeliveryDto.From(d))
+            .ToListAsync(ct);
+        return Result.Success<IReadOnlyList<DeliveryDto>>(items);
+    }
+
+    private bool CanViewStore(Guid storeId)
+        => _user.Roles.Contains("Admin") || (_user.Roles.Contains("StoreEmployee") && _user.StoreId == storeId);
+
     public Task<Result<DeliveryDto>> AcceptAsync(Guid deliveryId, CancellationToken ct)
         => MutateAsync(deliveryId, requireOwner: false, apply: (d, driverId) => d.Accept(driverId), emit: null, ct);
 

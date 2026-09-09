@@ -45,6 +45,15 @@ public static class DeliveryEndpoints
             return d is null ? Results.NotFound() : Results.Ok(DeliveryDto.From(d));
         }).RequireAuthorization();
 
+        // Widok operacyjny sklepu: wszystkie dostawy sklepu (StoreEmployee/Admin).
+        group.MapGet("/stores/{storeId:guid}/deliveries", async (Guid storeId, DeliveryService svc, CancellationToken ct) =>
+        {
+            var result = await svc.ListForStoreAsync(storeId, ct);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : Results.Problem(detail: result.Error.Message, statusCode: result.Error.ToStatusCode(), title: result.Error.Code);
+        }).RequireAuthorization("StoreEmployee");
+
         return app;
     }
 
