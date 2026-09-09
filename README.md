@@ -34,12 +34,13 @@ Backend to **modularny monolit** na .NET 8 — jeden deployment, twarde granice 
 
 | Moduł | Odpowiedzialność | Schemat | Status |
 |---|---|---|---|
-| **Identity** | Użytkownicy, JWT + refresh, role (RBAC) | `identity` | ✅ pełny |
-| **Catalog** | Sklepy, kategorie, produkty | `catalog` | ✅ pełny |
-| **Ordering** | Koszyk, zamówienie, statusy, strefy + sloty, prowizja | `ordering` | ✅ pełny + testy |
-| **Payments** | Płatność (mock), księga prowizji | `payments` | 🟡 szkielet |
-| **Delivery** | Projekcja cyklu dostawy | `delivery` | 🟡 szkielet |
-| **Notifications** | Powiadomienia (mock kanał) | `notifications` | 🟡 szkielet |
+| **Identity** | Użytkownicy, JWT + refresh, role (RBAC), Google, reset hasła, zespół sklepu | `identity` | ✅ pełny |
+| **Catalog** | Sklepy (status, prowizja, min-order), kategorie, produkty | `catalog` | ✅ pełny |
+| **Ordering** | Koszyk, zamówienie, statusy, strefy + sloty, prowizja, idempotencja | `ordering` | ✅ pełny + testy |
+| **Payments** | Płatność **webhook-autorytatywna** (abstrakcja + mock), księga prowizji, rozliczenia | `payments` | ✅ pełny + testy |
+| **Delivery** | Workflow kierowcy (pula → przyjmij → odbierz → dostarcz), izolacja | `delivery` | ✅ pełny |
+| **Notifications** | Rozwiązywanie odbiorcy, skrzynka in-app, abstrakcja push (FCM) + mock | `notifications` | ✅ pełny |
+| **Audit** | Rejestr akcji administracyjnych (kto/co/na czym/kiedy) | `audit` | ✅ pełny |
 | **Integrations** | Porty `IFiscalPrinterDriver` / `IPosConnector` + no-op | — | 🟡 tylko porty |
 
 ### Diagram modułów
@@ -51,12 +52,13 @@ flowchart TB
     ID["Identity"]:::full
     CT["Catalog"]:::full
     OR["Ordering"]:::full
-    PM["Payments"]:::skel
-    DL["Delivery"]:::skel
-    NT["Notifications"]:::skel
+    PM["Payments"]:::full
+    DL["Delivery"]:::full
+    NT["Notifications"]:::full
+    AU["Audit"]:::full
     IN["Integrations<br/>(ports + no-op)"]:::skel
   end
-  BUS(["In-process Event Bus + Outbox dispatcher"])
+  BUS(["Event Bus (in-process / RabbitMQ) + Outbox dispatcher"])
   DB[("PostgreSQL<br/>schemat-per-moduł")]
 
   ID --- BUS
@@ -105,16 +107,20 @@ DRAFT(koszyk) → PLACED → CONFIRMED → PICKING → READY_FOR_PICKUP → IN_D
 ```
 /backend
   /src
-    ZipZap.Api                 # host: DI, auth, Swagger, migracje przy starcie
-    ZipZap.BuildingBlocks      # event bus, outbox, multi-tenancy, Result/Error, migrator
+    ZipZap.Api                 # host: DI, auth, Swagger, migracje przy starcie, guard produkcyjny
+    ZipZap.BuildingBlocks      # event bus, outbox/inbox, multi-tenancy, Result/Error, audyt, migrator
     ZipZap.Contracts           # published language (zdarzenia integracyjne)
-    /Modules                   # Identity · Catalog · Ordering · Payments · Delivery · Notifications · Integrations
+    /Modules                   # Identity · Catalog · Ordering · Payments · Delivery · Notifications · Audit · Integrations
   /tests
-    ZipZap.Modules.Ordering.Tests   # testy jednostkowe domeny Ordering
-/admin-panel                   # Angular (logowanie + lista zamówień sklepu)
-/mobile                        # Flutter (klient) — osobny etap
+    ZipZap.Modules.Ordering.Tests    # testy jednostkowe domeny Ordering
+    ZipZap.Modules.Identity.Tests    # testy jednostkowe Identity (m.in. Google)
+    ZipZap.Modules.Payments.Tests    # testy podpisu/idempotencji webhooka
+    ZipZap.Api.IntegrationTests      # testy integracyjne API (authz, izolacja, webhook)
+/admin-panel                   # Angular — panel sprzedawcy/admina (zamówienia, dostawy, oferta,
+                               #   zespół, rozliczenia, sklepy; zakres per-rola)
+/mobile                        # Flutter — aplikacja klienta (przeglądanie→koszyk→checkout→płatność→śledzenie)
 /branding                      # logo, paleta, typografia
-docker-compose.yml
+docker-compose.yml · .env.example · PRODUCTION_SETUP.md
 ```
 
 ## Uruchomienie lokalne
@@ -139,6 +145,19 @@ cd admin-panel
 npm install
 npm start                     # http://localhost:4200
 ```
+Zakładki: Pulpit · Zamówienia (status płatności + dostawy) · Dostawy · Oferta ·
+Zespół (pracownicy/kierowcy) · Rozliczenia (prowizja + księga) · Sklepy.
+Pracownik sklepu widzi tylko swój sklep; zakładki administracyjne są ukryte.
+
+### Aplikacja klienta (Flutter)
+```bash
+cd mobile
+flutter pub get
+flutter run -d chrome         # lub urządzenie/emulator
+```
+Lejek: przeglądanie sklepów → koszyk → adres i termin → **płatność (webhook-autorytatywna,
+polling statusu)** → potwierdzenie → śledzenie zamówienia. Konfiguracja API w
+`lib/core/config/app_config.dart` (web: `localhost:5080`, emulator Android: `10.0.2.2`).
 
 ### Backend bez Dockera (wymaga .NET 8 SDK)
 ```bash
@@ -150,8 +169,15 @@ dotnet run --project src/ZipZap.Api
 ### Testy
 ```bash
 cd backend
-dotnet test
+dotnet test                   # jednostkowe + integracyjne
 ```
+Testy **integracyjne** bootują całe API na osobnej bazie `zipzap_it` i wymagają
+działającego Postgresa (dev-Docker na `localhost:5432`; override: `ZIPZAP_TEST_POSTGRES`).
+
+### Produkcja
+Rozdział konfiguracji/sekretów i wdrożenie: **[PRODUCTION_SETUP.md](PRODUCTION_SETUP.md)**.
+Na produkcji (`ASPNETCORE_ENVIRONMENT=Production`) API **odmawia startu** z domyślnymi
+sekretami deweloperskimi (guard fail-fast).
 
 ### Logowanie Google (opcjonalne)
 Backend weryfikuje **ID token Google** (`Google.Apis.Auth`) względem skonfigurowanego Client ID
@@ -170,24 +196,35 @@ backend nie przechowuje sekretu Google.
 
 | Obszar | Przykłady |
 |---|---|
-| **Identity** | `POST /api/identity/register` · `login` · `refresh` · `GET /me` |
+| **Identity** | `POST /api/identity/register` · `login` · `refresh` · `google` · `password/forgot` · `GET /me` · `POST /admin/users` · `GET /admin/stores/{id}/team` (Admin) |
 | **Catalog** (publiczne odczyty) | `GET /api/catalog/stores` · `/stores/{id}/products` |
-| **Catalog** (zarządzanie) | `POST /api/catalog/stores` (Admin) · `/stores/{id}/products` (StoreEmployee) |
-| **Ordering** | `POST /api/ordering/carts` → `/items` → `/checkout` · `POST /orders/{id}/{ready\|delivered\|…}` |
-| **Payments** | `GET /api/payments/stores/{id}/commission` |
-| **Delivery** | `GET /api/delivery/available` (Driver) |
-| **Notifications** | `GET /api/notifications` (Admin) |
+| **Catalog** (zarządzanie) | `POST /api/catalog/stores` (Admin) · `PATCH /stores/{id}` · `/stores/{id}/products` (StoreEmployee) · `POST /admin/resync-projections` (Admin) |
+| **Ordering** | `POST /api/ordering/carts` → `/items` → `/checkout` (nagł. `Idempotency-Key`) · `POST /orders/{id}/{confirm\|ready\|…}` · `GET /orders/mine` |
+| **Payments** | `POST /webhook/{provider}` (podpis) · `GET /orders/{id}/mine` (klient) · `/stores/{id}/{commission\|summary\|ledger}` |
+| **Delivery** | `GET /available` · `/mine` (Driver) · `POST /{id}/{accept\|pick-up\|delivered}` · `GET /stores/{id}/deliveries` (StoreEmployee) |
+| **Notifications** | `GET /mine` · `POST /{id}/read` · `POST /devices` · `GET /` (Admin) |
+| **Audit** | `GET /api/audit` (Admin; filtry `storeId`, `action`) |
 | **Integrations** | `GET /api/integrations/drivers` (Admin) |
 
 ## Marka
 Kolory: pomarańcz `#F97316`, zieleń `#22C55E`, grafit `#3A3F4B`. Zasoby: [`/branding`](branding/README.md).
 
 ## Roadmapa MVP
-1. ✅ Fundament: struktura, BuildingBlocks (event bus + outbox), docker-compose, branding
-2. ✅ Identity — rejestracja/logowanie, JWT + refresh, role
-3. ✅ Catalog — sklepy, kategorie, produkty
-4. ✅ Ordering — koszyk, zamówienie, statusy, strefy + sloty, prowizja + testy
-5. ✅ Szkielety (Payments/Delivery/Notifications/Integrations) + panel Angular + README z diagramem
+- ✅ **Fundament + hardening** — BuildingBlocks (event bus + outbox/inbox, RabbitMQ z retry/DLQ),
+  koperta błędów + correlation id, readiness.
+- ✅ **Identity** — rejestracja/logowanie, JWT + refresh, role, Google, reset hasła, weryfikacja e-mail.
+- ✅ **Catalog + Ordering** — sklepy (status/prowizja/min-order), oferta, koszyk, checkout z idempotencją.
+- ✅ **Payments** — płatność **webhook-autorytatywna** (abstrakcja + mock), księga prowizji, rozliczenia.
+- ✅ **Delivery + Notifications** — workflow kierowcy z izolacją; rozwiązywanie odbiorcy, skrzynka, abstrakcja push.
+- ✅ **Aplikacja Flutter** (klient) — pełny lejek z płatnością i śledzeniem.
+- ✅ **Panel admina** — zamówienia (płatność+dostawa), sklepy, zespół, rozliczenia, dostawy, zakres per-rola.
+- ✅ **Hardening produkcyjny** — config/secrets + guard, testy integracyjne, audit log, indeksy DB, docs.
 
-**Dalej:** aplikacja mobilna Flutter (klient), realne integracje (kasy fiskalne, POS/ERP),
-realna bramka płatności, rozbudowa panelu. *(Broker komunikatów — RabbitMQ — już zintegrowany.)*
+**Odłożone (świadomie):** realna bramka płatności (Przelewy24), realne integracje (kasy/POS),
+zapisane adresy dostaw, zwroty, oceny. **Faza H (zaplanowana):** dwa plany rozliczeń + restauracje —
+patrz [ANALYSIS_TWO_PLANS.md](ANALYSIS_TWO_PLANS.md).
+
+## Dokumentacja
+[PRODUCTION_SETUP.md](PRODUCTION_SETUP.md) · [PAYMENTS.md](PAYMENTS.md) ·
+[FLUTTER_APP_PLAN.md](FLUTTER_APP_PLAN.md) · [ANALYSIS_TWO_PLANS.md](ANALYSIS_TWO_PLANS.md) ·
+[ADVANCED_MVP_ROADMAP.md](ADVANCED_MVP_ROADMAP.md)
