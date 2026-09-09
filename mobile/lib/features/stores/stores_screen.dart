@@ -36,6 +36,7 @@ class StoresScreen extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return const EmptyView(
+              svgAsset: 'assets/svg/empty_box.svg',
               icon: Icons.storefront_outlined,
               title: 'Brak sklepów',
               subtitle: 'W Twojej okolicy nie ma jeszcze aktywnych sklepów.',

@@ -25,6 +25,7 @@ class NotificationsScreen extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return const EmptyView(
+              svgAsset: 'assets/svg/empty_box.svg',
               icon: Icons.notifications_none,
               title: 'Brak powiadomień',
             );

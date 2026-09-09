@@ -1,0 +1,12 @@
+<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Brak elementów</title>
+  <ellipse cx="100" cy="144" rx="56" ry="9" fill="#F1F3F5"/>
+  <!-- tylne klapy -->
+  <path d="M64 66 L100 52 L100 40 L52 58 Z" fill="#FFF6EE" stroke="#F97316" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M136 66 L100 52 L100 40 L148 58 Z" fill="#FFF6EE" stroke="#F97316" stroke-width="3" stroke-linejoin="round"/>
+  <!-- ściany pudełka -->
+  <path d="M64 66 L100 80 L100 132 L64 118 Z" fill="#FDE9D6" stroke="#F97316" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M136 66 L100 80 L100 132 L136 118 Z" fill="#FBDCC0" stroke="#F97316" stroke-width="3" stroke-linejoin="round"/>
+  <!-- otwarta góra -->
+  <path d="M64 66 L100 80 L136 66 L100 52 Z" fill="#FFFFFF" stroke="#F97316" stroke-width="3" stroke-linejoin="round"/>
+</svg>

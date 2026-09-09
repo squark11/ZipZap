@@ -21,6 +21,7 @@ class CartScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Koszyk')),
       body: (c == null || c.items.isEmpty)
           ? const EmptyView(
+              svgAsset: 'assets/svg/empty_cart.svg',
               icon: Icons.shopping_cart_outlined,
               title: 'Koszyk jest pusty',
               subtitle: 'Dodaj produkty ze sklepu, aby złożyć zamówienie.',

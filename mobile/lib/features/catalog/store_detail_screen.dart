@@ -54,6 +54,7 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
         data: (list) {
           if (list.isEmpty) {
             return const EmptyView(
+              svgAsset: 'assets/svg/empty_box.svg',
               icon: Icons.inventory_2_outlined,
               title: 'Brak produktów',
               subtitle: 'Ten sklep nie dodał jeszcze oferty.',

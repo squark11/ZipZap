@@ -26,6 +26,7 @@ class MyOrdersScreen extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return const EmptyView(
+              svgAsset: 'assets/svg/empty_box.svg',
               icon: Icons.receipt_long_outlined,
               title: 'Brak zamówień',
               subtitle: 'Twoje zamówienia pojawią się tutaj.',

@@ -31,7 +31,7 @@
 - ⬜ Tokeny (kolory/typografia/spacing/radius/cień/motion), **tryb ciemny** [defekt #5].
 - ⬜ Logo (warianty SVG) + zestaw **ikon systemowych** (~40) + ikony statusów.
 - ⬜ Katalog komponentów (Widgetbook Flutter / strona demo Angular).
-- ⬜ Pipeline SVG: konwersja `.ai/.eps → .svg` (z `/images`) + SVGO + `flutter_svg`.
+- 🔧 Pipeline SVG: ✅ `flutter_svg` + pierwsze bespoke ilustracje (pusty koszyk/pudełko w `mobile/assets/svg`); ⬜ konwersja `.ai/.eps → .svg` (z `/images`) + SVGO.
 - ✅ **Dolna nawigacja** aplikacji (Sklepy/Koszyk/Zamówienia/Konto; Szukaj → R3) [defekt #2].
 - ✅ **Fix pl‑PL w panelu** (przecinek dziesiętny, daty dd.MM) [defekt #3].
 

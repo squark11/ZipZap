@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/zz_theme.dart';
 
@@ -56,7 +57,17 @@ class EmptyView extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  const EmptyView({super.key, required this.icon, required this.title, this.subtitle});
+
+  /// Opcjonalna ilustracja SVG (np. `assets/svg/empty_cart.svg`); gdy null — ikona.
+  final String? svgAsset;
+
+  const EmptyView({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.svgAsset,
+  });
 
   @override
   Widget build(BuildContext context) => Center(
@@ -65,7 +76,10 @@ class EmptyView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 48, color: ZzColors.textMuted),
+              if (svgAsset != null)
+                SvgPicture.asset(svgAsset!, height: 132)
+              else
+                Icon(icon, size: 48, color: ZzColors.textMuted),
               const SizedBox(height: 12),
               Text(title,
                   textAlign: TextAlign.center,
