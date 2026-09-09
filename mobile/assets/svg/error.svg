@@ -1,0 +1,7 @@
+<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Coś poszło nie tak</title>
+  <ellipse cx="100" cy="146" rx="50" ry="8" fill="#F1F3F5"/>
+  <path d="M100 34 L156 130 a9 9 0 0 1 -8 13 H52 a9 9 0 0 1 -8 -13 Z" fill="#FEECEC" stroke="#EF4444" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="94" y="66" width="12" height="42" rx="6" fill="#EF4444"/>
+  <circle cx="100" cy="120" r="7" fill="#EF4444"/>
+</svg>

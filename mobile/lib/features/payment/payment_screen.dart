@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -161,8 +162,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(success ? Icons.check_circle : Icons.cancel,
-              size: 72, color: success ? ZzColors.green : ZzColors.danger),
+          SvgPicture.asset(
+              success ? 'assets/svg/success.svg' : 'assets/svg/error.svg',
+              height: 128),
           const SizedBox(height: 16),
           Text(success ? 'Płatność potwierdzona' : 'Płatność nieudana',
               style: Theme.of(context).textTheme.headlineSmall),

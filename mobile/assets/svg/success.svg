@@ -1,0 +1,11 @@
+<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Sukces</title>
+  <ellipse cx="100" cy="146" rx="46" ry="8" fill="#F1F3F5"/>
+  <circle cx="100" cy="74" r="46" fill="#E9FBF0" stroke="#22C55E" stroke-width="4"/>
+  <path d="M78 76 l16 16 l30 -34" fill="none" stroke="#22C55E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#34D874">
+    <path d="M150 40 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z"/>
+    <circle cx="44" cy="50" r="4"/>
+    <circle cx="156" cy="100" r="3"/>
+  </g>
+</svg>

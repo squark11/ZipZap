@@ -1,0 +1,7 @@
+<svg viewBox="35 20 90 185" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>ZipZap</title>
+  <ellipse cx="62" cy="48" rx="10" ry="24" fill="#22C55E" transform="rotate(-25 62 48)"/>
+  <ellipse cx="82" cy="40" rx="10" ry="26" fill="#34D874"/>
+  <ellipse cx="102" cy="48" rx="10" ry="24" fill="#22C55E" transform="rotate(25 102 48)"/>
+  <path d="M45,72 Q82,55 119,72 L101,152 Q92,178 82,192 Q72,178 63,152 Z" fill="#F97316"/>
+</svg>

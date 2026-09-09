@@ -34,7 +34,7 @@ class ErrorView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 44, color: ZzColors.danger),
+              SvgPicture.asset('assets/svg/error.svg', height: 120),
               const SizedBox(height: 12),
               Text(message,
                   textAlign: TextAlign.center,
