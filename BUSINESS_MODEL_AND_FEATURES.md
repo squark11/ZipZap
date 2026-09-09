@@ -106,4 +106,4 @@ Legenda: ✅ mamy · 🟡 częściowo · ⬜ brak.
 3. **Realne płatności (Przelewy24/BLIK)** to bramka do prawdziwego pilota.
 4. Model **dwóch planów** dobrze odpowiada rynkowi (dostawa własna vs outsourcing) — Faza H.
 
-Powiązane: [ADVANCED_APP_ROADMAP.md](ADVANCED_APP_ROADMAP.md) · [ANALYSIS_TWO_PLANS.md](ANALYSIS_TWO_PLANS.md).
+Powiązane: [ROADMAP.md](ROADMAP.md) · [ANALYSIS_TWO_PLANS.md](ANALYSIS_TWO_PLANS.md).

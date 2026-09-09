@@ -15,6 +15,11 @@ but unmistakably ZipZap. **One accent color (orange), image-forward, rounded car
 generous whitespace, fast.** When in doubt, copy the *structure* competitors use and
 apply ZipZap's brand.
 
+**Build to the roadmap.** Always work in line with **`ROADMAP.md`** (the single source
+of truth): take the next item from the current phase; when new work appears, **add it to
+`ROADMAP.md` in the right phase first**, then implement. This skill is the *design*
+authority (how it looks/feels); `ROADMAP.md` is the *what & when*.
+
 ## 0. Non‑negotiables
 - Brand tokens only — never hardcode hex/spacing. Source of truth: `/branding`
   (orange `#F97316`, green `#22C55E` success, graphite `#3A3F4B` text). Fonts:
@@ -113,4 +118,4 @@ apply ZipZap's brand.
 - Flutter: extend `ZzTheme` (add dark), keep `ZzColors/ZzRadius` tokens; `flutter_svg`
   for assets under `mobile/assets/svg`; `google_fonts` Poppins/Inter (or bundle).
 - Angular panel: reuse the same tokens/inline‑SVG icon style already in the rail.
-- Reference `ADVANCED_APP_ROADMAP.md` (§4–5) for the design‑system + SVG production plan.
+- Follow `ROADMAP.md` (R1–R3) for the phased design/SVG to‑do; this skill is the design authority.

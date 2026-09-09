@@ -123,4 +123,4 @@ Missing: 🔴 push (FCM) / email channels, 🟡 recipient resolution (store/driv
 | Admin panel | **EXTEND** (ops sections, store scope) | Partial |
 | Tenant reads | **FIX** ownership checks | Security |
 
-See `ADVANCED_MVP_ROADMAP.md` for the sequenced plan, dependencies, and risks.
+See `ROADMAP.md` (single source of truth) for the sequenced plan, dependencies, and risks.
