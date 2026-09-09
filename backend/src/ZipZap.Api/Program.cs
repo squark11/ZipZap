@@ -28,6 +28,39 @@ using ZipZap.Modules.Integrations.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --- Twardy guard sekretów na produkcji (fail-fast) ---
+// Na produkcji NIE pozwalamy wystartować z domyślnymi/deweloperskimi sekretami.
+if (builder.Environment.IsProduction())
+{
+    var cfg = builder.Configuration;
+    var problems = new List<string>();
+
+    var key = cfg["Jwt:SigningKey"] ?? "";
+    if (key.StartsWith("CHANGE_ME", StringComparison.Ordinal) || key.Length < 32)
+        problems.Add("Jwt:SigningKey — ustaw losowy sekret min. 32 znaki (env: Jwt__SigningKey).");
+
+    var conn = cfg.GetConnectionString("Postgres") ?? "";
+    if (conn.Length == 0 || conn.Contains("Password=zipzap", StringComparison.OrdinalIgnoreCase))
+        problems.Add("ConnectionStrings:Postgres — ustaw produkcyjne hasło bazy (env: ConnectionStrings__Postgres).");
+
+    if ((cfg["RabbitMq:Password"] ?? "") is "" or "zipzap")
+        problems.Add("RabbitMq:Password — ustaw produkcyjne hasło (env: RabbitMq__Password).");
+
+    if ((cfg["Payments:Provider"] ?? "mock").Equals("mock", StringComparison.OrdinalIgnoreCase))
+        problems.Add("Payments:Provider = 'mock' — na produkcji użyj realnego dostawcy (env: Payments__Provider).");
+    if ((cfg["Payments:Mock:Secret"] ?? "") == "mock-dev-secret")
+        problems.Add("Payments:Mock:Secret — zmień domyślny sekret (env: Payments__Mock__Secret).");
+
+    if ((cfg["Seed:AdminPassword"] ?? "") is "" or "Admin123!")
+        problems.Add("Seed:AdminPassword — ustaw silne hasło administratora startowego (env: Seed__AdminPassword).");
+
+    if (problems.Count > 0)
+        throw new InvalidOperationException(
+            "Konfiguracja produkcyjna niebezpieczna/niekompletna:\n - " +
+            string.Join("\n - ", problems) +
+            "\nUstaw powyższe zmienne środowiskowe (patrz PRODUCTION_SETUP.md).");
+}
+
 // --- Wspólny rdzeń (event bus in-process/RabbitMQ, outbox dispatcher, kontekst najemcy) ---
 builder.Services.AddBuildingBlocks(builder.Configuration);
 

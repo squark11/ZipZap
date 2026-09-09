@@ -42,13 +42,20 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-zipzap};Username=${POSTGRES_USER:-zipzap};Password=${POSTGRES_PASSWORD:-zipzap}"
       Jwt__SigningKey: ${JWT__SIGNINGKEY:-CHANGE_ME_DEV_ONLY_super_secret_key_at_least_32_chars_long}
       RabbitMq__Host: rabbitmq
       RabbitMq__User: ${RABBITMQ_USER:-zipzap}
       RabbitMq__Password: ${RABBITMQ_PASSWORD:-zipzap}
+      Payments__Provider: ${PAYMENTS__PROVIDER:-mock}
+      Payments__Mock__Secret: ${PAYMENTS__MOCK__SECRET:-mock-dev-secret}
+      Payments__PublicUrl: ${PAYMENTS__PUBLICURL:-http://localhost:4200}
+      Identity__PublicUrl: ${IDENTITY__PUBLICURL:-http://localhost:4200}
+      Google__ClientId: ${GOOGLE__CLIENTID:-}
+      Seed__AdminEmail: ${SEED__ADMINEMAIL:-admin@zipzap.local}
+      Seed__AdminPassword: ${SEED__ADMINPASSWORD:-Admin123!}
     ports:
       - "5080:8080"
 
