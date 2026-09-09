@@ -194,9 +194,55 @@ katalog komponentów zaktualizowany + zasoby SVG dodane + osobny commit.
 - **UI**: użyte komponenty DS, light+dark, brak „magicznych" wartości (tylko tokeny).
 - **GFX**: SVG zoptymalizowane (SVGO), theme-aware, z a11y title; w katalogu zasobów.
 
----
+### R9 — Wdrożenie i wydanie (Deploy & Launch)
+- **Środowiska**: dev (Docker lokalnie) → **staging** → prod. Sekrety z env (jest guard).
+- **Deploy (tymczasowo darmowy / Docker):**
+  - Backend (.NET + Postgres + RabbitMQ) — **Fly.io / Render / Railway** (free/low‑tier) albo
+    tani **VPS + docker compose**. Postgres zarządzany: **Neon / Supabase / Railway** (free tier).
+  - **Panel Angular** i **Flutter web** — **Cloudflare Pages / Netlify / Vercel / GitHub Pages** (free).
+  - Domena + **TLS** (reverse proxy: Caddy/Traefik/nginx lub PaaS wbudowany).
+- **CI/CD** (GitHub Actions): build + `dotnet test` (z Postgres jako service) + `flutter analyze/test`
+  + `ng build`; artefakty; deploy na merge do main.
+- **Kopie zapasowe** DB (automatyczne) + procedura odtworzenia; migracje przy starcie.
+- **Zdrowie**: `/health/ready` już jest — podłączyć pod uptime monitor.
 
-### Następny krok (do wyboru)
+### R10 — Mobile: Android + iOS (build, podpisywanie, publikacja)
+- **Wspólne**: ikona aplikacji + splash (z SVG/logo), wersjonowanie (`pubspec` version+build),
+  ekran uprawnień (lokalizacja, powiadomienia) z uzasadnieniem, deep‑linki (powrót z płatności),
+  konfiguracja `baseUrl` per środowisko.
+- **Android**: `flutter build appbundle`, **keystore** + podpisywanie (Play App Signing),
+  Play Console: listing (opis, zrzuty, ikona 512, feature graphic, polityka prywatności),
+  **Internal testing** → Closed → Production. Docelowo FCM (push).
+- **iOS**: konto Apple Developer (99$/rok), certyfikaty/provisioning, `flutter build ipa`,
+  App Store Connect: listing + zrzuty per rozmiar, **TestFlight** → review → Production.
+  APNs (push). Uwaga: build iOS wymaga macOS/Xcode (lub CI typu Codemagic/Mac‑in‑cloud).
+- **Store readiness**: teksty marketingowe, zrzuty (z prawdziwego UI po R2), kategoria,
+  wiek, dane kontaktowe, **link do polityki prywatności i regulaminu**.
+
+### R11 — Obserwowalność i wsparcie
+- **Błędy**: Sentry (Flutter + Angular + .NET) — crash/exception tracking.
+- **Metryki/log**: strukturalne logi + correlation id (jest); dashboard (Grafana/PaaS logs).
+- **Wsparcie**: kanał zgłoszeń (e‑mail/chat), FAQ, statusy incydentów.
+
+## 12. Zgodność prawna (pełnoprawna aplikacja, rynek PL)
+- **RODO/GDPR**: polityka prywatności, podstawy przetwarzania, zgody (marketing/push),
+  prawo do usunięcia/eksportu danych, rejestr czynności, umowy powierzenia z dostawcami.
+- **Regulamin** usługi (klient + merchant), prawa konsumenta (odstąpienie/reklamacje/zwroty).
+- **Cookies/consent** (panel/web) — baner zgód, tylko niezbędne domyślnie.
+- **Płatności**: zgodność po stronie dostawcy (PCI‑DSS, PSD2/SCA) — nie przechowujemy danych kart;
+  webhook‑autorytatywny (jest). Faktury/fiskalizacja (GOPOS) po stronie merchanta.
+- **Treści**: informacje o alergenach/składnikach (gastronomia), ceny brutto, koszt dostawy jawnie.
+
+## 13. QA i testy (pełna piramida)
+- **Jednostkowe** (domena) — są. **Integracyjne API** (authz/izolacja/webhook) — są.
+- **E2E** — scenariusze prawdziwego użytkownika: patrz **[TEST_SCENARIOS.md](TEST_SCENARIOS.md)**
+  (klient, merchant, kierowca, admin + przypadki brzegowe i błędy).
+- **UI/UX bug‑hunt** — przegląd na żywo (Flutter web + panel) pod kątem stanów, walidacji,
+  wyścigów, dostępności; log defektów w TEST_SCENARIOS.md.
+- **Device matrix** — Android (mały/duży), iOS, web (desktop/mobile), light/dark, wolna sieć.
+- **Automatyzacja** — E2E w CI (Flutter integration_test / Playwright dla panelu) — docelowo.
+
+
 1. **Start R1** — zbuduję design system + wyprodukuję pierwszy zestaw **SVG** (logo warianty,
    ikony systemowe, puste stany) i wpięcie `flutter_svg`.
 2. Najpierw **konwersja** dostarczonych `.ai/.eps → .svg` (jeśli dasz zielone światło na
