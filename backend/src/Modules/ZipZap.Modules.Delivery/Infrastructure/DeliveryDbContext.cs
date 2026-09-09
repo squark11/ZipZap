@@ -24,6 +24,7 @@ public sealed class DeliveryDbContext : DbContext, IOutboxDbContext
             e.HasKey(d => d.Id);
             e.HasIndex(d => d.OrderId).IsUnique();
             e.HasIndex(d => new { d.StoreId, d.Status });
+            e.HasIndex(d => d.Status); // pula dostępnych dostaw (filtr po samym statusie)
             e.HasIndex(d => d.DriverId);
             e.Property(d => d.Status).HasConversion<string>().HasMaxLength(24);
             // Ochrona przed równoczesnym przyjęciem dostawy przez dwóch kierowców.

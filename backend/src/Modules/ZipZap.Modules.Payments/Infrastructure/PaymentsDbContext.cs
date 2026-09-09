@@ -41,6 +41,7 @@ public sealed class PaymentsDbContext : DbContext, IOutboxDbContext
             e.ToTable("commission_ledger");
             e.HasKey(l => l.Id);
             e.HasIndex(l => l.StoreId);
+            e.HasIndex(l => l.OrderId).IsUnique(); // jedna prowizja na zamówienie (idempotencja)
             e.Property(l => l.Amount).HasColumnType("numeric(12,2)");
         });
 

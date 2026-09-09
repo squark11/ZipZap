@@ -56,7 +56,7 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.ToTable("carts");
             e.HasKey(c => c.Id);
             e.Property(c => c.CartToken).IsRequired().HasMaxLength(64);
-            e.HasIndex(c => c.CartToken);
+            e.HasIndex(c => c.CartToken).IsUnique(); // token autoryzuje dostęp do koszyka
             e.Property(c => c.Status).HasConversion<string>().HasMaxLength(20);
             e.Ignore(c => c.DomainEvents);
             e.Ignore(c => c.Subtotal);
