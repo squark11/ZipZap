@@ -13,7 +13,14 @@ export interface OrderDto {
   contactPhone: string; deliveryAddress: string; placedAtUtc: string;
   items: OrderItemDto[]; history: OrderStatusChangeDto[];
 }
-export interface DeliveryDto { id: string; orderId: string; storeId: string; status: string; createdAtUtc: string; }
+export interface DeliveryDto {
+  id: string; orderId: string; storeId: string; driverId?: string; status: string;
+  createdAtUtc: string; pickedUpAtUtc?: string; deliveredAtUtc?: string;
+}
+export interface PaymentDto {
+  orderId: string; storeId: string; amount: number; deliveryFee: number; commissionAmount: number;
+  status: string; provider?: string; redirectUrl?: string; providerRef?: string;
+}
 export interface CommissionDto { storeId: string; totalCommission: number; entries: number; }
 
 @Injectable({ providedIn: 'root' })
