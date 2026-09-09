@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers.dart';
 import '../theme/zz_theme.dart';
+import 'zz_icon.dart';
 
 /// Liczba nieprzeczytanych powiadomień zalogowanego użytkownika.
 final unreadCountProvider = FutureProvider.autoDispose<int>((ref) async {
@@ -22,7 +23,7 @@ class NotificationsBell extends ConsumerWidget {
       alignment: Alignment.center,
       children: [
         IconButton(
-          icon: const Icon(Icons.notifications_none),
+          icon: const ZzIcon('bell', size: 24),
           tooltip: 'Powiadomienia',
           onPressed: () => context.push('/notifications'),
         ),
