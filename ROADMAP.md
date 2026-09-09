@@ -29,14 +29,14 @@
 
 ### R1 — Design system + fundament wizualny [P0]
 - ⬜ Tokeny (kolory/typografia/spacing/radius/cień/motion), **tryb ciemny** [defekt #5].
-- ⬜ Logo (warianty SVG) + zestaw **ikon systemowych** (~40) + ikony statusów.
+- 🔧 Logo: ✅ znak główny (`logo_mark.svg`, splash); ⬜ warianty (poziom/monochrom/app‑icon) + zestaw **ikon systemowych** (~40) + ikony statusów.
 - ⬜ Katalog komponentów (Widgetbook Flutter / strona demo Angular).
-- 🔧 Pipeline SVG: ✅ `flutter_svg` + pierwsze bespoke ilustracje (pusty koszyk/pudełko w `mobile/assets/svg`); ⬜ konwersja `.ai/.eps → .svg` (z `/images`) + SVGO.
+- 🔧 Pipeline SVG: ✅ `flutter_svg` + bespoke ilustracje (pusty koszyk/pudełko + **błąd/sukces** w `mobile/assets/svg`, podpięte w ErrorView/płatności); ⬜ konwersja `.ai/.eps → .svg` (z `/images`) + SVGO.
 - ✅ **Dolna nawigacja** aplikacji (Sklepy/Koszyk/Zamówienia/Konto; Szukaj → R3) [defekt #2].
 - ✅ **Fix pl‑PL w panelu** (przecinek dziesiętny, daty dd.MM) [defekt #3].
 
 ### R2 — Odświeżenie wizualne aplikacji klienta [P0]
-- ⬜ Ilustracje SVG: puste/błędne stany, sukcesy, oś statusów.
+- 🔧 Ilustracje SVG: ✅ puste/błędne stany + sukces; ⬜ oś statusów.
 - ⬜ Przebudowa ekranów (sklepy, produkt, koszyk, checkout, śledzenie) na komponenty DS.
 - ⬜ Skeletony, mikro‑interakcje, obsługa offline, dopracowane treści.
 - ⬜ Fotografie: obróbka + WebP/AVIF + lazy‑load (sprawdzić licencje).
