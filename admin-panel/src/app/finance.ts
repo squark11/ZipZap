@@ -46,7 +46,7 @@ import { Api, LedgerEntryDto, PaymentsSummaryDto } from './api';
             <tr>
               <td class="mono num">{{ e.orderId.substring(0,8) }}</td>
               <td class="right">{{ e.amount | number:'1.2-2' }} zł</td>
-              <td class="muted">{{ e.createdAtUtc | date:'MM-dd HH:mm' }}</td>
+              <td class="muted">{{ e.createdAtUtc | date:'dd.MM HH:mm' }}</td>
             </tr>
           }
         </tbody>

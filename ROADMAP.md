@@ -32,8 +32,8 @@
 - ⬜ Logo (warianty SVG) + zestaw **ikon systemowych** (~40) + ikony statusów.
 - ⬜ Katalog komponentów (Widgetbook Flutter / strona demo Angular).
 - ⬜ Pipeline SVG: konwersja `.ai/.eps → .svg` (z `/images`) + SVGO + `flutter_svg`.
-- ⬜ **Dolna nawigacja** aplikacji (Sklepy/Szukaj/Koszyk/Zamówienia/Konto) [defekt #2].
-- ⬜ **Fix pl‑PL w panelu** (przecinek dziesiętny, daty) [defekt #3].
+- ✅ **Dolna nawigacja** aplikacji (Sklepy/Koszyk/Zamówienia/Konto; Szukaj → R3) [defekt #2].
+- ✅ **Fix pl‑PL w panelu** (przecinek dziesiętny, daty dd.MM) [defekt #3].
 
 ### R2 — Odświeżenie wizualne aplikacji klienta [P0]
 - ⬜ Ilustracje SVG: puste/błędne stany, sukcesy, oś statusów.

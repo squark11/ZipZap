@@ -113,6 +113,20 @@ class ZzTheme {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ZzRadius.md)),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: ZzColors.bg,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: ZzColors.orange50,
+        height: 64,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: states.contains(WidgetState.selected) ? ZzColors.orange : ZzColors.textMuted,
+            )),
+        iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+              color: states.contains(WidgetState.selected) ? ZzColors.orange : ZzColors.textMuted,
+            )),
+      ),
     );
   }
 }

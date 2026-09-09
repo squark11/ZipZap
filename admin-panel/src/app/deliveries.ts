@@ -37,9 +37,9 @@ interface Group { key: string; label: string; statuses: string[]; }
                 <td class="mono num">{{ d.orderId.substring(0,8) }}</td>
                 <td><span class="pill" [attr.data-status]="d.status">{{ label(d.status) }}</span></td>
                 <td class="muted">{{ d.driverId ? (d.driverId.substring(0,8) + '…') : 'nieprzypisany' }}</td>
-                <td class="muted">{{ d.createdAtUtc | date:'MM-dd HH:mm' }}</td>
-                <td class="muted">{{ d.pickedUpAtUtc ? (d.pickedUpAtUtc | date:'MM-dd HH:mm') : '—' }}</td>
-                <td class="muted">{{ d.deliveredAtUtc ? (d.deliveredAtUtc | date:'MM-dd HH:mm') : '—' }}</td>
+                <td class="muted">{{ d.createdAtUtc | date:'dd.MM HH:mm' }}</td>
+                <td class="muted">{{ d.pickedUpAtUtc ? (d.pickedUpAtUtc | date:'dd.MM HH:mm') : '—' }}</td>
+                <td class="muted">{{ d.deliveredAtUtc ? (d.deliveredAtUtc | date:'dd.MM HH:mm') : '—' }}</td>
               </tr>
             }
           </tbody>

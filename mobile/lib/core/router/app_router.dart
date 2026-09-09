@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/auth_state.dart';
 import '../providers.dart';
+import 'main_scaffold.dart';
 import '../../features/account/login_screen.dart';
 import '../../features/account/forgot_password_screen.dart';
 import '../../features/account/account_screen.dart';
@@ -49,24 +50,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
-      GoRoute(path: '/stores', builder: (_, _) => const StoresScreen()),
+
+      // Główne zakładki z dolną nawigacją.
+      ShellRoute(
+        builder: (context, state, child) => MainScaffold(child: child),
+        routes: [
+          GoRoute(path: '/stores', builder: (_, _) => const StoresScreen()),
+          GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
+          GoRoute(path: '/orders', builder: (_, _) => const MyOrdersScreen()),
+          GoRoute(path: '/account', builder: (_, _) => const AccountScreen()),
+        ],
+      ),
+
+      // Ekrany pełnoekranowe (bez dolnej nawigacji).
       GoRoute(
         path: '/stores/:id',
         builder: (_, s) => StoreDetailScreen(storeId: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
       GoRoute(path: '/checkout', builder: (_, _) => const CheckoutScreen()),
       GoRoute(
         path: '/pay/:orderId',
         builder: (_, s) => PaymentScreen(orderId: s.pathParameters['orderId']!),
       ),
-      GoRoute(path: '/orders', builder: (_, _) => const MyOrdersScreen()),
       GoRoute(
         path: '/orders/:id',
         builder: (_, s) => OrderTrackScreen(orderId: s.pathParameters['id']!),
       ),
       GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
-      GoRoute(path: '/account', builder: (_, _) => const AccountScreen()),
       GoRoute(
         path: '/login',
         builder: (_, s) => LoginScreen(redirect: s.uri.queryParameters['redirect']),

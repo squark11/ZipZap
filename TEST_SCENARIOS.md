@@ -72,12 +72,11 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
    nawigacji → przy mocku/porzuceniu płatności użytkownik **utykał**. *Repro:* złóż
    zamówienie → na ekranie płatności nie płać. *Naprawa:* dodano akcję
    „Zapłacę później — śledź zamówienie" (→ śledzenie zamówienia).
-2. **[P2] UX — brak globalnej dolnej nawigacji.** Zamówienia/Konto dostępne tylko
-   przez ikony w app‑barze; konkurencja ma bottom‑nav (Sklepy/Szukaj/Koszyk/
-   Zamówienia/Konto). *Sugestia:* dodać `BottomNavigationBar` (skill §3).
-3. **[P2] UI — panel formatuje po en‑US.** Kwoty z kropką („3.60 zł") zamiast
-   polskiego przecinka; daty `MM‑dd`. *Sugestia:* `LOCALE_ID='pl-PL'` +
-   `registerLocaleData(localePl)` w panelu Angular. (Aplikacja Flutter jest OK — `pl_PL`.)
+2. **[P2 · NAPRAWIONE] UX — brak globalnej dolnej nawigacji.** Dodano dolną nawigację
+   (ShellRoute + `MainScaffold`: Sklepy/Koszyk/Zamówienia/Konto, licznik na koszyku);
+   app‑bar Sklepów odchudzony; Szukaj dojdzie w R3.
+3. **[P2 · NAPRAWIONE] UI — panel formatuje po en‑US.** Ustawiono `LOCALE_ID='pl-PL'` +
+   `registerLocaleData(localePl)`; daty na `dd.MM HH:mm`. (Aplikacja Flutter była OK.)
 4. **[P3] UX — checkout: CTA aktywne bez wyboru strefy/terminu.** Walidacja dopiero
    po kliknięciu (snackbar). *Sugestia:* wyłączyć przycisk, dopóki strefa+termin
    niewybrane (jak przy min‑order).

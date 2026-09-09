@@ -81,7 +81,7 @@ interface Group { key: string; label: string; statuses: string[]; }
                 <td class="right muted">{{ o.commissionAmount | number:'1.2-2' }} zł</td>
                 <td><span class="paybadge" [class]="payClass(o.id)">{{ payLabel(o.id) }}</span></td>
                 <td><span class="pill" [attr.data-status]="o.status">{{ o.status }}</span></td>
-                <td class="muted">{{ o.placedAtUtc | date:'MM-dd HH:mm' }}</td>
+                <td class="muted">{{ o.placedAtUtc | date:'dd.MM HH:mm' }}</td>
                 <td>
                   <div class="actions">
                     @for (a of actionsFor(o.status); track a.action) {
@@ -112,8 +112,8 @@ interface Group { key: string; label: string; statuses: string[]; }
                         @else {
                           <div class="kv"><span class="pill" [attr.data-status]="deliveries[o.id]!.status">{{ deliveryLabel(deliveries[o.id]!.status) }}</span></div>
                           <div class="kv">Kierowca: {{ deliveries[o.id]!.driverId ? (deliveries[o.id]!.driverId!.substring(0,8) + '…') : 'nieprzypisany' }}</div>
-                          @if (deliveries[o.id]!.pickedUpAtUtc) { <div class="kv muted">Odebrano: {{ deliveries[o.id]!.pickedUpAtUtc | date:'MM-dd HH:mm' }}</div> }
-                          @if (deliveries[o.id]!.deliveredAtUtc) { <div class="kv muted">Dostarczono: {{ deliveries[o.id]!.deliveredAtUtc | date:'MM-dd HH:mm' }}</div> }
+                          @if (deliveries[o.id]!.pickedUpAtUtc) { <div class="kv muted">Odebrano: {{ deliveries[o.id]!.pickedUpAtUtc | date:'dd.MM HH:mm' }}</div> }
+                          @if (deliveries[o.id]!.deliveredAtUtc) { <div class="kv muted">Dostarczono: {{ deliveries[o.id]!.deliveredAtUtc | date:'dd.MM HH:mm' }}</div> }
                         }
                       </div>
                     </div>

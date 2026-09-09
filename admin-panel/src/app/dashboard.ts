@@ -46,7 +46,7 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
               <td class="mono">{{ d.id.substring(0,8) }}</td>
               <td class="mono num">{{ d.orderId.substring(0,8) }}</td>
               <td><span class="pill" [attr.data-status]="d.status">{{ d.status }}</span></td>
-              <td class="muted">{{ d.createdAtUtc | date:'MM-dd HH:mm' }}</td>
+              <td class="muted">{{ d.createdAtUtc | date:'dd.MM HH:mm' }}</td>
             </tr>
           }
         </tbody>
