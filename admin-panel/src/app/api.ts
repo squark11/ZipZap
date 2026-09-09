@@ -2,7 +2,11 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
-export interface StoreDto { id: string; name: string; city: string; slug: string; commissionRate: number; isActive: boolean; }
+export interface StoreDto {
+  id: string; name: string; city: string; slug: string; commissionRate: number; isActive: boolean;
+  status: string; minimumOrderValue: number; isAcceptingOrders: boolean;
+  description?: string; address?: string; phone?: string;
+}
 export interface CategoryDto { id: string; storeId: string; name: string; sortOrder: number; }
 export interface ProductDto { id: string; storeId: string; categoryId?: string; name: string; price: number; currency: string; unit: string; isAvailable: boolean; }
 export interface OrderItemDto { productId: string; productName: string; unitPrice: number; quantity: number; lineTotal: number; }

@@ -5,10 +5,11 @@ import { Api, StoreDto } from './api';
 import { OrdersComponent } from './orders';
 import { CatalogComponent } from './catalog';
 import { DashboardComponent } from './dashboard';
+import { StoresComponent } from './stores';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent],
+  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent],
   template: `
   @if (!api.isLoggedIn()) {
     <div class="auth">
@@ -57,6 +58,10 @@ import { DashboardComponent } from './dashboard';
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
           <span class="tip">Oferta</span>
         </button>
+        <button class="rail-btn" [class.active]="tab==='stores'" (click)="tab='stores'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>
+          <span class="tip">Sklepy</span>
+        </button>
         <div class="spacer"></div>
         <button class="rail-btn" (click)="logout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -82,13 +87,14 @@ import { DashboardComponent } from './dashboard';
         </div>
 
         <div class="content">
-          @if (stores.length === 0) {
-            <div class="card pad"><p class="muted">Brak sklepów. Utwórz sklep przez API (POST /api/catalog/stores) jako admin.</p></div>
+          @if (stores.length === 0 && tab !== 'stores') {
+            <div class="card pad"><p class="muted">Brak sklepów. Przejdź do zakładki <strong>Sklepy</strong>, aby utworzyć pierwszy.</p></div>
           } @else {
             @switch (tab) {
               @case ('dashboard') { <app-dashboard [storeId]="selectedStoreId" /> }
               @case ('orders') { <app-orders [storeId]="selectedStoreId" [query]="search" /> }
               @case ('catalog') { <app-catalog [storeId]="selectedStoreId" /> }
+              @case ('stores') { <app-stores (changed)="loadStores()" /> }
             }
           }
         </div>
@@ -108,7 +114,7 @@ export class App {
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
-  tab: 'dashboard' | 'orders' | 'catalog' = 'dashboard';
+  tab: 'dashboard' | 'orders' | 'catalog' | 'stores' = 'dashboard';
 
   get initials(): string {
     const e = this.api.userEmail();
@@ -127,7 +133,8 @@ export class App {
   loadStores() {
     this.api.getPublic<StoreDto[]>('/catalog/stores?onlyActive=false').subscribe(s => {
       this.stores = s;
-      if (s.length) { this.selectedStoreId = s[0].id; }
+      const stillThere = s.some(x => x.id === this.selectedStoreId);
+      if (!stillThere && s.length) { this.selectedStoreId = s[0].id; }
     });
   }
 
