@@ -222,5 +222,8 @@ app.MapIntegrationsEndpoints();
 
 app.Run();
 
+// Udostępnia klasę Program dla testów integracyjnych (WebApplicationFactory<Program>).
+public partial class Program { }
+
 // Umożliwia testy integracyjne (WebApplicationFactory) w przyszłości.
 public partial class Program { }
