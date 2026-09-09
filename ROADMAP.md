@@ -30,7 +30,7 @@
 ### R1 — Design system + fundament wizualny [P0]
 - ⬜ Tokeny (kolory/typografia/spacing/radius/cień/motion), **tryb ciemny** [defekt #5].
 - 🔧 Logo: ✅ znak główny + warianty (poziom `ZzLogo` / mono / app‑icon `512²`).
-- 🔧 **Ikony systemowe** (~40): ✅ batch 1 (10: store/cart/orders/account/search/bell/clock/location/package/heart) + `ZzIcon` (tint z `IconTheme`); ⬜ pozostałe ~30 + ikony statusów, wpięcie w dolną nawigację (R2).
+- 🔧 **Ikony systemowe** (~40): ✅ **26 ikon** (batch 1+2: nawigacja, akcje, statusy — store/cart/orders/account/search/bell/clock/location/package/heart/delivery/filter/star(+fill)/plus/minus/trash/chevron‑l/r/card/info/home/check/check_circle/x_circle/close) + `ZzIcon` (tint z `IconTheme`) + **wpięte w dolną nawigację**; ⬜ ~14 domenowych (kategorie, kupon, godziny otwarcia, telefon…) + `StatusPill` na ikonach (R2).
 - ⬜ Katalog komponentów (Widgetbook Flutter / strona demo Angular).
 - 🔧 Pipeline SVG: ✅ `flutter_svg` + bespoke ilustracje (pusty koszyk/pudełko + **błąd/sukces** w `mobile/assets/svg`, podpięte w ErrorView/płatności); ⬜ konwersja `.ai/.eps → .svg` (z `/images`) + SVGO.
 - ✅ **Dolna nawigacja** aplikacji (Sklepy/Koszyk/Zamówienia/Konto; Szukaj → R3) [defekt #2].
