@@ -79,7 +79,7 @@
 
 ### R9 — Deploy & Launch [P0 przed pilotażem]
 - ✅ **PWA instalowalna**: manifest ZipZap (#F97316, ikony 192/512 + maskable + SVG), własny service worker (`sw.js`, offline powłoki), `flutter build web` OK; API konfigurowalne `--dart-define=API_BASE_URL`.
-- 🔧 **Konfiguracja z kontami**: ✅ `.env.example` (wszystkie konta/sekrety) + panel **Konfiguracja** (status integracji + checklist, tylko admin, bez sekretów); ⬜ edytowalne ustawienia platformy (godziny fal, prowizja, waluta) + ekran integracji (P24/Google/SMTP — sekrety write‑only).
+- 🔧 **Konfiguracja z kontami**: ✅ `.env.example` (wszystkie konta/sekrety) + panel **Konfiguracja** (status integracji + checklist) + ✅ **edytowalne ustawienia platformy** (fale dostaw, prowizja, waluta, operator — zapis w `App_Data`); ⬜ ekran integracji (P24/Google/SMTP — sekrety write‑only) + docelowo store ustawień w DB.
 - ⬜ Środowiska dev→staging→prod; sekrety z env (guard jest).
 - 🔧 Deploy **darmowo/Docker**: ✅ `web.Dockerfile` (nginx) + serwis compose `web` + `DEPLOY.md` (warstwa nginx zweryfikowana lokalnie); ⬜ realny hosting: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase), web (Cloudflare Pages/Netlify) pod publicznym HTTPS.
 - 🔧 **CI/CD** (GitHub Actions): ✅ build + testy (`.github/workflows/ci.yml` — backend z Postgres service 30/30, mobile analyze+test 17/17); ⬜ krok deploy na main.
