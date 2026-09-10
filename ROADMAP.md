@@ -79,6 +79,7 @@
 
 ### R9 — Deploy & Launch [P0 przed pilotażem]
 - ✅ **PWA instalowalna**: manifest ZipZap (#F97316, ikony 192/512 + maskable + SVG), własny service worker (`sw.js`, offline powłoki), `flutter build web` OK; API konfigurowalne `--dart-define=API_BASE_URL`.
+- ✅ **Rozliczenia (model przychodu ZipZap→sklep)**: faktura miesięczna wg planu — **A: dostawa ZipZap = liczba dostaw × stała 25 zł**, **B: kurier sklepu = suma prowizji**; plan per‑sklep + opłata w ustawieniach platformy; endpoint `/invoice?month=` + karta w panelu (Rozliczenia). Klient płaci bramką sklepu — ZipZap nie jest płatnikiem. (rdzeń billingu Fazy H)
 - 🔧 **Konfiguracja z kontami**: ✅ `.env.example` + panel **Konfiguracja** (status + checklist) + ✅ **edytowalne ustawienia platformy** + ✅ **per‑store integracja bramki płatniczej** (każdy sklep podpina swoje konto; tokeny **szyfrowane** Data Protection, write‑only, dostęp per‑sklep) + ✅ **routing per‑store w flow płatności** (resolver dostawcy sklepu → fallback mock, gotowe pod realny adapter); ⬜ **adapter realnej bramki** (Przelewy24 — odszyfrowanie i użycie tokenów) + store ustawień w DB.
 - ⬜ Środowiska dev→staging→prod; sekrety z env (guard jest).
 - 🔧 Deploy **darmowo/Docker**: ✅ `web.Dockerfile` (nginx) + serwis compose `web` + `DEPLOY.md` (warstwa nginx zweryfikowana lokalnie); ⬜ realny hosting: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase), web (Cloudflare Pages/Netlify) pod publicznym HTTPS.
