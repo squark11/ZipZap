@@ -1,5 +1,20 @@
 # Deploy ZipZap
 
+## Twoje konta i sekrety
+Wszystkie konta/wartości do uzupełnienia są w **[`.env.example`](.env.example)** —
+skopiuj do `.env` i wpisz swoje (`.env` jest w `.gitignore`, nie trafi do repo):
+```bash
+cp .env.example .env    # potem uzupełnij wartości CHANGE_ME / puste
+```
+Grupy: baza (Postgres/Neon), `Jwt__SigningKey`, konto admina (`Seed__*`), płatności
+(`Payments__*` — mock teraz, P24 po podpięciu adaptera), Google OAuth (`Google__ClientId`),
+e-mail SMTP (opcjonalnie), `WEB_API_BASE_URL` dla PWA, oraz tokeny hostingu/CI (Cloudflare/
+Fly.io/Neon — trzymaj jako **sekrety CI**, nie w repo). **Nigdy nie commituj prawdziwych sekretów.**
+
+> W panelu administratora (zakładka **Konfiguracja**, w budowie) część ustawień
+> nie-sekretnych (godziny fal dostaw, prowizja, waluta) będzie edytowalna z UI; sekrety
+> zostają w env/CI.
+
 ## Lokalny dev
 ```bash
 docker compose up -d postgres          # + rabbitmq jeśli potrzebny
