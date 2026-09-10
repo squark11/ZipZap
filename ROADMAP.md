@@ -90,6 +90,7 @@
 - ⬜ **iOS**: konto Apple Dev, certyfikaty; `build ipa`; App Store Connect + **TestFlight** → review; APNs. (Wymaga macOS/CI np. Codemagic.)
 
 ### R11 — Obserwowalność + wsparcie [P1]
+- 🔧 Backend: ✅ health `/health`·`/live`·`/ready` (DB), ✅ correlation‑id (nagłówek + zakres logów), ✅ logowanie żądań (metoda/ścieżka/status/ms/cid), ✅ globalny handler wyjątków (ProblemDetails); ⬜ JSON‑logi w prod + agregacja.
 - ⬜ Sentry (Flutter/Angular/.NET), metryki/log dashboard, kanał zgłoszeń + FAQ.
 
 ---
