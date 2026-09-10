@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ZipZap.Api.Configuration;
 using ZipZap.Api.Middleware;
 using ZipZap.Api.Security;
 using ZipZap.BuildingBlocks.DependencyInjection;
@@ -99,6 +100,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = "sub",
         };
     });
+
+builder.Services.AddSingleton<PlatformSettingsStore>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -255,6 +258,13 @@ app.MapGet("/api/admin/config/status", (IConfiguration cfg, IHostEnvironment env
         jwtUsingDevSecret = jwt.Contains("CHANGE_ME") || jwt.Contains("DEV_ONLY"),
     });
 }).RequireAuthorization("Admin").WithTags("System");
+
+// Ustawienia platformy (edytowalne, nie‑sekretne) — odczyt i zapis (admin).
+app.MapGet("/api/admin/config/platform", async (PlatformSettingsStore store, CancellationToken ct) =>
+    Results.Ok(await store.GetAsync(ct))).RequireAuthorization("Admin").WithTags("System");
+
+app.MapPut("/api/admin/config/platform", async (PlatformSettings body, PlatformSettingsStore store, CancellationToken ct) =>
+    Results.Ok(await store.SaveAsync(body, ct))).RequireAuthorization("Admin").WithTags("System");
 
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();

@@ -39,6 +39,9 @@ build/
 .env.local
 *.local.env
 
+# ---------- Runtime data (ustawienia platformy itp.) ----------
+App_Data/
+
 # ---------- OS ----------
 .DS_Store
 Thumbs.db
