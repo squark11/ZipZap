@@ -159,7 +159,18 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           _row('Razem', zl(o.total), bold: true),
           const SizedBox(height: 20),
           Text('Dostawa', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+          if (o.deliveryWindowLabel != null) ...[
+            Row(
+              children: [
+                const ZzIcon('clock', size: 16, color: ZzColors.orange),
+                const SizedBox(width: 6),
+                Text('Termin: ${o.deliveryWindowLabel}',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           Text(o.deliveryAddress),
           Text('tel. ${o.contactPhone}',
               style: TextStyle(color: context.zz.textMuted)),

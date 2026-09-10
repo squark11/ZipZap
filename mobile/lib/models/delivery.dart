@@ -1,3 +1,5 @@
+import '../core/util/format.dart';
+
 class DeliveryZone {
   final String id;
   final String storeId;
@@ -49,21 +51,7 @@ class TimeSlot {
   String get label {
     final s = startTime.length >= 5 ? startTime.substring(0, 5) : startTime;
     final e = endTime.length >= 5 ? endTime.substring(0, 5) : endTime;
-    return '${_friendlyDate(date)}, $s–$e';
-  }
-
-  static String _friendlyDate(String iso) {
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final that = DateTime(d.year, d.month, d.day);
-    final diff = that.difference(today).inDays;
-    if (diff == 0) return 'Dziś';
-    if (diff == 1) return 'Jutro';
-    final dd = d.day.toString().padLeft(2, '0');
-    final mm = d.month.toString().padLeft(2, '0');
-    return '$dd.$mm';
+    return '${friendlyDate(date)}, $s–$e';
   }
 
   factory TimeSlot.fromJson(Map<String, dynamic> j) => TimeSlot(

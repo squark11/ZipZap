@@ -1,3 +1,5 @@
+import '../core/util/format.dart';
+
 class OrderItem {
   final String productId;
   final String productName;
@@ -57,6 +59,22 @@ class Order {
   final List<OrderItem> items;
   final List<OrderStatusChange> history;
 
+  /// Okno dostawy (fala): data ISO + godziny (opcjonalne — zależne od API).
+  final String? deliveryDate;
+  final String? deliveryStartTime;
+  final String? deliveryEndTime;
+
+  /// Czytelne okno dostawy, np. „Dziś, 14:00–16:00" (null gdy brak danych).
+  String? get deliveryWindowLabel {
+    final st = deliveryStartTime, en = deliveryEndTime;
+    if (st == null || en == null) return null;
+    final s = st.length >= 5 ? st.substring(0, 5) : st;
+    final e = en.length >= 5 ? en.substring(0, 5) : en;
+    final d = deliveryDate;
+    final datePart = (d != null && d.isNotEmpty) ? '${friendlyDate(d)}, ' : '';
+    return '$datePart$s–$e';
+  }
+
   Order({
     required this.id,
     required this.storeId,
@@ -73,6 +91,9 @@ class Order {
     required this.placedAtUtc,
     required this.items,
     required this.history,
+    this.deliveryDate,
+    this.deliveryStartTime,
+    this.deliveryEndTime,
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -97,5 +118,8 @@ class Order {
                 ?.map((e) => OrderStatusChange.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             const [],
+        deliveryDate: j['deliveryDate']?.toString(),
+        deliveryStartTime: j['deliveryStartTime']?.toString(),
+        deliveryEndTime: j['deliveryEndTime']?.toString(),
       );
 }

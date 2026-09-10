@@ -29,14 +29,17 @@ public sealed record OrderDto(
     Guid Id, Guid StoreId, Guid CustomerId, string Status,
     decimal Subtotal, decimal CommissionAmount, decimal DeliveryFee, decimal Total, string Currency,
     Guid DeliveryZoneId, Guid TimeSlotId, string DeliveryAddress, string ContactPhone, DateTime PlacedAtUtc,
-    IReadOnlyList<OrderItemDto> Items, IReadOnlyList<OrderStatusChangeDto> History)
+    IReadOnlyList<OrderItemDto> Items, IReadOnlyList<OrderStatusChangeDto> History,
+    DateOnly? DeliveryDate = null, TimeOnly? DeliveryStartTime = null, TimeOnly? DeliveryEndTime = null)
 {
-    public static OrderDto From(Order o) =>
+    /// <summary>Mapuje zamówienie; gdy podano slot — dołącza okno dostawy.</summary>
+    public static OrderDto From(Order o, TimeSlot? slot = null) =>
         new(o.Id, o.StoreId, o.CustomerId, o.Status.ToString(),
             o.Subtotal, o.CommissionAmount, o.DeliveryFee, o.Total, o.Currency,
             o.DeliveryZoneId, o.TimeSlotId, o.DeliveryAddress, o.ContactPhone, o.PlacedAtUtc,
             o.Items.Select(OrderItemDto.From).ToList(),
-            o.History.OrderBy(h => h.ChangedAtUtc).Select(OrderStatusChangeDto.From).ToList());
+            o.History.OrderBy(h => h.ChangedAtUtc).Select(OrderStatusChangeDto.From).ToList(),
+            slot?.Date, slot?.StartTime, slot?.EndTime);
 }
 
 public sealed record DeliveryZoneDto(Guid Id, Guid StoreId, string Name, decimal DeliveryFee, bool IsActive)

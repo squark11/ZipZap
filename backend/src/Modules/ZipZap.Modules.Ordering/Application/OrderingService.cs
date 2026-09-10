@@ -228,7 +228,10 @@ public sealed class OrderingService
                       || _user.Roles.Contains("Driver");
         if (!isOwner && !isStaff) return Error.Forbidden("Brak dostępu do zamówienia.");
 
-        return OrderDto.From(order);
+        // Dołącz okno dostawy (data + godziny slotu), by klient widział termin na śledzeniu.
+        var slot = await _db.TimeSlots.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == order.TimeSlotId, ct);
+        return OrderDto.From(order, slot);
     }
 
     public async Task<IReadOnlyList<OrderDto>> ListMyOrdersAsync(CancellationToken ct)
@@ -238,7 +241,7 @@ public sealed class OrderingService
             .Include(o => o.Items).Include(o => o.History)
             .Where(o => o.CustomerId == customerId)
             .OrderByDescending(o => o.PlacedAtUtc).ToListAsync(ct);
-        return orders.Select(OrderDto.From).ToList();
+        return orders.Select(o => OrderDto.From(o)).ToList();
     }
 
     public async Task<Result<IReadOnlyList<OrderDto>>> ListStoreOrdersAsync(Guid storeId, string? status, CancellationToken ct)
@@ -253,7 +256,7 @@ public sealed class OrderingService
             query = query.Where(o => o.Status == parsed);
 
         var orders = await query.OrderByDescending(o => o.PlacedAtUtc).ToListAsync(ct);
-        return Result.Success<IReadOnlyList<OrderDto>>(orders.Select(OrderDto.From).ToList());
+        return Result.Success<IReadOnlyList<OrderDto>>(orders.Select(o => OrderDto.From(o)).ToList());
     }
 
     public async Task<Result<OrderDto>> ChangeStatusAsync(Guid orderId, OrderAction action, CancellationToken ct)
