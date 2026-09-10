@@ -77,9 +77,9 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
    app‑bar Sklepów odchudzony; Szukaj dojdzie w R3.
 3. **[P2 · NAPRAWIONE] UI — panel formatuje po en‑US.** Ustawiono `LOCALE_ID='pl-PL'` +
    `registerLocaleData(localePl)`; daty na `dd.MM HH:mm`. (Aplikacja Flutter była OK.)
-4. **[P3] UX — checkout: CTA aktywne bez wyboru strefy/terminu.** Walidacja dopiero
-   po kliknięciu (snackbar). *Sugestia:* wyłączyć przycisk, dopóki strefa+termin
-   niewybrane (jak przy min‑order).
+4. **[P3] UX — checkout: CTA aktywne bez wyboru strefy/terminu.** ✅ NAPRAWIONE —
+   przycisk nieaktywny, dopóki adres/telefon/strefa/termin nieuzupełnione
+   (reaktywnie), a linia pod nim nazywa pierwszy brakujący element.
 5. **[P3] UI — brak trybu ciemnego.** ✅ NAPRAWIONE — `ZzTheme.light()/dark()` +
    `ZzPalette` (neutrale zależne od trybu, `context.zz`); przełącznik
    System/Jasny/Ciemny w Koncie (utrwalany). Zweryfikowane na żywo (dark).

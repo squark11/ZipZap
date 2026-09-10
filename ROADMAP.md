@@ -39,9 +39,9 @@
 ### R2 — Odświeżenie wizualne aplikacji klienta [P0]
 - 🔧 Ilustracje SVG: ✅ puste/błędne stany + sukces; ⬜ oś statusów.
 - ⬜ Przebudowa ekranów (sklepy, produkt, koszyk, checkout, śledzenie) na komponenty DS.
-- ⬜ Skeletony, mikro‑interakcje, obsługa offline, dopracowane treści.
+- 🔧 Skeletony (✅ `ZzSkeleton`/`StoreListSkeleton` na liście sklepów; ⬜ szczegóły sklepu, zamówienia), mikro‑interakcje, obsługa offline, dopracowane treści.
 - ⬜ Fotografie: obróbka + WebP/AVIF + lazy‑load (sprawdzić licencje).
-- ⬜ Checkout: CTA nieaktywne dopóki brak strefy/terminu [defekt #4].
+- ✅ Checkout: CTA nieaktywne dopóki brak adresu/telefonu/strefy/terminu + podpowiedź braków [defekt #4].
 
 ### R3 — Onboarding + odkrywanie [P0]
 - ⬜ Onboarding (3 ilustracje SVG: wartość → zaufanie/śledzenie → lokalizacja).
