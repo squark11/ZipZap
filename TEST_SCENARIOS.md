@@ -83,12 +83,26 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
 5. **[P3] UI — brak trybu ciemnego.** ✅ NAPRAWIONE — `ZzTheme.light()/dark()` +
    `ZzPalette` (neutrale zależne od trybu, `context.zz`); przełącznik
    System/Jasny/Ciemny w Koncie (utrwalany). Zweryfikowane na żywo (dark).
-6. **[info] Dev — mock płatności to ślepa uliczka.** Redirect na
-   `localhost:4200/pay/mock` (origin panelu) nie ma strony płatności. **Oczekiwane**
-   (realny dostawca ją ma); po naprawie #1 użytkownik może wyjść.
+6. **[P2 · POTWIERDZONE NA ŻYWO] Dev — nie da się zapłacić.** Redirect płatności to
+   `http://localhost:4200/pay/mock?...` (origin panelu) — strona nie istnieje, więc
+   realny tester **nie ukończy zakupu** w trybie dev. Wyjście „Zapłacę później" (fix #1)
+   ratuje przed pułapką, ale płatność jest nieosiągalna. *Rekomendacja (osobny slice):*
+   dev‑owy endpoint „symuluj płatność (sukces/porażka)" wołający webhook mocka, albo
+   mini‑strona `/pay/mock`. Potwierdzone QA 2026‑09‑10 (checkout→payment=Pending, 21,90).
+8. **[P3 · NAPRAWIONE] UX — surowa data w terminie dostawy.** Slot pokazywał ISO
+   `2026-09-10 · 14:00–16:00`; zmienione na `Dziś/Jutro/dd.MM, 14:00–16:00`
+   (znalezione w QA na żywo 2026‑09‑10).
 7. **[do weryfikacji] Skalowanie w podglądzie web.** Podgląd czasem renderował w
    powiększeniu — prawdopodobnie artefakt panelu podglądu; **zweryfikować na realnym
    Chrome/Androidzie** (device matrix, R10).
+
+**QA na żywo 2026‑09‑10 (backend + Flutter web):** Postgres+API (5080) live, 16 sklepów
+w seedzie. Zweryfikowane wizualnie: lista sklepów (realne dane, ikony marki, „Otwarte/
+Zamknięte", `0,00 zł`), szczegóły sklepu (`ProductListSkeleton` → produkt „Chleb żytni
+6,00 zł/szt"). Zweryfikowane przez API E2E (nowy user): rejestracja→koszyk→dodanie
+(subtotal 12,00)→strefy (Centrum 9,90)→sloty (fale 14:00–16:00)→checkout (Placed, razem
+**21,90**, opłata dostawy naliczona)→płatność (Pending 21,90). Ograniczenie: kliknięcia
+w UI Flutter‑web timeoutują w automatyzacji — ekrany za loginem testowane przez API.
 
 **Potwierdzone OK w tej sesji:** pełny lejek klienta (przeglądanie→koszyk→checkout→
 płatność authorized→śledzenie), wyścig dodawania do koszyka (naprawiony), izolacja
