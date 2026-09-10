@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../models/order.dart';
 
@@ -20,7 +21,7 @@ class MyOrdersScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Moje zamówienia')),
       body: orders.when(
-        loading: () => const LoadingView(),
+        loading: () => const OrderListSkeleton(),
         error: (e, _) =>
             ErrorView(message: e.toString(), onRetry: () => ref.invalidate(myOrdersProvider)),
         data: (list) {

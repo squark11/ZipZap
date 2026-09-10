@@ -103,3 +103,95 @@ class _StoreCardSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// „Szkielety” wierszy produktu — dla ekranu sklepu podczas ładowania oferty.
+class ProductListSkeleton extends StatelessWidget {
+  final int count;
+  const ProductListSkeleton({super.key, this.count = 7});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemCount: count,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, _) => const _ProductRowSkeleton(),
+    );
+  }
+}
+
+class _ProductRowSkeleton extends StatelessWidget {
+  const _ProductRowSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const ZzSkeleton(width: 46, height: 46),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  ZzSkeleton(width: 140, height: 14),
+                  SizedBox(height: 8),
+                  ZzSkeleton(width: 80, height: 12),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            const ZzSkeleton(width: 64, height: 38),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// „Szkielety” kart zamówień — dla listy „Moje zamówienia”.
+class OrderListSkeleton extends StatelessWidget {
+  final int count;
+  const OrderListSkeleton({super.key, this.count = 6});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: count,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, _) => const _OrderCardSkeleton(),
+    );
+  }
+}
+
+class _OrderCardSkeleton extends StatelessWidget {
+  const _OrderCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  ZzSkeleton(width: 90, height: 14),
+                  SizedBox(height: 8),
+                  ZzSkeleton(width: 160, height: 12),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            const ZzSkeleton(width: 76, height: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}

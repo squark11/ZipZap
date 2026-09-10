@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/cart_button.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../models/product.dart';
 import '../../models/store.dart';
@@ -46,7 +47,7 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
         actions: const [CartButton()],
       ),
       body: products.when(
-        loading: () => const LoadingView(label: 'Ładowanie oferty…'),
+        loading: () => const ProductListSkeleton(),
         error: (e, _) => ErrorView(
           message: e.toString(),
           onRetry: () => ref.invalidate(productsProvider(widget.storeId)),
@@ -72,9 +73,20 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
           );
         },
       ),
-      bottomNavigationBar: cart.count > 0
-          ? _CartBar(count: cart.count, subtotal: cart.subtotal)
-          : null,
+      bottomNavigationBar: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 240),
+        switchInCurve: Curves.easeOutBack,
+        transitionBuilder: (child, anim) => SizeTransition(
+          sizeFactor: anim,
+          child: FadeTransition(opacity: anim, child: child),
+        ),
+        child: cart.count > 0
+            ? _CartBar(
+                key: const ValueKey('cartbar'),
+                count: cart.count,
+                subtotal: cart.subtotal)
+            : const SizedBox.shrink(key: ValueKey('nobar')),
+      ),
     );
   }
 }
@@ -183,7 +195,7 @@ class _Stepper extends StatelessWidget {
 class _CartBar extends StatelessWidget {
   final int count;
   final double subtotal;
-  const _CartBar({required this.count, required this.subtotal});
+  const _CartBar({super.key, required this.count, required this.subtotal});
 
   @override
   Widget build(BuildContext context) {
