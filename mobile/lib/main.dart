@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/theme_mode_controller.dart';
 import 'core/theme/zz_theme.dart';
+import 'core/widgets/connectivity_banner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,12 @@ class ZipZapApp extends ConsumerWidget {
       darkTheme: ZzTheme.dark(),
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) => Column(
+        children: [
+          const OfflineBar(),
+          Expanded(child: child ?? const SizedBox.shrink()),
+        ],
+      ),
     );
   }
 }
