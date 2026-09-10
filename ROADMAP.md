@@ -39,7 +39,7 @@
 ### R2 — Odświeżenie wizualne aplikacji klienta [P0]
 - 🔧 Ilustracje SVG: ✅ puste/błędne stany + sukces; ⬜ oś statusów.
 - ⬜ Przebudowa ekranów (sklepy, produkt, koszyk, checkout, śledzenie) na komponenty DS.
-- 🔧 Skeletony (✅ `ZzSkeleton`/`StoreListSkeleton` na liście sklepów; ⬜ szczegóły sklepu, zamówienia), mikro‑interakcje, obsługa offline, dopracowane treści.
+- 🔧 Skeletony (✅ lista sklepów + **oferta sklepu** + **Moje zamówienia**) + mikro‑interakcje (✅ animowane wejście paska koszyka); ⬜ obsługa offline, dopracowane treści, więcej mikro‑animacji.
 - ⬜ Fotografie: obróbka + WebP/AVIF + lazy‑load (sprawdzić licencje).
 - ✅ Checkout: CTA nieaktywne dopóki brak adresu/telefonu/strefy/terminu + podpowiedź braków [defekt #4].
 
