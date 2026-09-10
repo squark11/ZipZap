@@ -59,5 +59,18 @@ services:
     ports:
       - "5080:8080"
 
+  # PWA klienta (Flutter web) za nginx. Profil "web" — nie buduje się domyślnie
+  # (build Fluttera jest wolny). Uruchom: docker compose --profile web up -d --build web
+  web:
+    build:
+      context: ./mobile
+      dockerfile: web.Dockerfile
+      args:
+        API_BASE_URL: ${WEB_API_BASE_URL:-http://localhost:5080/api}
+    container_name: zipzap-web
+    profiles: ["web"]
+    ports:
+      - "8090:80"
+
 volumes:
   zipzap-pgdata:

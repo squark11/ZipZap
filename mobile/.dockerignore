@@ -1,0 +1,14 @@
+build/
+.dart_tool/
+.idea/
+.vscode/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+test/
+coverage/
+android/
+ios/
+windows/
+linux/
+macos/
