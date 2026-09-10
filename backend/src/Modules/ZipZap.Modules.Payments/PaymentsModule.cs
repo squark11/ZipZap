@@ -32,6 +32,9 @@ public static class PaymentsModule
             sp.GetServices<IPaymentProvider>(),
             sp.GetRequiredService<IOptions<PaymentsOptions>>().Value.Provider));
 
+        // Domyślny resolver per-store bramki (host może nadpisać realnym adapterem).
+        services.AddSingleton<IStorePaymentGateway, NullStorePaymentGateway>();
+
         services.AddScoped<PaymentsEventHandlers>();
         services.AddScoped<IIntegrationEventHandler<OrderPlaced>>(sp => sp.GetRequiredService<PaymentsEventHandlers>());
         services.AddScoped<IIntegrationEventHandler<OrderDelivered>>(sp => sp.GetRequiredService<PaymentsEventHandlers>());

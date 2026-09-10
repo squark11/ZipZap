@@ -18,11 +18,13 @@ public sealed class PaymentsEventHandlers :
 {
     private readonly PaymentsDbContext _db;
     private readonly PaymentProviderRegistry _providers;
+    private readonly IStorePaymentGateway _storeGateway;
 
-    public PaymentsEventHandlers(PaymentsDbContext db, PaymentProviderRegistry providers)
+    public PaymentsEventHandlers(PaymentsDbContext db, PaymentProviderRegistry providers, IStorePaymentGateway storeGateway)
     {
         _db = db;
         _providers = providers;
+        _storeGateway = storeGateway;
     }
 
     public async Task HandleAsync(OrderPlaced e, CancellationToken ct = default)
@@ -31,7 +33,10 @@ public sealed class PaymentsEventHandlers :
 
         var payment = new Payment(e.OrderId, e.StoreId, e.CustomerId, e.Total, e.DeliveryFee, e.CommissionAmount);
 
-        var provider = _providers.Default;
+        // Per-store bramka: jeśli sklep skonfigurował dostawcę i jest on zarejestrowany,
+        // użyj go; inaczej dostawca domyślny (mock) — bezpieczny fallback.
+        var key = await _storeGateway.GetProviderKeyAsync(e.StoreId, ct);
+        var provider = (key is not null ? _providers.Get(key) : null) ?? _providers.Default;
         var session = await provider.CreateSessionAsync(
             new PaymentSessionRequest(payment.Id, e.OrderId, e.Total, "PLN", $"ZipZap zamówienie {e.OrderId:N}"), ct);
         payment.AttachSession(provider.Key, session.SessionId, session.RedirectUrl);

@@ -111,6 +111,8 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(
         Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys")));
 builder.Services.AddSingleton<StoreIntegrationStore>();
+// Nadpisz domyślny (null) resolver realnym adapterem nad magazynem integracji sklepów.
+builder.Services.AddSingleton<ZipZap.Modules.Payments.Application.IStorePaymentGateway, StorePaymentGatewayAdapter>();
 
 builder.Services.AddAuthorization(options =>
 {
