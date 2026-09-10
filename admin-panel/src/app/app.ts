@@ -10,10 +10,11 @@ import { TeamComponent } from './team';
 import { FinanceComponent } from './finance';
 import { DeliveriesComponent } from './deliveries';
 import { SettingsComponent } from './settings';
+import { IntegrationsComponent } from './integrations';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent, SettingsComponent],
+  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent, SettingsComponent, IntegrationsComponent],
   template: `
   @if (!api.isLoggedIn()) {
     <div class="auth">
@@ -65,6 +66,10 @@ import { SettingsComponent } from './settings';
         <button class="rail-btn" [class.active]="tab==='catalog'" (click)="tab='catalog'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
           <span class="tip">Oferta</span>
+        </button>
+        <button class="rail-btn" [class.active]="tab==='integrations'" (click)="tab='integrations'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H6a3 3 0 0 0 0 6h3M15 7h3a3 3 0 0 1 0 6h-3M8 10h8"/></svg>
+          <span class="tip">Integracje</span>
         </button>
         @if (api.isAdmin()) {
         <button class="rail-btn" [class.active]="tab==='team'" (click)="tab='team'">
@@ -121,6 +126,7 @@ import { SettingsComponent } from './settings';
               @case ('orders') { <app-orders [storeId]="selectedStoreId" [query]="search" /> }
               @case ('deliveries') { <app-deliveries [storeId]="selectedStoreId" /> }
               @case ('catalog') { <app-catalog [storeId]="selectedStoreId" /> }
+              @case ('integrations') { <app-integrations [storeId]="selectedStoreId" /> }
               @case ('team') { <app-team [storeId]="selectedStoreId" /> }
               @case ('finance') { <app-finance [storeId]="selectedStoreId" /> }
               @case ('stores') { <app-stores (changed)="loadStores()" /> }
@@ -144,7 +150,7 @@ export class App {
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
-  tab: 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'team' | 'finance' | 'stores' | 'settings' = 'dashboard';
+  tab: 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'integrations' | 'team' | 'finance' | 'stores' | 'settings' = 'dashboard';
 
   get initials(): string {
     const e = this.api.userEmail();

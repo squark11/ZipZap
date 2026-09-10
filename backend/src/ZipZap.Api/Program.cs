@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -102,6 +103,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddSingleton<PlatformSettingsStore>();
+
+// Data Protection — szyfrowanie sekretów integracji at-rest; klucze utrwalane
+// (inaczej po restarcie nie odszyfrujemy zapisanych tokenów).
+builder.Services.AddDataProtection()
+    .SetApplicationName("ZipZap")
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys")));
+builder.Services.AddSingleton<StoreIntegrationStore>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -265,6 +274,24 @@ app.MapGet("/api/admin/config/platform", async (PlatformSettingsStore store, Can
 
 app.MapPut("/api/admin/config/platform", async (PlatformSettings body, PlatformSettingsStore store, CancellationToken ct) =>
     Results.Ok(await store.SaveAsync(body, ct))).RequireAuthorization("Admin").WithTags("System");
+
+// Integracja płatności per-sklep (każdy sklep podpina swoje konto). Sekrety write-only,
+// szyfrowane; zwracamy TYLKO status. Dostęp: admin lub pracownik TEGO sklepu.
+app.MapGet("/api/payments/stores/{storeId:guid}/integration",
+    async (Guid storeId, ICurrentUser user, StoreIntegrationStore store, CancellationToken ct) =>
+{
+    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    if (!ok) return Results.Problem(detail: "Brak dostępu do integracji tego sklepu.", statusCode: 403, title: "forbidden");
+    return Results.Ok(await store.GetStatusAsync(storeId, ct));
+}).RequireAuthorization("StoreEmployee").WithTags("Payments");
+
+app.MapPut("/api/payments/stores/{storeId:guid}/integration",
+    async (Guid storeId, StoreIntegrationUpdate body, ICurrentUser user, StoreIntegrationStore store, CancellationToken ct) =>
+{
+    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    if (!ok) return Results.Problem(detail: "Brak dostępu do integracji tego sklepu.", statusCode: 403, title: "forbidden");
+    return Results.Ok(await store.SaveAsync(storeId, body, ct));
+}).RequireAuthorization("StoreEmployee").WithTags("Payments");
 
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
