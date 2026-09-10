@@ -83,12 +83,13 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
 5. **[P3] UI — brak trybu ciemnego.** ✅ NAPRAWIONE — `ZzTheme.light()/dark()` +
    `ZzPalette` (neutrale zależne od trybu, `context.zz`); przełącznik
    System/Jasny/Ciemny w Koncie (utrwalany). Zweryfikowane na żywo (dark).
-6. **[P2 · POTWIERDZONE NA ŻYWO] Dev — nie da się zapłacić.** Redirect płatności to
-   `http://localhost:4200/pay/mock?...` (origin panelu) — strona nie istnieje, więc
-   realny tester **nie ukończy zakupu** w trybie dev. Wyjście „Zapłacę później" (fix #1)
-   ratuje przed pułapką, ale płatność jest nieosiągalna. *Rekomendacja (osobny slice):*
-   dev‑owy endpoint „symuluj płatność (sukces/porażka)" wołający webhook mocka, albo
-   mini‑strona `/pay/mock`. Potwierdzone QA 2026‑09‑10 (checkout→payment=Pending, 21,90).
+6. **[P2 · NAPRAWIONE] Dev — nie dało się zapłacić.** Redirect szedł na nieistniejącą
+   `localhost:4200/pay/mock`. Naprawa: API hostuje dev‑ową stronę płatności
+   (`GET /api/payments/mock/pay`) + `POST /api/payments/mock/complete`, która buduje i
+   **podpisuje** webhook mocka i przechodzi tą samą zweryfikowaną ścieżką (płatność wciąż
+   webhook‑autorytatywna, bez fałszywego sukcesu); redirect → `Payments:Mock:PayPageUrl`.
+   Zweryfikowane na żywo: checkout→strona (27,90 zł)→sukces→payment=Authorized, order
+   Placed→**Confirmed**. Testy: webhook 3/3, moduł 4/4.
 8. **[P3 · NAPRAWIONE] UX — surowa data w terminie dostawy.** Slot pokazywał ISO
    `2026-09-10 · 14:00–16:00`; zmienione na `Dziś/Jutro/dd.MM, 14:00–16:00`
    (znalezione w QA na żywo 2026‑09‑10).
