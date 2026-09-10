@@ -233,6 +233,29 @@ app.MapGet("/health/ready", async (MessagingDbContext db, CancellationToken ct) 
         : Results.Json(new { status = "not-ready", database = "down" }, statusCode: StatusCodes.Status503ServiceUnavailable);
 }).WithTags("System");
 
+// Status konfiguracji (tylko admin) — SAME FLAGI, bez żadnych sekretów.
+app.MapGet("/api/admin/config/status", (IConfiguration cfg, IHostEnvironment env) =>
+{
+    bool set(string key) => !string.IsNullOrWhiteSpace(cfg[key]);
+    var jwt = cfg["Jwt:SigningKey"] ?? string.Empty;
+    return Results.Ok(new
+    {
+        environment = env.EnvironmentName,
+        payments = new
+        {
+            provider = cfg["Payments:Provider"],
+            publicUrl = cfg["Payments:PublicUrl"],
+            mockPayPage = set("Payments:Mock:PayPageUrl"),
+        },
+        googleSignIn = set("Google:ClientId"),
+        email = set("Email:Smtp:Host"),
+        rabbitMq = set("RabbitMq:Host"),
+        identityPublicUrl = cfg["Identity:PublicUrl"],
+        adminSeedEmail = cfg["Seed:AdminEmail"],
+        jwtUsingDevSecret = jwt.Contains("CHANGE_ME") || jwt.Contains("DEV_ONLY"),
+    });
+}).RequireAuthorization("Admin").WithTags("System");
+
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
 app.MapCatalogEndpoints();

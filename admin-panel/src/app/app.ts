@@ -9,10 +9,11 @@ import { StoresComponent } from './stores';
 import { TeamComponent } from './team';
 import { FinanceComponent } from './finance';
 import { DeliveriesComponent } from './deliveries';
+import { SettingsComponent } from './settings';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent],
+  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent, SettingsComponent],
   template: `
   @if (!api.isLoggedIn()) {
     <div class="auth">
@@ -81,6 +82,12 @@ import { DeliveriesComponent } from './deliveries';
           <span class="tip">Sklepy</span>
         </button>
         }
+        @if (api.isAdmin()) {
+        <button class="rail-btn" [class.active]="tab==='settings'" (click)="tab='settings'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.2.61.76 1.05 1.42 1.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="tip">Konfiguracja</span>
+        </button>
+        }
         <div class="spacer"></div>
         <button class="rail-btn" (click)="logout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -106,7 +113,7 @@ import { DeliveriesComponent } from './deliveries';
         </div>
 
         <div class="content">
-          @if (stores.length === 0 && tab !== 'stores') {
+          @if (stores.length === 0 && tab !== 'stores' && tab !== 'settings') {
             <div class="card pad"><p class="muted">Brak sklepów. Przejdź do zakładki <strong>Sklepy</strong>, aby utworzyć pierwszy.</p></div>
           } @else {
             @switch (tab) {
@@ -117,6 +124,7 @@ import { DeliveriesComponent } from './deliveries';
               @case ('team') { <app-team [storeId]="selectedStoreId" /> }
               @case ('finance') { <app-finance [storeId]="selectedStoreId" /> }
               @case ('stores') { <app-stores (changed)="loadStores()" /> }
+              @case ('settings') { <app-settings /> }
             }
           }
         </div>
@@ -136,7 +144,7 @@ export class App {
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
-  tab: 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'team' | 'finance' | 'stores' = 'dashboard';
+  tab: 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'team' | 'finance' | 'stores' | 'settings' = 'dashboard';
 
   get initials(): string {
     const e = this.api.userEmail();
