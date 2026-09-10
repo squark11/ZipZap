@@ -68,6 +68,13 @@
 - ⬜ `IPosConnector` (GOPOS): import **menu**, push zamówień, statusy, **fiskalizacja**.
 - ⬜ Akceptacja zamówienia przez merchanta (dźwięk/push), realny **FCM**.
 
+### Import/Eksport danych (narzędzia sprzedawcy) [P1]
+- 🔧 **Import asortymentu z pliku** (CSV/XLSX): ✅ **szablon** `templates/asortyment-import-szablon.csv` (`nazwa;kategoria;cena;jednostka;dostepny`); ⬜ endpoint `POST /catalog/stores/{id}/products/import` (walidacja wierszy + **podgląd** + **upsert**; kategorie dopasowane po nazwie, tworzone gdy brak) + UI w „Oferta" (upload + raport błędów).
+- ⬜ **Eksport asortymentu** (CSV/XLSX) — bieżąca oferta do edycji offline i ponownego importu.
+- ⬜ **Eksport zamówień** (CSV) do księgowości — per sklep + zakres dat.
+- ⬜ **Eksport rozliczeń/faktur** — CSV teraz, **faktura PDF** później (z zakładki Rozliczenia); eksport księgi prowizji.
+- ⬜ Wspólne: limit rozmiaru pliku, **UTF‑8 (BOM)**, separator `;` (Excel PL), przecinek dziesiętny, nagłówki PL.
+
 ### R7 — Dostawa wg dystansu (Faza H cz. 2) [P1]
 - ⬜ `IGeocoder` (mock + realny provider), współrzędne sklepu/klienta.
 - ⬜ Dystans (Haversine), cennik `base + perKm`, promień zasięgu, podgląd opłaty po adresie.
