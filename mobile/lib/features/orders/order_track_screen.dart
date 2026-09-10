@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/zz_icon.dart';
 import '../../models/order.dart';
 
 /// Kolejność statusów w osi czasu zamówienia.
@@ -28,6 +29,16 @@ const _statusLabels = {
   'ReadyForPickup': 'Gotowe do odbioru',
   'InDelivery': 'W dostawie',
   'Delivered': 'Dostarczone',
+};
+
+/// Ikona z zestawu marki dla każdego kroku osi statusów.
+const _statusIcons = {
+  'Placed': 'orders',
+  'Confirmed': 'check',
+  'Picking': 'cart',
+  'ReadyForPickup': 'package',
+  'InDelivery': 'delivery',
+  'Delivered': 'check_circle',
 };
 
 class OrderTrackScreen extends ConsumerStatefulWidget {
@@ -123,7 +134,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
               text: 'To zamówienie zostało anulowane.',
             )
           else
-            _Timeline(currentStatus: o.status),
+            OrderTimeline(currentStatus: o.status),
           const SizedBox(height: 24),
           Text('Produkty', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -169,61 +180,165 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
       );
 }
 
-class _Timeline extends StatelessWidget {
+/// Oś statusów zamówienia (ilustrowana ikonami kroków; aktywny „pulsuje”).
+class OrderTimeline extends StatelessWidget {
   final String currentStatus;
-  const _Timeline({required this.currentStatus});
+  const OrderTimeline({super.key, required this.currentStatus});
 
   @override
   Widget build(BuildContext context) {
+    // Delivered/Completed to stany końcowe — cała oś „zrobiona”, bez pulsu.
+    final terminal = currentStatus == 'Delivered' || currentStatus == 'Completed';
     var currentIndex = _statusFlow.indexOf(currentStatus);
     if (currentStatus == 'Completed') currentIndex = _statusFlow.length - 1;
     return Column(
       children: List.generate(_statusFlow.length, (i) {
-        final done = i <= currentIndex;
+        final step = _statusFlow[i];
+        final done = terminal ? i <= currentIndex : i < currentIndex;
+        final current = terminal ? false : i == currentIndex;
+        final reached = done || current;
         final isLast = i == _statusFlow.length - 1;
+
+        final fill = current
+            ? ZzColors.orange
+            : (done ? ZzColors.green : context.zz.surface);
+        final border = current
+            ? ZzColors.orange
+            : (done ? ZzColors.green : context.zz.border);
+        final iconColor = reached ? Colors.white : context.zz.textMuted;
+
         return IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Column(
                 children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: done ? ZzColors.green : context.zz.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: done ? ZzColors.green : context.zz.border, width: 2),
-                    ),
-                    child: done
-                        ? const Icon(Icons.check, size: 14, color: Colors.white)
-                        : null,
+                  _StatusNode(
+                    icon: _statusIcons[step]!,
+                    fill: fill,
+                    border: border,
+                    iconColor: iconColor,
+                    pulse: current,
                   ),
                   if (!isLast)
                     Expanded(
                       child: Container(
                         width: 2,
-                        color: i < currentIndex ? ZzColors.green : context.zz.border,
+                        color: done ? ZzColors.green : context.zz.border,
                       ),
                     ),
                 ],
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Padding(
-                padding: const EdgeInsets.only(bottom: 18, top: 1),
-                child: Text(
-                  _statusLabels[_statusFlow[i]]!,
-                  style: TextStyle(
-                    fontWeight: done ? FontWeight.w600 : FontWeight.w400,
-                    color: done ? ZzColors.text : context.zz.textMuted,
-                  ),
+                padding: const EdgeInsets.only(bottom: 22, top: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _statusLabels[step]!,
+                      style: TextStyle(
+                        fontWeight: reached ? FontWeight.w600 : FontWeight.w400,
+                        color: current
+                            ? ZzColors.orange600
+                            : (done ? context.zz.text : context.zz.textMuted),
+                      ),
+                    ),
+                    if (current)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Text('W trakcie',
+                            style: TextStyle(color: ZzColors.orange600, fontSize: 12)),
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
         );
       }),
+    );
+  }
+}
+
+/// Węzeł osi statusów: kółko z ikoną kroku; aktywny „pulsuje”.
+class _StatusNode extends StatefulWidget {
+  final String icon;
+  final Color fill;
+  final Color border;
+  final Color iconColor;
+  final bool pulse;
+  const _StatusNode({
+    required this.icon,
+    required this.fill,
+    required this.border,
+    required this.iconColor,
+    required this.pulse,
+  });
+
+  @override
+  State<_StatusNode> createState() => _StatusNodeState();
+}
+
+class _StatusNodeState extends State<_StatusNode>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _c;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pulse) {
+      _c = AnimationController(
+          vsync: this, duration: const Duration(milliseconds: 1500))
+        ..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 30.0;
+    final circle = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: widget.fill,
+        shape: BoxShape.circle,
+        border: Border.all(color: widget.border, width: 2),
+      ),
+      child: Center(child: ZzIcon(widget.icon, size: 16, color: widget.iconColor)),
+    );
+    if (_c == null) return SizedBox(width: size, height: size, child: circle);
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedBuilder(
+            animation: _c!,
+            builder: (_, _) {
+              final t = _c!.value;
+              return Container(
+                width: size + size * t,
+                height: size + size * t,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  // Pomarańcz marki (249,115,22) z zanikającą przezroczystością.
+                  color: Color.fromRGBO(249, 115, 22, (1 - t) * 0.30),
+                ),
+              );
+            },
+          ),
+          circle,
+        ],
+      ),
     );
   }
 }
