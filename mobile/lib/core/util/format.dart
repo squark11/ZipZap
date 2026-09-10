@@ -10,3 +10,8 @@ final DateFormat _dt = DateFormat('dd.MM HH:mm', 'pl_PL');
 
 /// Krótki znacznik czasu, np. `09.09 14:30`.
 String shortDateTime(DateTime utc) => _dt.format(utc.toLocal());
+
+final DateFormat _t = DateFormat('HH:mm', 'pl_PL');
+
+/// Sama godzina, np. `14:30`.
+String shortTime(DateTime utc) => _t.format(utc.toLocal());

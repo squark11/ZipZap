@@ -109,6 +109,11 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
 
   Widget _body(Order o) {
     final cancelled = o.status == 'Cancelled';
+    // Znaczniki czasu przejść: „Placed" = złożenie, reszta z historii statusów.
+    final timestamps = <String, DateTime>{'Placed': o.placedAtUtc};
+    for (final h in o.history) {
+      timestamps[h.toStatus] = h.changedAtUtc;
+    }
     return RefreshIndicator(
       color: ZzColors.orange,
       onRefresh: () => _load(),
@@ -134,7 +139,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
               text: 'To zamówienie zostało anulowane.',
             )
           else
-            OrderTimeline(currentStatus: o.status),
+            OrderTimeline(currentStatus: o.status, timestamps: timestamps),
           const SizedBox(height: 24),
           Text('Produkty', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -183,7 +188,12 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
 /// Oś statusów zamówienia (ilustrowana ikonami kroków; aktywny „pulsuje”).
 class OrderTimeline extends StatelessWidget {
   final String currentStatus;
-  const OrderTimeline({super.key, required this.currentStatus});
+
+  /// Znaczniki czasu przejść (status → kiedy). Pokazywane przy zrobionych krokach.
+  final Map<String, DateTime> timestamps;
+
+  const OrderTimeline(
+      {super.key, required this.currentStatus, this.timestamps = const {}});
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +216,7 @@ class OrderTimeline extends StatelessWidget {
             ? ZzColors.orange
             : (done ? ZzColors.green : context.zz.border);
         final iconColor = reached ? Colors.white : context.zz.textMuted;
+        final ts = timestamps[step];
 
         return IntrinsicHeight(
           child: Row(
@@ -244,6 +255,12 @@ class OrderTimeline extends StatelessWidget {
                             : (done ? context.zz.text : context.zz.textMuted),
                       ),
                     ),
+                    if (done && ts != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(shortTime(ts),
+                            style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
+                      ),
                     if (current)
                       const Padding(
                         padding: EdgeInsets.only(top: 2),
