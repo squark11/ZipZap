@@ -85,7 +85,7 @@
 - ⬜ Kopie zapasowe DB + odtwarzanie; TLS (reverse proxy); uptime monitor na `/health/ready`.
 
 ### R10 — Android + iOS (build/podpis/sklepy) [P0 przed pilotażem mobilnym]
-- 🔧 Ikona ✅ (app‑icon + ikony PWA), baseUrl per‑env ✅ (`API_BASE_URL`); ⬜ splash natywny, wersjonowanie, ekran uprawnień, deep‑linki.
+- 🔧 Ikona ✅ (app‑icon + ikony PWA), baseUrl per‑env ✅ (`API_BASE_URL`), **deep‑linki** ✅ (trasa docelowa zachowana przez splash) [defekt #9]; ⬜ splash natywny, wersjonowanie, ekran uprawnień.
 - ⬜ **Android**: appbundle + keystore/Play App Signing; Play Console (listing, zrzuty, polityka) → Internal → Production; FCM.
 - ⬜ **iOS**: konto Apple Dev, certyfikaty; `build ipa`; App Store Connect + **TestFlight** → review; APNs. (Wymaga macOS/CI np. Codemagic.)
 

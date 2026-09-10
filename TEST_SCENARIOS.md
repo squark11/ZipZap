@@ -93,11 +93,11 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
 8. **[P3 · NAPRAWIONE] UX — surowa data w terminie dostawy.** Slot pokazywał ISO
    `2026-09-10 · 14:00–16:00`; zmienione na `Dziś/Jutro/dd.MM, 14:00–16:00`
    (znalezione w QA na żywo 2026‑09‑10).
-9. **[P2 · do naprawy] Deep‑link do sklepu gubi się przy starcie.** Wejście na
-   `/#/stores/{id}` przy świeżym załadowaniu przekierowuje na `/#/stores` (splash→
-   bootstrap→/stores nadpisuje intencję). Blokuje udostępnialne linki do sklepu i
-   deep‑linki z powiadomień. *Fix (osobny slice, R10 deep‑links):* zachować docelową
-   lokalizację przez splash/bootstrap.
+9. **[P2 · NAPRAWIONE] Deep‑link do sklepu gubił się przy starcie.** `/#/stores/{id}`
+   przy świeżym załadowaniu szedł na `/#/stores`. Naprawa: docelowa trasa niesiona jako
+   `?from=` przez `/splash` i przywracana po bootstrapie (fallback `/stores`); deep‑linki
+   za loginem nadal łańcuchują przez `/login?redirect=`. Zweryfikowane na żywo:
+   `/#/stores/{id}` → szczegóły sklepu (widać nagłówek); root `/` → lista sklepów.
 7. **[do weryfikacji] Skalowanie w podglądzie web.** Podgląd czasem renderował w
    powiększeniu — prawdopodobnie artefakt panelu podglądu; **zweryfikować na realnym
    Chrome/Androidzie** (device matrix, R10).
