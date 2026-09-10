@@ -1,14 +1,46 @@
 import { Component, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Api, LedgerEntryDto, PaymentsSummaryDto } from './api';
+
+interface InvoiceDto {
+  period: string; plan: string; basis: string; unitFee?: number;
+  orderCount: number; total: number; currency: string;
+  lines: { orderId: string; createdAtUtc: string; amount: number }[];
+}
+interface BillingDto { plan: string; }
 
 @Component({
   selector: 'app-finance',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
   <div class="page-head">
     <h1>Rozliczenia</h1>
     <div class="controls"><button class="btn ghost sm" (click)="load()">Odśwież</button></div>
+  </div>
+
+  <div class="card pad" style="margin-bottom:16px">
+    <div class="inv-head">
+      <div>
+        <div class="k">Faktura miesięczna ZipZap → sklep</div>
+        <div class="muted" style="font-size:13px">
+          Plan
+          <select [(ngModel)]="plan" (ngModelChange)="savePlan()" style="margin:0 6px">
+            <option value="A">A — dostawa ZipZap ({{ invoice?.unitFee ?? 25 | number:'1.2-2' }} zł/dostawę)</option>
+            <option value="B">B — kurier sklepu (prowizja)</option>
+          </select>
+          · miesiąc
+          <input type="month" [(ngModel)]="month" (ngModelChange)="loadInvoice()" style="margin-left:6px" />
+        </div>
+      </div>
+      <div class="inv-total">
+        <div class="muted" style="font-size:12px">Do zafakturowania</div>
+        <div class="v accent">{{ (invoice?.total ?? 0) | number:'1.2-2' }} zł</div>
+        <div class="muted" style="font-size:12px">
+          {{ invoice?.orderCount ?? 0 }} {{ invoice?.basis === 'delivery' ? 'dostaw' : 'zamówień z prowizją' }}
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="tiles">
@@ -54,6 +86,11 @@ import { Api, LedgerEntryDto, PaymentsSummaryDto } from './api';
     }
   </div>
   `,
+  styles: [`
+    .inv-head { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+    .inv-total { text-align:right; }
+    select, input[type=month] { border:1px solid #E5E7EB; border-radius:6px; padding:4px 8px; font-size:13px; background:#fff; }
+  `],
 })
 export class FinanceComponent {
   private api = inject(Api);
@@ -62,6 +99,10 @@ export class FinanceComponent {
   summary: PaymentsSummaryDto | null = null;
   ledger: LedgerEntryDto[] = [];
   loading = false;
+
+  invoice: InvoiceDto | null = null;
+  plan = 'A';
+  month = new Date().toISOString().slice(0, 7);
 
   constructor() {
     effect(() => { const id = this.storeId(); if (id) this.load(); });
@@ -74,6 +115,26 @@ export class FinanceComponent {
     this.api.get<LedgerEntryDto[]>(`/payments/stores/${id}/ledger`).subscribe({
       next: l => { this.ledger = l; this.loading = false; },
       error: () => { this.ledger = []; this.loading = false; },
+    });
+    this.api.get<BillingDto>(`/payments/stores/${id}/billing`).subscribe({ next: b => this.plan = b.plan || 'A', error: () => {} });
+    this.loadInvoice();
+  }
+
+  loadInvoice() {
+    const id = this.storeId();
+    if (!id) return;
+    this.api.get<InvoiceDto>(`/payments/stores/${id}/invoice?month=${this.month}`).subscribe({
+      next: inv => this.invoice = inv,
+      error: () => this.invoice = null,
+    });
+  }
+
+  savePlan() {
+    const id = this.storeId();
+    if (!id) return;
+    this.api.put<BillingDto>(`/payments/stores/${id}/billing`, { plan: this.plan }).subscribe({
+      next: () => this.loadInvoice(),
+      error: () => {},
     });
   }
 }
