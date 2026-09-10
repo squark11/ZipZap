@@ -13,6 +13,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('every brand icon loads without throwing', (tester) async {
+    const names = <String>[
+      // batch 1
+      'store', 'cart', 'orders', 'account', 'search', 'bell', 'clock',
+      'location', 'package', 'heart',
+      // batch 2
+      'delivery', 'filter', 'star', 'star_fill', 'plus', 'minus', 'trash',
+      'chevron_right', 'chevron_left', 'card', 'info', 'home', 'check',
+      'check_circle', 'x_circle', 'close',
+      // batch 3
+      'eye', 'eye_off', 'lock', 'mail', 'phone', 'tag', 'edit', 'cutlery',
+    ];
+    for (final n in names) {
+      await tester.pumpWidget(_host(ZzIcon(n)));
+      expect(find.byType(SvgPicture), findsOneWidget, reason: n);
+      expect(tester.takeException(), isNull, reason: n);
+    }
+  });
+
   testWidgets('StatusPill renders label + icon for every known status', (tester) async {
     const statuses = <String, String>{
       'Placed': 'Złożone',

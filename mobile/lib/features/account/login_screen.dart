@@ -6,6 +6,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/config/app_config.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/widgets/zz_icon.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   final String? redirect;
@@ -21,6 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _fullName = TextEditingController();
   bool _register = false;
   bool _busy = false;
+  bool _obscure = true;
 
   @override
   void dispose() {
@@ -89,8 +91,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SizedBox(height: 14),
           TextField(
             controller: _password,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: 'Hasło'),
+            obscureText: _obscure,
+            decoration: InputDecoration(
+              labelText: 'Hasło',
+              suffixIcon: IconButton(
+                tooltip: _obscure ? 'Pokaż hasło' : 'Ukryj hasło',
+                icon: ZzIcon(_obscure ? 'eye' : 'eye_off',
+                    size: 22, color: ZzColors.textMuted),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 24),
