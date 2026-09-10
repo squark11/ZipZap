@@ -170,7 +170,9 @@ await using (var scope = app.Services.CreateAsyncScope())
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-// Correlation id: z nagłówka X-Correlation-Id lub generowany; odsyłany w odpowiedzi.
+// Correlation id + logowanie żądań: id z nagłówka X-Correlation-Id lub generowany;
+// wrzucany do zakresu logów (każda linia w żądaniu ma cid) i odsyłany w odpowiedzi.
+var httpLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("HttpRequest");
 app.Use(async (context, next) =>
 {
     var correlationId = context.Request.Headers.TryGetValue("X-Correlation-Id", out var incoming)
@@ -178,7 +180,24 @@ app.Use(async (context, next) =>
         ? incoming.ToString()
         : Activity.Current?.Id ?? context.TraceIdentifier;
     context.Response.Headers["X-Correlation-Id"] = correlationId;
-    await next();
+
+    using (httpLogger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = correlationId }))
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            await next();
+        }
+        finally
+        {
+            sw.Stop();
+            var path = context.Request.Path.Value ?? string.Empty;
+            // Health-checki są częste — logujemy je ciszej (Debug).
+            var level = path.StartsWith("/health") ? LogLevel.Debug : LogLevel.Information;
+            httpLogger.Log(level, "{Method} {Path} -> {StatusCode} ({ElapsedMs} ms) [cid={CorrelationId}]",
+                context.Request.Method, path, context.Response.StatusCode, sw.ElapsedMilliseconds, correlationId);
+        }
+    }
 });
 
 if (app.Environment.IsDevelopment())
