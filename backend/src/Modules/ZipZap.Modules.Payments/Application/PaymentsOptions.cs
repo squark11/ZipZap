@@ -16,5 +16,12 @@ public sealed class PaymentsOptions
     {
         /// <summary>Sekret do podpisu HMAC webhooków mocka (dev/test).</summary>
         public string Secret { get; set; } = "mock-dev-secret";
+
+        /// <summary>
+        /// Bazowy URL dev-owej strony „płatności" hostowanej przez API
+        /// (np. http://localhost:5080/api/payments/mock/pay). Gdy puste — redirect
+        /// wskazuje `{PublicUrl}/pay/mock` (zachowanie zgodne wstecz).
+        /// </summary>
+        public string PayPageUrl { get; set; } = "";
     }
 }

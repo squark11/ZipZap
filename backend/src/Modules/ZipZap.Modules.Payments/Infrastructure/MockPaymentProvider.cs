@@ -22,7 +22,10 @@ public sealed class MockPaymentProvider : IPaymentProvider
     public Task<PaymentSession> CreateSessionAsync(PaymentSessionRequest request, CancellationToken ct = default)
     {
         var sessionId = Guid.NewGuid().ToString("N");
-        var redirect = $"{_options.PublicUrl.TrimEnd('/')}/pay/mock?session={sessionId}&payment={request.PaymentId}";
+        var payBase = string.IsNullOrWhiteSpace(_options.Mock.PayPageUrl)
+            ? $"{_options.PublicUrl.TrimEnd('/')}/pay/mock"
+            : _options.Mock.PayPageUrl.TrimEnd('/');
+        var redirect = $"{payBase}?session={sessionId}&payment={request.PaymentId}";
         return Task.FromResult(new PaymentSession(sessionId, redirect));
     }
 
