@@ -21,6 +21,7 @@ using ZipZap.Modules.Ordering;
 using ZipZap.Modules.Ordering.Api;
 using ZipZap.Modules.Payments;
 using ZipZap.Modules.Payments.Api;
+using ZipZap.Modules.Payments.Infrastructure;
 using ZipZap.Modules.Delivery;
 using ZipZap.Modules.Delivery.Api;
 using ZipZap.Modules.Notifications;
@@ -113,6 +114,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddSingleton<StoreIntegrationStore>();
 // Nadpisz domyślny (null) resolver realnym adapterem nad magazynem integracji sklepów.
 builder.Services.AddSingleton<ZipZap.Modules.Payments.Application.IStorePaymentGateway, StorePaymentGatewayAdapter>();
+builder.Services.AddSingleton<StoreBillingStore>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -293,6 +295,72 @@ app.MapPut("/api/payments/stores/{storeId:guid}/integration",
     var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
     if (!ok) return Results.Problem(detail: "Brak dostępu do integracji tego sklepu.", statusCode: 403, title: "forbidden");
     return Results.Ok(await store.SaveAsync(storeId, body, ct));
+}).RequireAuthorization("StoreEmployee").WithTags("Payments");
+
+// Plan rozliczeniowy sklepu (A = dostawa ZipZap / B = kurier sklepu) — odczyt i zapis.
+app.MapGet("/api/payments/stores/{storeId:guid}/billing",
+    async (Guid storeId, ICurrentUser user, StoreBillingStore billing, CancellationToken ct) =>
+{
+    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    if (!ok) return Results.Problem(detail: "Brak dostępu do rozliczeń tego sklepu.", statusCode: 403, title: "forbidden");
+    return Results.Ok(await billing.GetAsync(storeId, ct));
+}).RequireAuthorization("StoreEmployee").WithTags("Payments");
+
+app.MapPut("/api/payments/stores/{storeId:guid}/billing",
+    async (Guid storeId, StoreBilling body, ICurrentUser user, StoreBillingStore billing, CancellationToken ct) =>
+{
+    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    if (!ok) return Results.Problem(detail: "Brak dostępu do rozliczeń tego sklepu.", statusCode: 403, title: "forbidden");
+    return Results.Ok(await billing.SaveAsync(storeId, body, ct));
+}).RequireAuthorization("StoreEmployee").WithTags("Payments");
+
+// Faktura miesięczna ZipZap → sklep. Plan A: liczba dostaw × stała opłata; Plan B: suma prowizji.
+app.MapGet("/api/payments/stores/{storeId:guid}/invoice",
+    async (Guid storeId, string? month, ICurrentUser user, PaymentsDbContext db,
+           StoreBillingStore billing, PlatformSettingsStore platform, CancellationToken ct) =>
+{
+    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    if (!ok) return Results.Problem(detail: "Brak dostępu do rozliczeń tego sklepu.", statusCode: 403, title: "forbidden");
+
+    var now = DateTime.UtcNow;
+    DateTime start;
+    if (!string.IsNullOrWhiteSpace(month) && DateTime.TryParse($"{month}-01", out var m))
+        start = new DateTime(m.Year, m.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+    else
+        start = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+    var end = start.AddMonths(1);
+
+    var entries = await db.CommissionLedger.AsNoTracking()
+        .Where(l => l.StoreId == storeId && l.CreatedAtUtc >= start && l.CreatedAtUtc < end)
+        .OrderBy(l => l.CreatedAtUtc)
+        .Select(l => new { l.OrderId, l.Amount, l.CreatedAtUtc })
+        .ToListAsync(ct);
+
+    var plan = (await billing.GetAsync(storeId, ct)).Plan;
+    var settings = await platform.GetAsync(ct);
+    var deliveryFee = settings.ZipZapDeliveryFee;
+    var isPlanA = plan == "A";
+
+    var lines = entries.Select(e => new
+    {
+        e.OrderId,
+        e.CreatedAtUtc,
+        amount = isPlanA ? deliveryFee : e.Amount,
+    }).ToList();
+    var total = isPlanA ? entries.Count * deliveryFee : entries.Sum(e => e.Amount);
+
+    return Results.Ok(new
+    {
+        storeId,
+        period = start.ToString("yyyy-MM"),
+        plan,
+        basis = isPlanA ? "delivery" : "commission",
+        unitFee = isPlanA ? deliveryFee : (decimal?)null,
+        orderCount = entries.Count,
+        total,
+        currency = settings.Currency,
+        lines,
+    });
 }).RequireAuthorization("StoreEmployee").WithTags("Payments");
 
 // --- Endpointy modułów ---

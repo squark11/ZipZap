@@ -15,6 +15,9 @@ public sealed record PlatformSettings
     /// <summary>Domyślna prowizja (0–1), np. 0.10 = 10%.</summary>
     public decimal DefaultCommissionRate { get; init; } = 0.10m;
 
+    /// <summary>Stała opłata ZipZap za dostawę realizowaną przez nas (Plan A), np. 25 zł.</summary>
+    public decimal ZipZapDeliveryFee { get; init; } = 25m;
+
     public string Currency { get; init; } = "PLN";
     public string? OperatorName { get; init; }
     public string? OperatorContact { get; init; }
@@ -73,6 +76,7 @@ public sealed class PlatformSettingsStore
             .OrderBy(w => w)
             .ToList(),
         DefaultCommissionRate = Math.Clamp(s.DefaultCommissionRate, 0m, 1m),
+        ZipZapDeliveryFee = Math.Max(0m, s.ZipZapDeliveryFee),
         Currency = string.IsNullOrWhiteSpace(s.Currency) ? "PLN" : s.Currency.Trim().ToUpperInvariant(),
         OperatorName = string.IsNullOrWhiteSpace(s.OperatorName) ? null : s.OperatorName!.Trim(),
         OperatorContact = string.IsNullOrWhiteSpace(s.OperatorContact) ? null : s.OperatorContact!.Trim(),
