@@ -1,14 +1,19 @@
 {
-    "name": "zipzap",
-    "short_name": "zipzap",
+    "name": "ZipZap",
+    "short_name": "ZipZap",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "ZipZap — aplikacja klienta (marketplace spozywczy)",
+    "background_color": "#FFFFFF",
+    "theme_color": "#F97316",
+    "description": "ZipZap — zamów zakupy i jedzenie z lokalnych sklepów i restauracji.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
+        {
+            "src": "icons/zipzap.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",

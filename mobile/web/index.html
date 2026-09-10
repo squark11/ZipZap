@@ -18,18 +18,20 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="ZipZap — aplikacja klienta (marketplace spozywczy)">
+  <meta name="description" content="ZipZap — zamów zakupy i jedzenie z lokalnych sklepów i restauracji.">
+  <meta name="theme-color" content="#F97316">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="zipzap">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ZipZap">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>zipzap</title>
+  <title>ZipZap</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -42,5 +44,16 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Rejestracja własnego service workera (instalowalność PWA + offline powłoki). -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (e) {
+          console.warn('SW registration failed', e);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

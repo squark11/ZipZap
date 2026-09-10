@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Konfiguracja aplikacji zależna od środowiska/targetu.
 class AppConfig {
   /// Bazowy URL API.
-  /// - web: `localhost:5080`
-  /// - Android emulator: `10.0.2.2` (mapowanie na host loopback)
+  /// Deploy: podaj przy buildzie `--dart-define=API_BASE_URL=https://api.twojadomena/api`.
+  /// Domyślnie (dev): web → `localhost:5080`, emulator Androida → `10.0.2.2`.
   static String get apiBaseUrl {
+    const fromEnv = String.fromEnvironment('API_BASE_URL');
+    if (fromEnv.isNotEmpty) return fromEnv;
     if (kIsWeb) return 'http://localhost:5080/api';
     return 'http://10.0.2.2:5080/api';
   }
