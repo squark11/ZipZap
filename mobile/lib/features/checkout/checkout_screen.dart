@@ -83,6 +83,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
+  /// Pierwszy brakujący warunek złożenia zamówienia (null = można składać).
+  String? get _missing {
+    if (_address.text.trim().isEmpty) return 'Podaj adres dostawy.';
+    if (_phone.text.trim().isEmpty) return 'Podaj telefon kontaktowy.';
+    if (_zoneId == null) return 'Wybierz strefę dostawy.';
+    if (_slotId == null) return 'Wybierz termin dostawy.';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
@@ -121,6 +130,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               const _Label('Adres dostawy'),
               TextField(
                 controller: _address,
+                onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(hintText: 'ul. Przykładowa 12/3'),
               ),
               const SizedBox(height: 16),
@@ -128,6 +138,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               TextField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(hintText: '600 100 200'),
               ),
               const SizedBox(height: 16),
@@ -158,7 +169,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               _SummaryRow('Razem', zl(cart.subtotal + fee), bold: true),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _submitting ? null : () => _submit(fee),
+                onPressed: (_submitting || _missing != null) ? null : () => _submit(fee),
                 child: _submitting
                     ? const SizedBox(
                         height: 22,
@@ -168,9 +179,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.',
+                _missing == null || _submitting
+                    ? 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.'
+                    : _missing!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: context.zz.textMuted, fontSize: 12),
+                style: TextStyle(
+                    color: _missing == null || _submitting
+                        ? context.zz.textMuted
+                        : ZzColors.orange600,
+                    fontSize: 12),
               ),
             ],
           );

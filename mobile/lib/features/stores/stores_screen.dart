@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/notifications_bell.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/store.dart';
@@ -29,7 +30,7 @@ class StoresScreen extends ConsumerWidget {
         ],
       ),
       body: stores.when(
-        loading: () => const LoadingView(label: 'Ładowanie sklepów…'),
+        loading: () => const StoreListSkeleton(),
         error: (e, _) => ErrorView(
           message: e.toString(),
           onRetry: () => ref.invalidate(storesProvider),
