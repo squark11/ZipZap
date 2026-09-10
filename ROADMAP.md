@@ -81,7 +81,7 @@
 - ✅ **PWA instalowalna**: manifest ZipZap (#F97316, ikony 192/512 + maskable + SVG), własny service worker (`sw.js`, offline powłoki), `flutter build web` OK; API konfigurowalne `--dart-define=API_BASE_URL`.
 - ⬜ Środowiska dev→staging→prod; sekrety z env (guard jest).
 - 🔧 Deploy **darmowo/Docker**: ✅ `web.Dockerfile` (nginx) + serwis compose `web` + `DEPLOY.md` (warstwa nginx zweryfikowana lokalnie); ⬜ realny hosting: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase), web (Cloudflare Pages/Netlify) pod publicznym HTTPS.
-- ⬜ **CI/CD** (GitHub Actions): build + testy (Postgres jako service) + deploy na main.
+- 🔧 **CI/CD** (GitHub Actions): ✅ build + testy (`.github/workflows/ci.yml` — backend z Postgres service 30/30, mobile analyze+test 17/17); ⬜ krok deploy na main.
 - ⬜ Kopie zapasowe DB + odtwarzanie; TLS (reverse proxy); uptime monitor na `/health/ready`.
 
 ### R10 — Android + iOS (build/podpis/sklepy) [P0 przed pilotażem mobilnym]
