@@ -37,7 +37,7 @@
 - ✅ **Fix pl‑PL w panelu** (przecinek dziesiętny, daty dd.MM) [defekt #3].
 
 ### R2 — Odświeżenie wizualne aplikacji klienta [P0]
-- 🔧 Ilustracje SVG: ✅ puste/błędne stany + sukces; ⬜ oś statusów.
+- ✅ Ilustracje SVG: puste/błędne stany + sukces + **oś statusów** (ikony kroków, aktywny pulsuje).
 - ⬜ Przebudowa ekranów (sklepy, produkt, koszyk, checkout, śledzenie) na komponenty DS.
 - 🔧 Skeletony (✅ lista sklepów + **oferta sklepu** + **Moje zamówienia**) + mikro‑interakcje (✅ animowane wejście paska koszyka); ⬜ obsługa offline, dopracowane treści, więcej mikro‑animacji.
 - ⬜ Fotografie: obróbka + WebP/AVIF + lazy‑load (sprawdzić licencje).
