@@ -28,7 +28,7 @@
 ## Część II — 🔧 Plan rozwoju (R1–R11)
 
 ### R1 — Design system + fundament wizualny [P0]
-- ⬜ Tokeny (kolory/typografia/spacing/radius/cień/motion), **tryb ciemny** [defekt #5].
+- ✅ **Tryb ciemny** [defekt #5]: `ZzPalette` (neutrale light/dark) + `context.zz`, motyw `light()/dark()`, przełącznik **System/Jasny/Ciemny** w Koncie (utrwalany); ⬜ pełne tokeny cień/motion.
 - 🔧 Logo: ✅ znak główny + warianty (poziom `ZzLogo` / mono / app‑icon `512²`).
 - ✅ **Ikony systemowe** (**34**, batch 1–3: nawigacja/akcje/statusy/formularze) + `ZzIcon` (tint z `IconTheme`); **wpięte** w dolną nawigację, `StatusPill` (ikony statusów), koszyk (stepper −/+/kosz), sklepy, konto, login (pokaż/ukryj hasło). ⬜ ikony **kategorii** (grocery/piekarnia/apteka…) dopięte przy UI kategorii w R3.
 - ⬜ Katalog komponentów (Widgetbook Flutter / strona demo Angular).

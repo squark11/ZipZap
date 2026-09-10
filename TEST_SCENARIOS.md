@@ -59,7 +59,7 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
 
 ## D. Przekrojowe / niefunkcjonalne
 1. **Dostępność:** kontrast, rozmiary dotyku, etykiety, focus. ⬜
-2. **Dark mode:** aplikacja renderuje poprawnie w trybie ciemnym urządzenia. ⬜
+2. **Dark mode:** aplikacja renderuje poprawnie w trybie ciemnym urządzenia. ✅
 3. **Responsywność:** web desktop vs mobile; brak poziomego scrolla. ⚠️ (obserwacja skalowania w podglądzie)
 4. **Formatowanie:** kwoty `pl_PL`, daty, znaczniki czasu strefy. ⚠️ (sprawdzić dd.MM vs strefy)
 5. **Sieć:** wolne API / offline → skeletony/bannery, brak zawieszeń. ⬜
@@ -80,8 +80,9 @@ Legenda wyniku: ✅ ok · 🐞 bug · ⚠️ UX/uwaga · ⬜ nietestowane.
 4. **[P3] UX — checkout: CTA aktywne bez wyboru strefy/terminu.** Walidacja dopiero
    po kliknięciu (snackbar). *Sugestia:* wyłączyć przycisk, dopóki strefa+termin
    niewybrane (jak przy min‑order).
-5. **[P3] UI — brak trybu ciemnego.** Aplikacja ma tylko `ZzTheme.light()`; na
-   urządzeniu w dark mode zostaje jasna (bez crasha). *Backlog:* dark theme (R1).
+5. **[P3] UI — brak trybu ciemnego.** ✅ NAPRAWIONE — `ZzTheme.light()/dark()` +
+   `ZzPalette` (neutrale zależne od trybu, `context.zz`); przełącznik
+   System/Jasny/Ciemny w Koncie (utrwalany). Zweryfikowane na żywo (dark).
 6. **[info] Dev — mock płatności to ślepa uliczka.** Redirect na
    `localhost:4200/pay/mock` (origin panelu) nie ma strony płatności. **Oczekiwane**
    (realny dostawca ją ma); po naprawie #1 użytkownik może wyjść.
