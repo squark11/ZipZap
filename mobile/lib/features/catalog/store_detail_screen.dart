@@ -100,10 +100,10 @@ class _ProductRow extends ConsumerWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: ZzColors.surface,
+                color: context.zz.surface,
                 borderRadius: BorderRadius.circular(ZzRadius.md),
               ),
-              child: const Icon(Icons.local_grocery_store_outlined, color: ZzColors.textMuted),
+              child: Icon(Icons.local_grocery_store_outlined, color: context.zz.textMuted),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -114,7 +114,7 @@ class _ProductRow extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                   const SizedBox(height: 2),
                   Text('${zl(product.price)} / ${product.unit}',
-                      style: const TextStyle(color: ZzColors.textMuted, fontSize: 13)),
+                      style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
                   if (!available)
                     const Text('Niedostępny',
                         style: TextStyle(color: ZzColors.danger, fontSize: 12)),
@@ -153,7 +153,7 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: ZzColors.border),
+        border: Border.all(color: context.zz.border),
         borderRadius: BorderRadius.circular(ZzRadius.md),
       ),
       child: Row(

@@ -16,7 +16,7 @@ class LoadingView extends StatelessWidget {
             const CircularProgressIndicator(color: ZzColors.orange),
             if (label != null) ...[
               const SizedBox(height: 12),
-              Text(label!, style: const TextStyle(color: ZzColors.textMuted)),
+              Text(label!, style: TextStyle(color: context.zz.textMuted)),
             ],
           ],
         ),
@@ -39,7 +39,7 @@ class ErrorView extends StatelessWidget {
               const SizedBox(height: 12),
               Text(message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: ZzColors.text, fontSize: 16)),
+                  style: TextStyle(color: context.zz.text, fontSize: 16)),
               if (onRetry != null) ...[
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
@@ -80,7 +80,7 @@ class EmptyView extends StatelessWidget {
               if (svgAsset != null)
                 SvgPicture.asset(svgAsset!, height: 132)
               else
-                Icon(icon, size: 48, color: ZzColors.textMuted),
+                Icon(icon, size: 48, color: context.zz.textMuted),
               const SizedBox(height: 12),
               Text(title,
                   textAlign: TextAlign.center,
@@ -89,7 +89,7 @@ class EmptyView extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(subtitle!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: ZzColors.textMuted)),
+                    style: TextStyle(color: context.zz.textMuted)),
               ],
             ],
           ),

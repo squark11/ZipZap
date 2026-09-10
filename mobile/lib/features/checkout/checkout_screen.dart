@@ -167,10 +167,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     : const Text('Złóż zamówienie i przejdź do płatności'),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: ZzColors.textMuted, fontSize: 12),
+                style: TextStyle(color: context.zz.textMuted, fontSize: 12),
               ),
             ],
           );
@@ -225,8 +225,8 @@ class _SlotPicker extends ConsumerWidget {
       error: (e, _) => Text(e.toString(), style: const TextStyle(color: ZzColors.danger)),
       data: (list) {
         if (list.isEmpty) {
-          return const Text('Brak dostępnych terminów w tej strefie.',
-              style: TextStyle(color: ZzColors.textMuted));
+          return Text('Brak dostępnych terminów w tej strefie.',
+              style: TextStyle(color: context.zz.textMuted));
         }
         return DropdownButtonFormField<String>(
           initialValue: value,
@@ -268,7 +268,7 @@ class _SummaryRow extends StatelessWidget {
           children: [
             Text(label,
                 style: TextStyle(
-                    color: bold ? ZzColors.text : ZzColors.textMuted,
+                    color: bold ? context.zz.text : context.zz.textMuted,
                     fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
                     fontSize: bold ? 17 : 14)),
             Text(value,

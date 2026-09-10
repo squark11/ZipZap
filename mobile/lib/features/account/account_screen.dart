@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../core/theme/theme_mode_controller.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/widgets/zz_icon.dart';
 
@@ -12,6 +13,7 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider).user;
+    final mode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Konto')),
@@ -23,10 +25,10 @@ class AccountScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 26,
-                    backgroundColor: ZzColors.orange50,
-                    child: ZzIcon('account', size: 26, color: ZzColors.orange),
+                    backgroundColor: context.zz.orangeTint,
+                    child: const ZzIcon('account', size: 26, color: ZzColors.orange),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -36,7 +38,7 @@ class AccountScreen extends ConsumerWidget {
                         Text(user?.fullName ?? 'Klient',
                             style: Theme.of(context).textTheme.titleMedium),
                         Text(user?.email ?? '',
-                            style: const TextStyle(color: ZzColors.textMuted)),
+                            style: TextStyle(color: context.zz.textMuted)),
                       ],
                     ),
                   ),
@@ -49,19 +51,47 @@ class AccountScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const ZzIcon('orders', size: 22, color: ZzColors.graphite),
+                  leading: ZzIcon('orders', size: 22, color: context.zz.heading),
                   title: const Text('Moje zamówienia'),
-                  trailing: const ZzIcon('chevron_right', size: 20, color: ZzColors.textMuted),
+                  trailing: ZzIcon('chevron_right', size: 20, color: context.zz.textMuted),
                   onTap: () => context.push('/orders'),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const ZzIcon('bell', size: 22, color: ZzColors.graphite),
+                  leading: ZzIcon('bell', size: 22, color: context.zz.heading),
                   title: const Text('Powiadomienia'),
-                  trailing: const ZzIcon('chevron_right', size: 20, color: ZzColors.textMuted),
+                  trailing: ZzIcon('chevron_right', size: 20, color: context.zz.textMuted),
                   onTap: () => context.push('/notifications'),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Wygląd',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: ThemeMode.system, label: Text('System')),
+                        ButtonSegment(value: ThemeMode.light, label: Text('Jasny')),
+                        ButtonSegment(value: ThemeMode.dark, label: Text('Ciemny')),
+                      ],
+                      selected: {mode},
+                      onSelectionChanged: (s) =>
+                          ref.read(themeModeProvider.notifier).setMode(s.first),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),

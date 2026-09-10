@@ -114,7 +114,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           ),
           const SizedBox(height: 4),
           Text('Złożono ${shortDateTime(o.placedAtUtc)}',
-              style: const TextStyle(color: ZzColors.textMuted, fontSize: 13)),
+              style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
           const SizedBox(height: 20),
           if (cancelled)
             const _Banner(
@@ -146,7 +146,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           const SizedBox(height: 6),
           Text(o.deliveryAddress),
           Text('tel. ${o.contactPhone}',
-              style: const TextStyle(color: ZzColors.textMuted)),
+              style: TextStyle(color: context.zz.textMuted)),
         ],
       ),
     );
@@ -159,7 +159,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           children: [
             Text(label,
                 style: TextStyle(
-                    color: bold ? ZzColors.text : ZzColors.textMuted,
+                    color: bold ? context.zz.text : context.zz.textMuted,
                     fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
                     fontSize: bold ? 17 : 14)),
             Text(value,
@@ -191,10 +191,10 @@ class _Timeline extends StatelessWidget {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: done ? ZzColors.green : ZzColors.surface,
+                      color: done ? ZzColors.green : context.zz.surface,
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: done ? ZzColors.green : ZzColors.border, width: 2),
+                          color: done ? ZzColors.green : context.zz.border, width: 2),
                     ),
                     child: done
                         ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -204,7 +204,7 @@ class _Timeline extends StatelessWidget {
                     Expanded(
                       child: Container(
                         width: 2,
-                        color: i < currentIndex ? ZzColors.green : ZzColors.border,
+                        color: i < currentIndex ? ZzColors.green : context.zz.border,
                       ),
                     ),
                 ],
@@ -216,7 +216,7 @@ class _Timeline extends StatelessWidget {
                   _statusLabels[_statusFlow[i]]!,
                   style: TextStyle(
                     fontWeight: done ? FontWeight.w600 : FontWeight.w400,
-                    color: done ? ZzColors.text : ZzColors.textMuted,
+                    color: done ? ZzColors.text : context.zz.textMuted,
                   ),
                 ),
               ),

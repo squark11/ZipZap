@@ -43,13 +43,13 @@ class NotificationsScreen extends ConsumerWidget {
                   child: ListTile(
                     leading: Icon(
                       n.isRead ? Icons.notifications_none : Icons.notifications_active,
-                      color: n.isRead ? ZzColors.textMuted : ZzColors.orange,
+                      color: n.isRead ? context.zz.textMuted : ZzColors.orange,
                     ),
                     title: Text(n.title,
                         style: TextStyle(
                             fontWeight: n.isRead ? FontWeight.w500 : FontWeight.w700)),
                     subtitle: Text(shortDateTime(n.createdAtUtc),
-                        style: const TextStyle(color: ZzColors.textMuted, fontSize: 12)),
+                        style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
                     trailing: n.isRead
                         ? null
                         : Container(

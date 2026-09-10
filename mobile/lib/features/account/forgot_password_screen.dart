@@ -55,16 +55,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             const SizedBox(height: 12),
             Text('Sprawdź skrzynkę', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Jeśli konto o tym adresie istnieje, wysłaliśmy link do zresetowania hasła.',
-              style: TextStyle(color: ZzColors.textMuted),
+              style: TextStyle(color: context.zz.textMuted),
             ),
           ] else ...[
             const SizedBox(height: 8),
             Text('Zresetuj hasło', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 4),
-            const Text('Podaj e-mail konta — wyślemy link do zmiany hasła.',
-                style: TextStyle(color: ZzColors.textMuted)),
+            Text('Podaj e-mail konta — wyślemy link do zmiany hasła.',
+                style: TextStyle(color: context.zz.textMuted)),
             const SizedBox(height: 24),
             TextField(
               controller: _email,

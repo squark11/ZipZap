@@ -78,7 +78,7 @@ class _StoreCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: ZzColors.orange50,
+                  color: context.zz.orangeTint,
                   borderRadius: BorderRadius.circular(ZzRadius.md),
                 ),
                 alignment: Alignment.center,
@@ -93,7 +93,7 @@ class _StoreCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 2),
                     Text('${store.city} · min. ${zl(store.minimumOrderValue)}',
-                        style: const TextStyle(color: ZzColors.textMuted, fontSize: 13)),
+                        style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
                   ],
                 ),
               ),

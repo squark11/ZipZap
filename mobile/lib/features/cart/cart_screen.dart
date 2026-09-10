@@ -54,8 +54,8 @@ class CartScreen extends ConsumerWidget {
                                     style: const TextStyle(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 2),
                                 Text('${zl(it.unitPrice)} / szt.',
-                                    style: const TextStyle(
-                                        color: ZzColors.textMuted, fontSize: 13)),
+                                    style: TextStyle(
+                                        color: context.zz.textMuted, fontSize: 13)),
                                 const SizedBox(height: 8),
                                 _QtyStepper(
                                   quantity: it.quantity,
@@ -77,10 +77,10 @@ class CartScreen extends ConsumerWidget {
                               InkWell(
                                 onTap: () => controller.remove(it.productId),
                                 borderRadius: BorderRadius.circular(ZzRadius.sm),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
                                   child: ZzIcon('trash',
-                                      size: 20, color: ZzColors.textMuted),
+                                      size: 20, color: context.zz.textMuted),
                                 ),
                               ),
                             ],
@@ -109,7 +109,7 @@ class _QtyStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: ZzColors.border),
+        border: Border.all(color: context.zz.border),
         borderRadius: BorderRadius.circular(ZzRadius.sm),
       ),
       child: Row(
@@ -134,7 +134,7 @@ class _QtyStepper extends StatelessWidget {
         borderRadius: BorderRadius.circular(ZzRadius.sm),
         child: Padding(
           padding: const EdgeInsets.all(7),
-          child: ZzIcon(icon, size: 18, color: ZzColors.graphite),
+          child: ZzIcon(icon, size: 18),
         ),
       );
 }
@@ -158,17 +158,17 @@ class _CartFooter extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Wartość produktów', style: TextStyle(color: ZzColors.textMuted)),
+              Text('Wartość produktów', style: TextStyle(color: context.zz.textMuted)),
               Text(zl(subtotal), style: const TextStyle(fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 4),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Opłata za dostawę', style: TextStyle(color: ZzColors.textMuted)),
+              Text('Opłata za dostawę', style: TextStyle(color: context.zz.textMuted)),
               Text('liczona przy wyborze strefy',
-                  style: TextStyle(color: ZzColors.textMuted, fontSize: 12)),
+                  style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
             ],
           ),
           if (belowMin) ...[
@@ -177,7 +177,7 @@ class _CartFooter extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: ZzColors.orange50,
+                color: context.zz.orangeTint,
                 borderRadius: BorderRadius.circular(ZzRadius.sm),
               ),
               child: Text(

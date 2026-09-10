@@ -27,7 +27,7 @@ class ZzLogo extends StatelessWidget {
         SizedBox(width: height * 0.22),
         Text('ZipZap',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: wordmarkColor ?? ZzColors.graphite,
+                  color: wordmarkColor ?? context.zz.heading,
                   fontSize: height * 0.87,
                 )),
       ],

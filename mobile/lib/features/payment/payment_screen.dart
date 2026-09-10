@@ -113,7 +113,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   ?.copyWith(color: ZzColors.orange)),
           const SizedBox(height: 6),
           Text('w tym dostawa ${zl(p.deliveryFee)}',
-              style: const TextStyle(color: ZzColors.textMuted)),
+              style: TextStyle(color: context.zz.textMuted)),
           const SizedBox(height: 28),
           ElevatedButton.icon(
             onPressed: p.redirectUrl == null ? null : _pay,
@@ -124,22 +124,22 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: ZzColors.surface,
+              color: context.zz.surface,
               borderRadius: BorderRadius.circular(ZzRadius.md),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: ZzColors.orange),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Czekam na potwierdzenie płatności od dostawcy. '
                     'Status zaktualizuje się tu automatycznie.',
-                    style: TextStyle(color: ZzColors.textMuted, fontSize: 13),
+                    style: TextStyle(color: context.zz.textMuted, fontSize: 13),
                   ),
                 ),
               ],
@@ -174,7 +174,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ? 'Sklep przygotuje Twoje zamówienie. Możesz śledzić jego status.'
                 : 'Płatność nie została zrealizowana. Spróbuj ponownie.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: ZzColors.textMuted),
+            style: TextStyle(color: context.zz.textMuted),
           ),
           const SizedBox(height: 28),
           if (success)

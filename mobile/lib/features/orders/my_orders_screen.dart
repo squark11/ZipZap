@@ -48,7 +48,7 @@ class MyOrdersScreen extends ConsumerWidget {
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text(
                         '${shortDateTime(o.placedAtUtc)} · ${zl(o.total)}',
-                        style: const TextStyle(color: ZzColors.textMuted)),
+                        style: TextStyle(color: context.zz.textMuted)),
                     trailing: StatusPill(o.status),
                     onTap: () => context.push('/orders/${o.id}'),
                   ),

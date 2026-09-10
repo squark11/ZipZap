@@ -71,8 +71,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Text(_register ? 'Załóż konto' : 'Zaloguj się',
               style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
-          const Text('Konto potrzebne jest przy składaniu zamówienia.',
-              style: TextStyle(color: ZzColors.textMuted)),
+          Text('Konto potrzebne jest przy składaniu zamówienia.',
+              style: TextStyle(color: context.zz.textMuted)),
           const SizedBox(height: 24),
           if (_register) ...[
             TextField(
@@ -97,7 +97,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               suffixIcon: IconButton(
                 tooltip: _obscure ? 'Pokaż hasło' : 'Ukryj hasło',
                 icon: ZzIcon(_obscure ? 'eye' : 'eye_off',
-                    size: 22, color: ZzColors.textMuted),
+                    size: 22, color: context.zz.textMuted),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
