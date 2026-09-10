@@ -78,13 +78,14 @@
 - ⬜ **Oceny** (zamówienie/sklep/dostawa).
 
 ### R9 — Deploy & Launch [P0 przed pilotażem]
+- ✅ **PWA instalowalna**: manifest ZipZap (#F97316, ikony 192/512 + maskable + SVG), własny service worker (`sw.js`, offline powłoki), `flutter build web` OK; API konfigurowalne `--dart-define=API_BASE_URL`.
 - ⬜ Środowiska dev→staging→prod; sekrety z env (guard jest).
-- ⬜ Deploy **darmowo/Docker**: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase/Railway), web (Cloudflare Pages/Netlify/Vercel).
+- ⬜ Deploy **darmowo/Docker**: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase/Railway), web (Cloudflare Pages/Netlify/Vercel) + hosting build/web pod HTTPS.
 - ⬜ **CI/CD** (GitHub Actions): build + testy (Postgres jako service) + deploy na main.
 - ⬜ Kopie zapasowe DB + odtwarzanie; TLS (reverse proxy); uptime monitor na `/health/ready`.
 
 ### R10 — Android + iOS (build/podpis/sklepy) [P0 przed pilotażem mobilnym]
-- ⬜ Ikona + splash (z logo/SVG), wersjonowanie, ekran uprawnień, deep‑linki, baseUrl per‑env.
+- 🔧 Ikona ✅ (app‑icon + ikony PWA), baseUrl per‑env ✅ (`API_BASE_URL`); ⬜ splash natywny, wersjonowanie, ekran uprawnień, deep‑linki.
 - ⬜ **Android**: appbundle + keystore/Play App Signing; Play Console (listing, zrzuty, polityka) → Internal → Production; FCM.
 - ⬜ **iOS**: konto Apple Dev, certyfikaty; `build ipa`; App Store Connect + **TestFlight** → review; APNs. (Wymaga macOS/CI np. Codemagic.)
 
