@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/zz_icon.dart';
 import '../../models/delivery.dart';
 import '../cart/cart_controller.dart';
 
@@ -127,14 +128,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const _Label('Adres dostawy'),
+              const _Label('Adres dostawy', icon: 'home'),
               TextField(
                 controller: _address,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(hintText: 'ul. Przykładowa 12/3'),
               ),
               const SizedBox(height: 16),
-              const _Label('Telefon kontaktowy'),
+              const _Label('Telefon kontaktowy', icon: 'phone'),
               TextField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
@@ -142,7 +143,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 decoration: const InputDecoration(hintText: '600 100 200'),
               ),
               const SizedBox(height: 16),
-              const _Label('Strefa dostawy'),
+              const _Label('Strefa dostawy', icon: 'location'),
               _ZoneDropdown(
                 zones: zoneList,
                 value: _zoneId,
@@ -153,7 +154,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               const SizedBox(height: 16),
               if (_zoneId != null) ...[
-                const _Label('Termin dostawy'),
+                const _Label('Termin dostawy', icon: 'clock'),
                 _SlotPicker(
                   storeId: c.storeId,
                   zoneId: _zoneId!,
@@ -245,30 +246,96 @@ class _SlotPicker extends ConsumerWidget {
           return Text('Brak dostępnych terminów w tej strefie.',
               style: TextStyle(color: context.zz.textMuted));
         }
-        return DropdownButtonFormField<String>(
-          initialValue: value,
-          isExpanded: true,
-          hint: const Text('Wybierz termin'),
-          items: list
-              .map((s) => DropdownMenuItem(
-                    value: s.id,
-                    child: Text('${s.label}  (wolne: ${s.remainingCapacity})'),
-                  ))
-              .toList(),
-          onChanged: onChanged,
+        return Column(
+          children: [
+            for (final s in list)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _SlotCard(
+                  slot: s,
+                  selected: s.id == value,
+                  onTap: () => onChanged(s.id),
+                ),
+              ),
+          ],
         );
       },
     );
   }
 }
 
+/// Karta terminu (fali) dostawy — pokazuje harmonogram wprost i pozwala wybrać.
+class _SlotCard extends StatelessWidget {
+  final TimeSlot slot;
+  final bool selected;
+  final VoidCallback onTap;
+  const _SlotCard({required this.slot, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final soldOut = slot.remainingCapacity <= 0;
+    return InkWell(
+      onTap: soldOut ? null : onTap,
+      borderRadius: BorderRadius.circular(ZzRadius.md),
+      child: Opacity(
+        opacity: soldOut ? 0.5 : 1,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected ? context.zz.orangeTint : context.zz.surface,
+            border: Border.all(
+                color: selected ? ZzColors.orange : context.zz.border,
+                width: selected ? 1.5 : 1),
+            borderRadius: BorderRadius.circular(ZzRadius.md),
+          ),
+          child: Row(
+            children: [
+              ZzIcon('clock',
+                  size: 18, color: selected ? ZzColors.orange : context.zz.textMuted),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(slot.label,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: selected ? ZzColors.orange600 : context.zz.text)),
+                    const SizedBox(height: 2),
+                    Text(
+                        soldOut
+                            ? 'Brak wolnych miejsc'
+                            : 'Wolne miejsca: ${slot.remainingCapacity}',
+                        style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
+                  ],
+                ),
+              ),
+              if (selected)
+                const ZzIcon('check_circle', size: 20, color: ZzColors.orange),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Label extends StatelessWidget {
   final String text;
-  const _Label(this.text);
+  final String? icon;
+  const _Label(this.text, {this.icon});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              ZzIcon(icon!, size: 18, color: context.zz.textMuted),
+              const SizedBox(width: 6),
+            ],
+            Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ],
+        ),
       );
 }
 
