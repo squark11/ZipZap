@@ -8,6 +8,7 @@ import '../../core/util/format.dart';
 import '../../core/widgets/cart_button.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
+import 'store_header.dart';
 import '../../models/product.dart';
 import '../../models/store.dart';
 import '../cart/cart_controller.dart';
@@ -61,14 +62,29 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
               subtitle: 'Ten sklep nie dodał jeszcze oferty.',
             );
           }
+          final storeVal = store.valueOrNull;
           return RefreshIndicator(
             color: ZzColors.orange,
-            onRefresh: () async => ref.invalidate(productsProvider(widget.storeId)),
-            child: ListView.separated(
+            onRefresh: () async {
+              ref.invalidate(productsProvider(widget.storeId));
+              ref.invalidate(storeDetailProvider(widget.storeId));
+            },
+            child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _ProductRow(product: list[i]),
+              itemCount: list.length + 1,
+              itemBuilder: (_, i) {
+                if (i == 0) {
+                  if (storeVal == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: StoreHeader(store: storeVal),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ProductRow(product: list[i - 1]),
+                );
+              },
             ),
           );
         },
