@@ -38,7 +38,7 @@
 
 ### R2 — Odświeżenie wizualne aplikacji klienta [P0]
 - ✅ Ilustracje SVG: puste/błędne stany + sukces + **oś statusów** (ikony kroków, aktywny pulsuje).
-- 🔧 Przebudowa ekranów na komponenty DS: ✅ **hero‑nagłówek sklepu**, ✅ **checkout** (etykiety z ikonami + **karty terminów dostawy** — harmonogram widoczny wprost); ⬜ produkt/koszyk/śledzenie.
+- 🔧 Przebudowa ekranów na komponenty DS: ✅ **hero‑nagłówek sklepu**, ✅ **checkout** (etykiety z ikonami + karty terminów), ✅ **śledzenie** (oś statusów ze znacznikami czasu z historii); ⬜ produkt/koszyk (drobna kosmetyka).
 - 🔧 Skeletony (✅ lista sklepów + oferta sklepu + Moje zamówienia) + mikro‑interakcje (✅ animowane wejście paska koszyka) + ✅ **obsługa offline** (globalny pasek „Brak połączenia", `connectivity_plus`); ⬜ dopracowane treści, więcej mikro‑animacji.
 - ⬜ Fotografie: obróbka + WebP/AVIF + lazy‑load (sprawdzić licencje).
 - ✅ Checkout: CTA nieaktywne dopóki brak adresu/telefonu/strefy/terminu + podpowiedź braków [defekt #4].
