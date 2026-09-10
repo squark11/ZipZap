@@ -36,14 +36,28 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, gstate) {
       final auth = ref.read(authControllerProvider);
       final loc = gstate.matchedLocation;
+      final uri = gstate.uri;
 
+      // Podczas bootstrapu pokazujemy splash, ale zapamiętujemy dokąd
+      // użytkownik zmierzał (deep‑link do sklepu / z powiadomienia).
       if (auth.status == AuthStatus.unknown) {
-        return loc == '/splash' ? null : '/splash';
+        if (loc == '/splash') return null;
+        return '/splash?from=${Uri.encodeComponent(uri.toString())}';
       }
-      if (loc == '/splash') return '/stores';
+      // Po bootstrapie wracamy na zapamiętaną trasę (lub domyślnie /stores).
+      if (loc == '/splash') {
+        final from = uri.queryParameters['from'];
+        if (from != null && from.isNotEmpty) {
+          final decoded = Uri.decodeComponent(from);
+          if (decoded.startsWith('/') && !decoded.startsWith('/splash')) {
+            return decoded;
+          }
+        }
+        return '/stores';
+      }
 
       if (_needsAuth(loc) && !auth.isAuthenticated) {
-        return '/login?redirect=${Uri.encodeComponent(gstate.uri.toString())}';
+        return '/login?redirect=${Uri.encodeComponent(uri.toString())}';
       }
       if (loc == '/login' && auth.isAuthenticated) return '/stores';
       return null;
