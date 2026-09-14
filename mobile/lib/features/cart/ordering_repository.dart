@@ -2,6 +2,7 @@ import '../../core/api/api_client.dart';
 import '../../models/cart.dart';
 import '../../models/delivery.dart';
 import '../../models/order.dart';
+import '../../models/store_legal.dart';
 
 class OrderingRepository {
   final ApiClient _api;
@@ -35,6 +36,11 @@ class OrderingRepository {
     return Cart.fromJson(data as Map<String, dynamic>);
   }
 
+  Future<StoreLegal> getStoreLegal(String storeId) async {
+    final data = await _api.get('/stores/$storeId/legal');
+    return StoreLegal.fromJson(data as Map<String, dynamic>);
+  }
+
   Future<List<DeliveryZone>> listZones(String storeId) async {
     final data = await _api.get('/ordering/stores/$storeId/zones');
     return (data as List).map((e) => DeliveryZone.fromJson(e as Map<String, dynamic>)).toList();
@@ -56,6 +62,7 @@ class OrderingRepository {
     required String deliveryAddress,
     required String contactPhone,
     required String idempotencyKey,
+    bool consentAccepted = false,
   }) async {
     final data = await _api.post('/ordering/carts/$cartId/checkout',
         headers: {'Idempotency-Key': idempotencyKey},
@@ -65,6 +72,7 @@ class OrderingRepository {
           'timeSlotId': timeSlotId,
           'deliveryAddress': deliveryAddress,
           'contactPhone': contactPhone,
+          'consentAccepted': consentAccepted,
         });
     return Order.fromJson(data as Map<String, dynamic>);
   }

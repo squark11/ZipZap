@@ -11,6 +11,7 @@ import '../../features/account/account_screen.dart';
 import '../../features/cart/cart_screen.dart';
 import '../../features/catalog/store_detail_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
+import '../../features/feedback/feedback_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/orders/my_orders_screen.dart';
 import '../../features/orders/order_track_screen.dart';
@@ -91,6 +92,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => OrderTrackScreen(orderId: s.pathParameters['id']!),
       ),
       GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
+      GoRoute(
+        path: '/feedback',
+        builder: (_, state) => FeedbackScreen(screen: state.uri.queryParameters['from']),
+      ),
       GoRoute(
         path: '/login',
         builder: (_, s) => LoginScreen(redirect: s.uri.queryParameters['redirect']),

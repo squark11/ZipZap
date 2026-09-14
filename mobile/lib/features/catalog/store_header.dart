@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
+import '../../core/widgets/store_logo.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/store.dart';
 
@@ -23,16 +24,7 @@ class StoreHeader extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: context.zz.orangeTint,
-                    borderRadius: BorderRadius.circular(ZzRadius.md),
-                  ),
-                  child: const ZzIcon('store', size: 28, color: ZzColors.orange),
-                ),
+                StoreLogo(logoUrl: store.logoUrl, size: 56),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(

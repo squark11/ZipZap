@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/providers.dart';
@@ -11,10 +12,14 @@ import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/delivery.dart';
+import '../../models/store_legal.dart';
 import '../cart/cart_controller.dart';
 
 final zonesProvider = FutureProvider.autoDispose.family<List<DeliveryZone>, String>(
     (ref, storeId) => ref.read(orderingRepositoryProvider).listZones(storeId));
+
+final storeLegalProvider = FutureProvider.autoDispose.family<StoreLegal, String>(
+    (ref, storeId) => ref.read(orderingRepositoryProvider).getStoreLegal(storeId));
 
 final slotsProvider =
     FutureProvider.autoDispose.family<List<TimeSlot>, ({String storeId, String zoneId})>(
@@ -33,6 +38,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _phone = TextEditingController();
   String? _zoneId;
   String? _slotId;
+  bool _consent = false;
   bool _submitting = false;
   late final String _idempotencyKey;
 
@@ -71,6 +77,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             deliveryAddress: _address.text.trim(),
             contactPhone: _phone.text.trim(),
             idempotencyKey: _idempotencyKey,
+            consentAccepted: _consent,
           );
       ref.read(cartControllerProvider.notifier).clearAfterCheckout();
       if (mounted) context.go('/pay/${order.id}');
@@ -85,11 +92,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   /// Pierwszy brakujący warunek złożenia zamówienia (null = można składać).
-  String? get _missing {
+  String? _missingReason(StoreLegal? legal) {
     if (_address.text.trim().isEmpty) return 'Podaj adres dostawy.';
     if (_phone.text.trim().isEmpty) return 'Podaj telefon kontaktowy.';
     if (_zoneId == null) return 'Wybierz strefę dostawy.';
     if (_slotId == null) return 'Wybierz termin dostawy.';
+    if ((legal?.requiresAcceptance ?? false) && !_consent) {
+      return 'Zaakceptuj regulamin i politykę prywatności.';
+    }
     return null;
   }
 
@@ -125,6 +135,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               break;
             }
           }
+          final legal = ref.watch(storeLegalProvider(c.storeId)).valueOrNull;
+          final missing = _missingReason(legal);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -163,6 +175,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
+              if (legal != null && (legal.hasAnyDoc || legal.requiresAcceptance)) ...[
+                const Divider(height: 24),
+                const _Label('Dokumenty sklepu'),
+                _LegalLinks(legal: legal),
+                if (legal.requiresAcceptance)
+                  CheckboxListTile(
+                    value: _consent,
+                    onChanged: (v) => setState(() => _consent = v ?? false),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    activeColor: ZzColors.orange,
+                    title: const Text(
+                        'Akceptuję regulamin i politykę prywatności sklepu',
+                        style: TextStyle(fontSize: 13)),
+                  ),
+              ],
               const Divider(height: 24),
               _SummaryRow('Wartość produktów', zl(cart.subtotal)),
               _SummaryRow('Opłata za dostawę', zl(fee)),
@@ -170,7 +199,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               _SummaryRow('Razem', zl(cart.subtotal + fee), bold: true),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: (_submitting || _missing != null) ? null : () => _submit(fee),
+                onPressed: (_submitting || missing != null) ? null : () => _submit(fee),
                 child: _submitting
                     ? const SizedBox(
                         height: 22,
@@ -180,12 +209,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                _missing == null || _submitting
+                missing == null || _submitting
                     ? 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.'
-                    : _missing!,
+                    : missing,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: _missing == null || _submitting
+                    color: missing == null || _submitting
                         ? context.zz.textMuted
                         : ZzColors.orange600,
                     fontSize: 12),
@@ -317,6 +346,59 @@ class _SlotCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Klikalne linki do dokumentów prawnych sklepu (otwierane w przeglądarce).
+class _LegalLinks extends StatelessWidget {
+  final StoreLegal legal;
+  const _LegalLinks({required this.legal});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <(String, String)>[];
+    if ((legal.termsUrl ?? '').isNotEmpty) items.add(('Regulamin', legal.termsUrl!));
+    if ((legal.privacyUrl ?? '').isNotEmpty) items.add(('Polityka prywatności', legal.privacyUrl!));
+    if ((legal.gdprUrl ?? '').isNotEmpty) items.add(('Informacja RODO', legal.gdprUrl!));
+    if (items.isEmpty) {
+      return Text('Sklep nie udostępnił dokumentów.',
+          style: TextStyle(color: context.zz.textMuted, fontSize: 13));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final it in items)
+          InkWell(
+            onTap: () => _open(context, it.$2),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(children: [
+                const Icon(Icons.open_in_new, size: 16, color: ZzColors.orange),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(it.$1,
+                      style: const TextStyle(
+                          color: ZzColors.orange600,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline)),
+                ),
+              ]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _open(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    var ok = false;
+    if (uri != null) {
+      ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Nie udało się otworzyć dokumentu.')));
+    }
   }
 }
 

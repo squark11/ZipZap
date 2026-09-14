@@ -19,4 +19,7 @@ class AppConfig {
 
   /// Waluta pilota.
   static const String currency = 'PLN';
+
+  /// Wersja aplikacji dołączana do zgłaszanych uwag (kontekst dla zespołu).
+  static const String appVersion = '1.0.0';
 }

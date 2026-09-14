@@ -6,8 +6,10 @@ class CatalogRepository {
   final ApiClient _api;
   CatalogRepository(this._api);
 
-  Future<List<Store>> listStores({bool onlyActive = true}) async {
-    final data = await _api.get('/catalog/stores', query: {'onlyActive': onlyActive});
+  Future<List<Store>> listStores({bool onlyActive = true, double? lat, double? lng}) async {
+    final query = <String, dynamic>{'onlyActive': onlyActive};
+    if (lat != null && lng != null) { query['lat'] = lat; query['lng'] = lng; }
+    final data = await _api.get('/catalog/stores', query: query);
     return (data as List).map((e) => Store.fromJson(e as Map<String, dynamic>)).toList();
   }
 

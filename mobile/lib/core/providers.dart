@@ -9,6 +9,7 @@ import '../features/catalog/catalog_repository.dart';
 import '../features/cart/ordering_repository.dart';
 import '../features/payment/payments_repository.dart';
 import '../features/notifications/notifications_repository.dart';
+import '../features/feedback/feedback_repository.dart';
 
 // --- Infrastruktura ---
 final tokenStoreProvider = Provider<TokenStore>((ref) => TokenStore());
@@ -29,3 +30,5 @@ final paymentsRepositoryProvider =
     Provider<PaymentsRepository>((ref) => PaymentsRepository(ref.read(apiClientProvider)));
 final notificationsRepositoryProvider =
     Provider<NotificationsRepository>((ref) => NotificationsRepository(ref.read(apiClientProvider)));
+final feedbackRepositoryProvider =
+    Provider<FeedbackRepository>((ref) => FeedbackRepository(ref.read(apiClientProvider)));
