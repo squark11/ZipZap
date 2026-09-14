@@ -25,8 +25,12 @@ import { Api, StoreDto } from './api';
       <label>Telefon<input [(ngModel)]="ns.phone" placeholder="600 100 200" /></label>
       <label>Prowizja (%)<input [(ngModel)]="ns.commissionPct" type="number" step="0.5" /></label>
       <label>Min. zamówienie (zł)<input [(ngModel)]="ns.minimumOrderValue" type="number" step="0.01" /></label>
+      <label>Logo (URL)<input [(ngModel)]="ns.logoUrl" placeholder="https://…/logo.png" /></label>
+      <label>Szerokość (lat)<input [(ngModel)]="ns.latitude" type="number" step="0.0001" placeholder="50.0614" /></label>
+      <label>Długość (lng)<input [(ngModel)]="ns.longitude" type="number" step="0.0001" placeholder="19.9366" /></label>
       <button class="btn primary" (click)="create()">Utwórz sklep</button>
     </div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">Współrzędne służą do proponowania sklepów wg odległości. Na razie wpisujesz je ręcznie (auto z adresu dojdzie w kolejnym kroku).</p>
   </div>
 
   <div class="card">
@@ -39,8 +43,13 @@ import { Api, StoreDto } from './api';
         <tbody>
           @for (s of stores; track s.id) {
             <tr>
-              <td><strong>{{ s.name }}</strong><br><span class="muted mono">{{ s.slug }}</span></td>
-              <td class="muted">{{ s.city }}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  @if (s.logoUrl) { <img [src]="s.logoUrl" alt="logo" style="width:28px;height:28px;border-radius:6px;object-fit:cover;border:1px solid #E5E7EB" /> }
+                  <span><strong>{{ s.name }}</strong><br><span class="muted mono">{{ s.slug }}</span></span>
+                </div>
+              </td>
+              <td class="muted">{{ s.city }}@if (s.latitude != null) { <br><span class="mono" style="font-size:11px">📍 {{ s.latitude | number:'1.4-4' }}, {{ s.longitude | number:'1.4-4' }}</span> }</td>
               <td class="statuscell">
                 <select [ngModel]="s.status" (ngModelChange)="setStatus(s, $event)">
                   <option value="Open">Otwarty</option>
@@ -55,6 +64,7 @@ import { Api, StoreDto } from './api';
                 <div class="actions">
                   <button class="btn ghost sm" (click)="editMinOrder(s)">Min. zam.</button>
                   <button class="btn ghost sm" (click)="editCommission(s)">Prowizja</button>
+                  <button class="btn ghost sm" (click)="editBranding(s)">Logo/GPS</button>
                   <button class="btn ghost sm" (click)="toggleActive(s)">{{ s.isActive ? 'Dezaktywuj' : 'Aktywuj' }}</button>
                 </div>
               </td>
@@ -73,7 +83,7 @@ export class StoresComponent {
 
   stores: StoreDto[] = [];
   loading = false;
-  ns = { name: '', city: '', address: '', phone: '', commissionPct: 10, minimumOrderValue: 0 };
+  ns = { name: '', city: '', address: '', phone: '', commissionPct: 10, minimumOrderValue: 0, logoUrl: '', latitude: null as number | null, longitude: null as number | null };
 
   constructor() { this.load(); }
 
@@ -94,14 +104,35 @@ export class StoresComponent {
       phone: this.ns.phone.trim() || null,
       commissionRate: this.pct(this.ns.commissionPct),
       minimumOrderValue: Number(this.ns.minimumOrderValue) || 0,
+      logoUrl: this.ns.logoUrl.trim() || null,
+      latitude: this.ns.latitude,
+      longitude: this.ns.longitude,
     };
     this.api.post('/catalog/stores', body).subscribe({
       next: () => {
-        this.ns = { name: '', city: '', address: '', phone: '', commissionPct: 10, minimumOrderValue: 0 };
+        this.ns = { name: '', city: '', address: '', phone: '', commissionPct: 10, minimumOrderValue: 0, logoUrl: '', latitude: null, longitude: null };
         this.reload();
       },
       error: e => alert(err(e)),
     });
+  }
+
+  editBranding(s: StoreDto) {
+    const logo = prompt(`Logo (URL) dla "${s.name}" — puste = bez zmian, „-" = wyczyść`, s.logoUrl ?? '');
+    if (logo === null) return;
+    const coords = prompt(`Współrzędne „szerokość, długość" (np. 50.0614, 19.9366) — puste = bez zmian`,
+      s.latitude != null ? `${s.latitude}, ${s.longitude}` : '');
+    if (coords === null) return;
+
+    const body: any = {};
+    if (logo !== '') body.logoUrl = logo === '-' ? '' : logo.trim();
+    if (coords.trim() !== '') {
+      const parts = coords.split(',').map(x => Number(x.trim().replace(',', '.')));
+      if (parts.length !== 2 || parts.some(Number.isNaN)) { alert('Podaj dwie liczby: szerokość, długość'); return; }
+      body.latitude = parts[0]; body.longitude = parts[1];
+    }
+    if (Object.keys(body).length === 0) return;
+    this.api.patch(`/catalog/stores/${s.id}`, body).subscribe({ next: () => this.reload(), error: e => alert(err(e)) });
   }
 
   setStatus(s: StoreDto, status: string) {

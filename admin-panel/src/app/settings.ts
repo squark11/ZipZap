@@ -22,6 +22,10 @@ export interface PlatformSettings {
   operatorContact?: string;
 }
 
+export interface PlatformIntegrations {
+  googleClientId?: string;
+}
+
 @Component({
   selector: 'app-settings',
   imports: [CommonModule, FormsModule],
@@ -94,14 +98,33 @@ export interface PlatformSettings {
   </div>
 
   <div class="card pad">
+    <div class="page-head" style="margin-bottom:6px">
+      <h1 style="font-size:16px;margin:0">Integracje platformy</h1>
+      <div class="controls">
+        @if (savedI) { <span class="ok-msg">✓ Zapisano</span> }
+        <button class="btn ghost sm" (click)="saveIntegrations()" [disabled]="savingI">Zapisz</button>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:0">Konfiguracja integracji <b>tu w panelu</b> (nie w pliku env).
+      Google Client ID jest jawny (nie sekret) — to identyfikator klienta typu <b>Aplikacja internetowa</b>,
+      którego aplikacja używa jako <code>serverClientId</code>, a backend jako audience tokenu.</p>
+
+    <label class="lbl">Google OAuth — Client ID (Web)</label>
+    <input type="text" name="gid" [(ngModel)]="integrations.googleClientId"
+           placeholder="123456789-abc.apps.googleusercontent.com" />
+    @if (integError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ integError }}</p> }
+    <p class="muted" style="font-size:12px;margin-top:8px">Puste = logowanie Google wyłączone (zadziała fallback z env, jeśli ustawiony).</p>
+  </div>
+
+  <div class="card pad">
     <h1 style="font-size:16px;margin:0 0 8px">Twoje konta / sekrety</h1>
-    <p class="muted">Sekrety trzymamy w zmiennych środowiskowych (nie w bazie). Uzupełnij <code>.env</code>
-      wg szablonu <code>.env.example</code> — szczegóły w <code>DEPLOY.md</code>.</p>
+    <p class="muted">Tu zostają tylko <b>sekrety infrastruktury</b> — w zmiennych środowiskowych, nie w bazie.
+      Uzupełnij <code>.env</code> wg <code>.env.example</code> — szczegóły w <code>DEPLOY.md</code>.
+      Integracje (np. Google) ustawiasz wyżej, w panelu.</p>
     <ul class="check">
       <li>Baza (Postgres / Neon) — <code>CONNECTIONSTRINGS__POSTGRES</code></li>
       <li>Klucz JWT — <code>JWT__SIGNINGKEY</code></li>
       <li>Płatności — <code>PAYMENTS__*</code> (mock teraz, Przelewy24 po podpięciu)</li>
-      <li>Google OAuth — <code>GOOGLE__CLIENTID</code></li>
       <li>E-mail SMTP — <code>EMAIL__SMTP__*</code></li>
       <li>URL API dla aplikacji (PWA) — <code>WEB_API_BASE_URL</code></li>
       <li>Hosting / CI — Cloudflare / Fly.io / Neon (jako sekrety CI)</li>
@@ -134,6 +157,11 @@ export class SettingsComponent implements OnInit {
   savingP = false;
   savedP = false;
 
+  integrations: PlatformIntegrations = { googleClientId: '' };
+  savingI = false;
+  savedI = false;
+  integError = '';
+
   ngOnInit() { this.load(); }
 
   load() {
@@ -144,6 +172,25 @@ export class SettingsComponent implements OnInit {
     this.api.get<PlatformSettings>('/admin/config/platform').subscribe({
       next: p => this.applyPlatform(p),
       error: () => {},
+    });
+    this.api.get<PlatformIntegrations>('/admin/config/integrations').subscribe({
+      next: i => this.integrations = { googleClientId: i.googleClientId || '' },
+      error: () => {},
+    });
+  }
+
+  saveIntegrations() {
+    this.savingI = true;
+    this.savedI = false;
+    this.integError = '';
+    const body: PlatformIntegrations = { googleClientId: (this.integrations.googleClientId || '').trim() || undefined };
+    this.api.put<PlatformIntegrations>('/admin/config/integrations', body).subscribe({
+      next: i => {
+        this.integrations = { googleClientId: i.googleClientId || '' };
+        this.savingI = false; this.savedI = true; setTimeout(() => this.savedI = false, 2500);
+        this.load(); // odśwież status „Logowanie Google"
+      },
+      error: e => { this.savingI = false; this.integError = e?.error?.detail ?? 'Nie udało się zapisać integracji.'; },
     });
   }
 

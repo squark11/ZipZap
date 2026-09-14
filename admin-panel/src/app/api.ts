@@ -6,6 +6,7 @@ export interface StoreDto {
   id: string; name: string; city: string; slug: string; commissionRate: number; isActive: boolean;
   status: string; minimumOrderValue: number; isAcceptingOrders: boolean;
   description?: string; address?: string; phone?: string;
+  logoUrl?: string; latitude?: number; longitude?: number;
 }
 export interface CategoryDto { id: string; storeId: string; name: string; sortOrder: number; }
 export interface ProductDto { id: string; storeId: string; categoryId?: string; name: string; price: number; currency: string; unit: string; isAvailable: boolean; }
@@ -36,34 +37,50 @@ export interface TeamMemberDto {
   isActive: boolean; isEmailVerified: boolean; role: string; storeId: string;
 }
 
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken?: string;
+  user?: { email: string; roles: string[]; storeIds: string[] };
+}
+
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);
   readonly base = 'http://localhost:5080/api';
 
   readonly token = signal<string | null>(null);
+  private readonly refreshToken = signal<string | null>(null);
   readonly userEmail = signal<string>('');
   readonly roles = signal<string[]>([]);
   readonly storeIds = signal<string[]>([]);
   readonly isLoggedIn = computed(() => !!this.token());
   readonly isAdmin = computed(() => this.roles().includes('Admin'));
 
-  login(email: string, password: string): Observable<{ accessToken: string }> {
-    return this.http.post<{ accessToken: string; user: { email: string; roles: string[]; storeIds: string[] } }>(
-      `${this.base}/identity/login`, { email, password }
-    ).pipe(tap(r => {
-      this.token.set(r.accessToken);
-      this.userEmail.set(r.user?.email ?? email);
-      this.roles.set(r.user?.roles ?? []);
-      this.storeIds.set(r.user?.storeIds ?? []);
-    }));
+  private apply(r: AuthResponse, fallbackEmail?: string) {
+    this.token.set(r.accessToken);
+    if (r.refreshToken) this.refreshToken.set(r.refreshToken);
+    this.userEmail.set(r.user?.email ?? fallbackEmail ?? this.userEmail());
+    this.roles.set(r.user?.roles ?? []);
+    this.storeIds.set(r.user?.storeIds ?? []);
   }
 
-  logout() { this.token.set(null); this.userEmail.set(''); this.roles.set([]); this.storeIds.set([]); }
+  login(email: string, password: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/identity/login`, { email, password })
+      .pipe(tap(r => this.apply(r, email)));
+  }
+
+  /// Odświeża token (np. po dodaniu lokalizacji, by nowy sklep trafił do claimów).
+  refresh(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/identity/refresh`, { refreshToken: this.refreshToken() })
+      .pipe(tap(r => this.apply(r)));
+  }
+
+  logout() { this.token.set(null); this.refreshToken.set(null); this.userEmail.set(''); this.roles.set([]); this.storeIds.set([]); }
 
   private opts() { return { headers: { Authorization: `Bearer ${this.token()}` } }; }
 
   get<T>(path: string) { return this.http.get<T>(`${this.base}${path}`, this.opts()); }
+  getBlob(path: string) { return this.http.get(`${this.base}${path}`, { ...this.opts(), responseType: 'blob' as const }); }
   getPublic<T>(path: string) { return this.http.get<T>(`${this.base}${path}`); }
   post<T>(path: string, body: unknown) { return this.http.post<T>(`${this.base}${path}`, body, this.opts()); }
   put<T>(path: string, body: unknown) { return this.http.put<T>(`${this.base}${path}`, body, this.opts()); }

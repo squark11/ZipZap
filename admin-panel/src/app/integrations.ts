@@ -12,15 +12,22 @@ export interface StoreIntegrationStatus {
   hasCrcKey: boolean;
 }
 
+export interface StoreLegal {
+  termsUrl?: string;
+  privacyUrl?: string;
+  gdprUrl?: string;
+  requiresAcceptance: boolean;
+}
+
 @Component({
   selector: 'app-integrations',
   imports: [CommonModule, FormsModule],
   template: `
   <div class="page-head">
-    <h1>Integracje płatności</h1>
+    <h1>Integracje i dokumenty</h1>
     <div class="controls">
       @if (saved) { <span class="ok-msg">✓ Zapisano</span> }
-      <button class="btn ghost sm" (click)="save()" [disabled]="saving">Zapisz</button>
+      <button class="btn ghost sm" (click)="save()" [disabled]="saving">Zapisz płatności</button>
     </div>
   </div>
 
@@ -58,6 +65,36 @@ export interface StoreIntegrationStatus {
 
     <p class="note">🔒 Tokeny trzymamy zaszyfrowane. Nie wysyłaj ich e-mailem ani nie zapisuj w treści zamówień.</p>
   </div>
+
+  <div class="card pad" style="margin-top:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <b>Dokumenty i zgody</b>
+        <div class="muted" style="font-size:13px;max-width:60ch">Aby przyjmować płatności online, sklep musi udostępnić własny
+          <b>regulamin</b>, <b>politykę prywatności</b> oraz informację <b>RODO</b>. Klient akceptuje je przed zakupem.</div>
+      </div>
+      <div style="white-space:nowrap">
+        @if (legalSaved) { <span class="ok-msg">✓ Zapisano</span> }
+        <button class="btn ghost sm" (click)="saveLegal()" [disabled]="legalSaving">Zapisz dokumenty</button>
+      </div>
+    </div>
+
+    <label class="lbl">Regulamin (URL)</label>
+    <input name="terms" [(ngModel)]="legal.termsUrl" placeholder="https://twojsklep.pl/regulamin" />
+
+    <label class="lbl">Polityka prywatności (URL)</label>
+    <input name="priv" [(ngModel)]="legal.privacyUrl" placeholder="https://twojsklep.pl/polityka-prywatnosci" />
+
+    <label class="lbl">RODO / obowiązek informacyjny (URL, opcjonalnie)</label>
+    <input name="gdpr" [(ngModel)]="legal.gdprUrl" placeholder="https://twojsklep.pl/rodo" />
+
+    <label class="chk"><input type="checkbox" name="reqacc" [(ngModel)]="legal.requiresAcceptance" />
+      Wymagaj akceptacji regulaminu i polityki prywatności przed zakupem</label>
+
+    @if (legalError) { <p class="note" style="background:#FEECEC;color:#B4232A">{{ legalError }}</p> }
+    <p class="note">Podaj adresy do dokumentów opublikowanych na stronie sklepu (http/https). Przy włączonym wymogu
+      akceptacji <b>regulamin i polityka prywatności są obowiązkowe</b>.</p>
+  </div>
   `,
   styles: [`
     code, .set { font-size:12px; }
@@ -81,6 +118,11 @@ export class IntegrationsComponent {
   saving = false;
   saved = false;
 
+  legal = { termsUrl: '', privacyUrl: '', gdprUrl: '', requiresAcceptance: false };
+  legalSaving = false;
+  legalSaved = false;
+  legalError = '';
+
   constructor() {
     effect(() => { const id = this.storeId(); if (id) this.load(id); });
   }
@@ -93,6 +135,13 @@ export class IntegrationsComponent {
       },
       error: () => { this.status = null; },
     });
+    this.api.get<StoreLegal>(`/stores/${id}/legal`).subscribe({
+      next: l => this.legal = {
+        termsUrl: l.termsUrl || '', privacyUrl: l.privacyUrl || '',
+        gdprUrl: l.gdprUrl || '', requiresAcceptance: !!l.requiresAcceptance,
+      },
+      error: () => { /* brak konfiguracji = domyślne puste */ },
+    });
   }
 
   save() {
@@ -103,6 +152,24 @@ export class IntegrationsComponent {
     this.api.put<StoreIntegrationStatus>(`/payments/stores/${id}/integration`, this.form).subscribe({
       next: s => { this.status = s; this.form.apiKey = ''; this.form.crcKey = ''; this.saving = false; this.saved = true; setTimeout(() => this.saved = false, 2500); },
       error: () => { this.saving = false; },
+    });
+  }
+
+  saveLegal() {
+    const id = this.storeId();
+    if (!id) return;
+    this.legalSaving = true;
+    this.legalSaved = false;
+    this.legalError = '';
+    const body: StoreLegal = {
+      termsUrl: this.legal.termsUrl.trim() || undefined,
+      privacyUrl: this.legal.privacyUrl.trim() || undefined,
+      gdprUrl: this.legal.gdprUrl.trim() || undefined,
+      requiresAcceptance: this.legal.requiresAcceptance,
+    };
+    this.api.put<StoreLegal>(`/stores/${id}/legal`, body).subscribe({
+      next: () => { this.legalSaving = false; this.legalSaved = true; setTimeout(() => this.legalSaved = false, 2500); },
+      error: e => { this.legalSaving = false; this.legalError = e?.error?.detail ?? 'Nie udało się zapisać dokumentów.'; },
     });
   }
 }

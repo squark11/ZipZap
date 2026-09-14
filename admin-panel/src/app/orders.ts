@@ -25,6 +25,8 @@ interface Group { key: string; label: string; statuses: string[]; }
   <div class="page-head">
     <h1>Zamówienia</h1>
     <div class="controls">
+      <button class="btn ghost sm" (click)="exportCsv()" [disabled]="exporting || orders.length === 0"
+        title="Eksport do księgowości (CSV). Ustaw zakres dat w filtrach, aby zawęzić.">Eksportuj CSV</button>
       <button class="btn ghost sm" (click)="load()">Odśwież</button>
       <button class="filter-toggle" [class.open]="filtersOpen" (click)="filtersOpen = !filtersOpen">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
@@ -142,6 +144,7 @@ export class OrdersComponent {
 
   orders: OrderDto[] = [];
   loading = false;
+  exporting = false;
   expanded = new Set<string>();
   filter = 'all';
   filtersOpen = false;
@@ -256,6 +259,26 @@ export class OrdersComponent {
 
   clearFilters() {
     this.f = { text: '', amountMin: null, amountMax: null, dateFrom: '', dateTo: '' };
+  }
+
+  // Eksport do księgowości — honoruje zakres dat z filtrów (Data od/do).
+  exportCsv() {
+    const q: string[] = [];
+    if (this.f.dateFrom) q.push(`from=${this.f.dateFrom}`);
+    if (this.f.dateTo) q.push(`to=${this.f.dateTo}`);
+    const qs = q.length ? '?' + q.join('&') : '';
+    this.exporting = true;
+    this.api.getBlob(`/ordering/stores/${this.storeId()}/orders/export${qs}`).subscribe({
+      next: blob => {
+        this.exporting = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `zamowienia-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: e => { this.exporting = false; alert('Nie udało się: ' + (e?.error?.detail ?? 'eksport')); },
+    });
   }
 
   actionsFor(status: string): OrderAction[] {

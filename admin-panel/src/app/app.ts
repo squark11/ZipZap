@@ -11,10 +11,12 @@ import { FinanceComponent } from './finance';
 import { DeliveriesComponent } from './deliveries';
 import { SettingsComponent } from './settings';
 import { IntegrationsComponent } from './integrations';
+import { OnboardingComponent } from './onboarding';
+import { FeedbackComponent } from './feedback';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent, SettingsComponent, IntegrationsComponent],
+  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent, SettingsComponent, IntegrationsComponent, OnboardingComponent, FeedbackComponent],
   template: `
   @if (!api.isLoggedIn()) {
     <div class="auth">
@@ -51,6 +53,10 @@ import { IntegrationsComponent } from './integrations';
     <div class="app-shell">
       <aside class="rail">
         <div class="rail-logo">Z</div>
+        <button class="rail-btn" [class.active]="tab==='onboarding'" (click)="tab='onboarding'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span class="tip">Start</span>
+        </button>
         <button class="rail-btn" [class.active]="tab==='dashboard'" (click)="tab='dashboard'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
           <span class="tip">Pulpit</span>
@@ -88,6 +94,12 @@ import { IntegrationsComponent } from './integrations';
         </button>
         }
         @if (api.isAdmin()) {
+        <button class="rail-btn" [class.active]="tab==='feedback'" (click)="tab='feedback'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="tip">Uwagi</span>
+        </button>
+        }
+        @if (api.isAdmin()) {
         <button class="rail-btn" [class.active]="tab==='settings'" (click)="tab='settings'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.2.61.76 1.05 1.42 1.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span class="tip">Konfiguracja</span>
@@ -110,6 +122,10 @@ import { IntegrationsComponent } from './integrations';
             <select [(ngModel)]="selectedStoreId">
               @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
             </select>
+            @if (api.isAdmin() || api.storeIds().length > 0) {
+              <button class="btn ghost sm" style="margin-left:8px" [disabled]="addingLocation" (click)="addLocation()"
+                title="Dodaj kolejną lokalizację swojego sklepu">+ Lokalizacja</button>
+            }
           </div>
           <div class="userchip">
             <div class="avatar">{{ initials }}</div>
@@ -118,10 +134,11 @@ import { IntegrationsComponent } from './integrations';
         </div>
 
         <div class="content">
-          @if (stores.length === 0 && tab !== 'stores' && tab !== 'settings') {
+          @if (stores.length === 0 && tab !== 'stores' && tab !== 'settings' && tab !== 'feedback') {
             <div class="card pad"><p class="muted">Brak sklepów. Przejdź do zakładki <strong>Sklepy</strong>, aby utworzyć pierwszy.</p></div>
           } @else {
             @switch (tab) {
+              @case ('onboarding') { <app-onboarding [storeId]="selectedStoreId" /> }
               @case ('dashboard') { <app-dashboard [storeId]="selectedStoreId" /> }
               @case ('orders') { <app-orders [storeId]="selectedStoreId" [query]="search" /> }
               @case ('deliveries') { <app-deliveries [storeId]="selectedStoreId" /> }
@@ -130,6 +147,7 @@ import { IntegrationsComponent } from './integrations';
               @case ('team') { <app-team [storeId]="selectedStoreId" /> }
               @case ('finance') { <app-finance [storeId]="selectedStoreId" /> }
               @case ('stores') { <app-stores (changed)="loadStores()" /> }
+              @case ('feedback') { <app-feedback /> }
               @case ('settings') { <app-settings /> }
             }
           }
@@ -150,7 +168,8 @@ export class App {
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
-  tab: 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'integrations' | 'team' | 'finance' | 'stores' | 'settings' = 'dashboard';
+  addingLocation = false;
+  tab: 'onboarding' | 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'integrations' | 'team' | 'finance' | 'stores' | 'feedback' | 'settings' = 'onboarding';
 
   get initials(): string {
     const e = this.api.userEmail();
@@ -178,10 +197,31 @@ export class App {
     });
   }
 
+  // Multi-lokalizacja: właściciel dodaje kolejną lokalizację (nowy sklep przypisany do siebie).
+  addLocation() {
+    const name = prompt('Nazwa nowej lokalizacji (np. „Rapacz — Rynek 5")');
+    if (name === null || !name.trim()) return;
+    const city = prompt('Miasto lokalizacji');
+    if (city === null || !city.trim()) return;
+    this.addingLocation = true;
+    this.api.post<StoreDto>('/merchant/stores', {
+      name: name.trim(), city: city.trim(), commissionRate: 0.10, minimumOrderValue: 0,
+    }).subscribe({
+      next: created => {
+        // Token nie zawiera jeszcze nowego store_id — odśwież, potem pokaż i wybierz lokalizację.
+        this.api.refresh().subscribe({
+          next: () => { this.addingLocation = false; this.loadStores(); this.selectedStoreId = created.id; },
+          error: () => { this.addingLocation = false; this.loadStores(); },
+        });
+      },
+      error: e => { this.addingLocation = false; alert('Nie udało się dodać lokalizacji: ' + (e?.error?.detail ?? 'błąd')); },
+    });
+  }
+
   logout() {
     this.api.logout();
     this.stores = [];
     this.selectedStoreId = '';
-    this.tab = 'dashboard';
+    this.tab = 'onboarding';
   }
 }
