@@ -10,9 +10,13 @@ using ZipZap.Api.Configuration;
 using ZipZap.Api.Middleware;
 using ZipZap.Api.Security;
 using ZipZap.BuildingBlocks.DependencyInjection;
+using ZipZap.BuildingBlocks.Domain;
 using ZipZap.BuildingBlocks.Inbox;
 using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Persistence;
+using ZipZap.Modules.Catalog.Application;
+using ZipZap.Modules.Identity.Application;
+using ZipZap.Modules.Ordering.Application;
 using ZipZap.Modules.Identity;
 using ZipZap.Modules.Identity.Api;
 using ZipZap.Modules.Catalog;
@@ -30,6 +34,8 @@ using ZipZap.Modules.Integrations;
 using ZipZap.Modules.Integrations.Api;
 using ZipZap.Modules.Audit;
 using ZipZap.Modules.Audit.Api;
+using ZipZap.Modules.Feedback;
+using ZipZap.Modules.Feedback.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +84,7 @@ builder.Services.AddDeliveryModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 builder.Services.AddIntegrationsModule();
 builder.Services.AddAuditModule(builder.Configuration);
+builder.Services.AddFeedbackModule(builder.Configuration);
 
 // --- Uwierzytelnianie / autoryzacja (JWT) ---
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -115,6 +122,12 @@ builder.Services.AddSingleton<StoreIntegrationStore>();
 // Nadpisz domyślny (null) resolver realnym adapterem nad magazynem integracji sklepów.
 builder.Services.AddSingleton<ZipZap.Modules.Payments.Application.IStorePaymentGateway, StorePaymentGatewayAdapter>();
 builder.Services.AddSingleton<StoreBillingStore>();
+builder.Services.AddSingleton<StoreLegalStore>();
+// Nadpisz domyślny (null) provider polityki prawnej sklepu adapterem nad magazynem dokumentów.
+builder.Services.AddSingleton<ZipZap.Modules.Ordering.Application.IStoreLegalPolicyProvider, StoreLegalPolicyAdapter>();
+builder.Services.AddSingleton<PlatformIntegrationsStore>();
+// Integracje platformy edytowalne w panelu — nadpisz domyślne (env) źródło Google Client ID.
+builder.Services.AddSingleton<ZipZap.Modules.Identity.Application.IGoogleClientIdProvider, PlatformGoogleClientIdProvider>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -250,10 +263,13 @@ app.MapGet("/health/ready", async (MessagingDbContext db, CancellationToken ct) 
 }).WithTags("System");
 
 // Status konfiguracji (tylko admin) — SAME FLAGI, bez żadnych sekretów.
-app.MapGet("/api/admin/config/status", (IConfiguration cfg, IHostEnvironment env) =>
+app.MapGet("/api/admin/config/status",
+    async (IConfiguration cfg, IHostEnvironment env,
+        ZipZap.Modules.Identity.Application.IGoogleClientIdProvider google, CancellationToken ct) =>
 {
     bool set(string key) => !string.IsNullOrWhiteSpace(cfg[key]);
     var jwt = cfg["Jwt:SigningKey"] ?? string.Empty;
+    var googleId = await google.GetClientIdAsync(ct); // panel → env (efektywna wartość)
     return Results.Ok(new
     {
         environment = env.EnvironmentName,
@@ -263,7 +279,7 @@ app.MapGet("/api/admin/config/status", (IConfiguration cfg, IHostEnvironment env
             publicUrl = cfg["Payments:PublicUrl"],
             mockPayPage = set("Payments:Mock:PayPageUrl"),
         },
-        googleSignIn = set("Google:ClientId"),
+        googleSignIn = !string.IsNullOrWhiteSpace(googleId),
         email = set("Email:Smtp:Host"),
         rabbitMq = set("RabbitMq:Host"),
         identityPublicUrl = cfg["Identity:PublicUrl"],
@@ -271,6 +287,84 @@ app.MapGet("/api/admin/config/status", (IConfiguration cfg, IHostEnvironment env
         jwtUsingDevSecret = jwt.Contains("CHANGE_ME") || jwt.Contains("DEV_ONLY"),
     });
 }).RequireAuthorization("Admin").WithTags("System");
+
+// Integracje platformy edytowalne w panelu (Admin) — zamiast env. Wartości jawne (Google Client ID).
+app.MapGet("/api/admin/config/integrations", async (PlatformIntegrationsStore store, CancellationToken ct) =>
+    Results.Ok(await store.GetAsync(ct))).RequireAuthorization("Admin").WithTags("System");
+
+app.MapPut("/api/admin/config/integrations",
+    async (PlatformIntegrations body, PlatformIntegrationsStore store, CancellationToken ct) =>
+{
+    var err = PlatformIntegrationsStore.Validate(body);
+    if (err is not null) return Results.Problem(detail: err, statusCode: 400, title: "validation");
+    return Results.Ok(await store.SaveAsync(body, ct));
+}).RequireAuthorization("Admin").WithTags("System");
+
+// Publiczna konfiguracja dla aplikacji klienta — Google Client ID (jawny) do serverClientId.
+app.MapGet("/api/config/public",
+    async (IGoogleClientIdProvider google, CancellationToken ct) =>
+{
+    var googleId = await google.GetClientIdAsync(ct);
+    return Results.Ok(new { googleClientId = googleId, googleSignInEnabled = !string.IsNullOrWhiteSpace(googleId) });
+}).WithTags("System");
+
+// Multi-lokalizacja: właściciel sklepu (StoreEmployee) lub Admin dodaje kolejną LOKALIZACJĘ
+// (nowy sklep) przypisaną DO SIEBIE. Po sukcesie aplikacja/panel odświeża token (nowy store_id).
+app.MapPost("/api/merchant/stores",
+    async (CreateStoreRequest req, ICurrentUser user, CatalogService catalog, IdentityService identity, CancellationToken ct) =>
+{
+    IResult Problem(Error e) => Results.Problem(detail: e.Message, statusCode: e.ToStatusCode(), title: e.Code);
+
+    if (user.UserId is not Guid uid)
+        return Results.Problem(detail: "Brak tożsamości.", statusCode: 401, title: "unauthorized");
+    if (!(user.Roles.Contains("Admin") || user.StoreIds.Count > 0))
+        return Results.Problem(detail: "Tylko właściciel sklepu może dodać lokalizację.", statusCode: 403, title: "forbidden");
+
+    var created = await catalog.CreateStoreAsync(req.Name, req.Slug, req.Description, req.City, req.Address, req.Phone,
+        req.CommissionRate, req.MinimumOrderValue, ct, req.LogoUrl, req.Latitude, req.Longitude);
+    if (created.IsFailure) return Problem(created.Error);
+
+    var assign = await identity.AssignStoreEmployeeAsync(uid, created.Value.Id, ct);
+    if (assign.IsFailure) return Problem(assign.Error);
+
+    return Results.Ok(created.Value);
+}).RequireAuthorization().WithTags("Catalog");
+
+// Onboarding: status gotowości sklepu do sprzedaży (checklista). Agreguje Catalog + Ordering + dokumenty/integracje.
+app.MapGet("/api/stores/{storeId:guid}/readiness",
+    async (Guid storeId, ICurrentUser user, CatalogService catalog, OrderingService ordering,
+           StoreLegalStore legalStore, StoreIntegrationStore integrationStore, CancellationToken ct) =>
+{
+    if (!user.ManagesStore(storeId))
+        return Results.Problem(detail: "Brak dostępu do tego sklepu.", statusCode: 403, title: "forbidden");
+
+    var storeRes = await catalog.GetStoreAsync(storeId.ToString(), ct);
+    if (storeRes.IsFailure)
+        return Results.Problem(detail: storeRes.Error.Message, statusCode: storeRes.Error.ToStatusCode(), title: storeRes.Error.Code);
+    var store = storeRes.Value;
+
+    var hasProduct = (await catalog.ListProductsAsync(storeId, null, ct)).Any(p => p.IsAvailable);
+    var hasZone = (await ordering.ListZonesAsync(storeId, ct)).Any(z => z.IsActive);
+    var hasSlot = (await ordering.ListAvailableSlotsAsync(storeId, null, null, ct)).Count > 0;
+    var legal = await legalStore.GetAsync(storeId, ct);
+    var legalOk = !legal.RequiresAcceptance
+        || (!string.IsNullOrWhiteSpace(legal.TermsUrl) && !string.IsNullOrWhiteSpace(legal.PrivacyUrl));
+    var paymentOk = !string.IsNullOrWhiteSpace((await integrationStore.GetStatusAsync(storeId, ct)).Provider);
+    var published = store.IsActive && store.Status == "Open";
+
+    var steps = new[]
+    {
+        new { key = "logo",     label = "Logo sklepu",        done = !string.IsNullOrWhiteSpace(store.LogoUrl),          required = false, hint = "Dodaj logo w sekcji 'Profil sklepu' poniżej." },
+        new { key = "location", label = "Lokalizacja (mapa)", done = store.Latitude.HasValue && store.Longitude.HasValue, required = false, hint = "Podaj współrzędne, by klienci widzieli sklep wg odległości." },
+        new { key = "products", label = "Oferta (produkty)",  done = hasProduct,                                          required = true,  hint = "Dodaj co najmniej jeden dostępny produkt (zakładka Oferta)." },
+        new { key = "legal",    label = "Dokumenty prawne",   done = legalOk,                                             required = true,  hint = "Podaj regulamin i politykę prywatności (zakładka Integracje)." },
+        new { key = "payment",  label = "Bramka płatnicza",   done = paymentOk,                                           required = false, hint = "Podłącz swoją bramkę (zakładka Integracje). Na pilotaż działa tryb mock." },
+        new { key = "zone",     label = "Strefa dostawy",     done = hasZone,                                             required = true,  hint = "Dodaj strefę dostawy w sekcji 'Dostawa' poniżej." },
+        new { key = "slot",     label = "Termin dostawy",     done = hasSlot,                                             required = true,  hint = "Dodaj przyszły termin dostawy w sekcji 'Dostawa' poniżej." },
+        new { key = "published",label = "Sklep opublikowany", done = published,                                           required = true,  hint = "Ustaw status 'Otwarty', gdy wszystko gotowe." },
+    };
+    return Results.Ok(new { storeId, readyToSell = steps.Where(s => s.required).All(s => s.done), steps });
+}).RequireAuthorization("StoreEmployee").WithTags("Catalog");
 
 // Ustawienia platformy (edytowalne, nie‑sekretne) — odczyt i zapis (admin).
 app.MapGet("/api/admin/config/platform", async (PlatformSettingsStore store, CancellationToken ct) =>
@@ -284,7 +378,7 @@ app.MapPut("/api/admin/config/platform", async (PlatformSettings body, PlatformS
 app.MapGet("/api/payments/stores/{storeId:guid}/integration",
     async (Guid storeId, ICurrentUser user, StoreIntegrationStore store, CancellationToken ct) =>
 {
-    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    var ok = user.ManagesStore(storeId);
     if (!ok) return Results.Problem(detail: "Brak dostępu do integracji tego sklepu.", statusCode: 403, title: "forbidden");
     return Results.Ok(await store.GetStatusAsync(storeId, ct));
 }).RequireAuthorization("StoreEmployee").WithTags("Payments");
@@ -292,16 +386,31 @@ app.MapGet("/api/payments/stores/{storeId:guid}/integration",
 app.MapPut("/api/payments/stores/{storeId:guid}/integration",
     async (Guid storeId, StoreIntegrationUpdate body, ICurrentUser user, StoreIntegrationStore store, CancellationToken ct) =>
 {
-    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    var ok = user.ManagesStore(storeId);
     if (!ok) return Results.Problem(detail: "Brak dostępu do integracji tego sklepu.", statusCode: 403, title: "forbidden");
     return Results.Ok(await store.SaveAsync(storeId, body, ct));
 }).RequireAuthorization("StoreEmployee").WithTags("Payments");
+
+// Dokumenty prawne sklepu (regulamin / polityka prywatności / RODO) + wymóg akceptacji.
+// Odczyt PUBLICZNY — checkout pokazuje linki i wymóg akceptacji jeszcze przed zalogowaniem.
+app.MapGet("/api/stores/{storeId:guid}/legal", async (Guid storeId, StoreLegalStore store, CancellationToken ct) =>
+    Results.Ok(await store.GetAsync(storeId, ct))).WithTags("Legal");
+
+app.MapPut("/api/stores/{storeId:guid}/legal",
+    async (Guid storeId, StoreLegal body, ICurrentUser user, StoreLegalStore store, CancellationToken ct) =>
+{
+    var ok = user.ManagesStore(storeId);
+    if (!ok) return Results.Problem(detail: "Brak dostępu do dokumentów tego sklepu.", statusCode: 403, title: "forbidden");
+    var err = StoreLegalStore.Validate(body);
+    if (err is not null) return Results.Problem(detail: err, statusCode: 400, title: "validation");
+    return Results.Ok(await store.SaveAsync(storeId, body, ct));
+}).RequireAuthorization("StoreEmployee").WithTags("Legal");
 
 // Plan rozliczeniowy sklepu (A = dostawa ZipZap / B = kurier sklepu) — odczyt i zapis.
 app.MapGet("/api/payments/stores/{storeId:guid}/billing",
     async (Guid storeId, ICurrentUser user, StoreBillingStore billing, CancellationToken ct) =>
 {
-    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    var ok = user.ManagesStore(storeId);
     if (!ok) return Results.Problem(detail: "Brak dostępu do rozliczeń tego sklepu.", statusCode: 403, title: "forbidden");
     return Results.Ok(await billing.GetAsync(storeId, ct));
 }).RequireAuthorization("StoreEmployee").WithTags("Payments");
@@ -309,7 +418,7 @@ app.MapGet("/api/payments/stores/{storeId:guid}/billing",
 app.MapPut("/api/payments/stores/{storeId:guid}/billing",
     async (Guid storeId, StoreBilling body, ICurrentUser user, StoreBillingStore billing, CancellationToken ct) =>
 {
-    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    var ok = user.ManagesStore(storeId);
     if (!ok) return Results.Problem(detail: "Brak dostępu do rozliczeń tego sklepu.", statusCode: 403, title: "forbidden");
     return Results.Ok(await billing.SaveAsync(storeId, body, ct));
 }).RequireAuthorization("StoreEmployee").WithTags("Payments");
@@ -319,7 +428,7 @@ app.MapGet("/api/payments/stores/{storeId:guid}/invoice",
     async (Guid storeId, string? month, ICurrentUser user, PaymentsDbContext db,
            StoreBillingStore billing, PlatformSettingsStore platform, CancellationToken ct) =>
 {
-    var ok = user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    var ok = user.ManagesStore(storeId);
     if (!ok) return Results.Problem(detail: "Brak dostępu do rozliczeń tego sklepu.", statusCode: 403, title: "forbidden");
 
     var now = DateTime.UtcNow;
@@ -372,6 +481,7 @@ app.MapDeliveryEndpoints();
 app.MapNotificationsEndpoints();
 app.MapIntegrationsEndpoints();
 app.MapAuditEndpoints();
+app.MapFeedbackEndpoints();
 
 app.Run();
 

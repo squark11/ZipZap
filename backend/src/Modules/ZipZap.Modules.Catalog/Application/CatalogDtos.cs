@@ -4,11 +4,13 @@ namespace ZipZap.Modules.Catalog.Application;
 
 public sealed record StoreDto(
     Guid Id, string Name, string Slug, string? Description, string City, string? Address, string? Phone,
-    decimal CommissionRate, decimal MinimumOrderValue, bool IsActive, string Status, bool IsAcceptingOrders)
+    decimal CommissionRate, decimal MinimumOrderValue, bool IsActive, string Status, bool IsAcceptingOrders,
+    string? LogoUrl, double? Latitude, double? Longitude, double? DistanceKm = null)
 {
-    public static StoreDto From(Store s) =>
+    public static StoreDto From(Store s, double? distanceKm = null) =>
         new(s.Id, s.Name, s.Slug, s.Description, s.City, s.Address, s.Phone,
-            s.CommissionRate, s.MinimumOrderValue, s.IsActive, s.Status.ToString(), s.IsAcceptingOrders);
+            s.CommissionRate, s.MinimumOrderValue, s.IsActive, s.Status.ToString(), s.IsAcceptingOrders,
+            s.LogoUrl, s.Latitude, s.Longitude, distanceKm);
 }
 
 public sealed record CategoryDto(Guid Id, Guid StoreId, string Name, int SortOrder, Guid? ParentId)

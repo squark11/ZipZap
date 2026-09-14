@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using ZipZap.BuildingBlocks.Domain;
 using ZipZap.BuildingBlocks.Messaging;
@@ -20,12 +22,15 @@ public sealed class OrderingService
     private readonly OrderingDbContext _db;
     private readonly ICurrentUser _user;
     private readonly IIntegrationEventTypeRegistry _events;
+    private readonly IStoreLegalPolicyProvider _legal;
 
-    public OrderingService(OrderingDbContext db, ICurrentUser user, IIntegrationEventTypeRegistry events)
+    public OrderingService(OrderingDbContext db, ICurrentUser user, IIntegrationEventTypeRegistry events,
+        IStoreLegalPolicyProvider legal)
     {
         _db = db;
         _user = user;
         _events = events;
+        _legal = legal;
     }
 
     // ---------------- Koszyk ----------------
@@ -144,7 +149,8 @@ public sealed class OrderingService
     // ---------------- Zamówienie ----------------
 
     public async Task<Result<OrderDto>> PlaceOrderAsync(Guid cartId, string token, Guid deliveryZoneId,
-        Guid timeSlotId, string deliveryAddress, string contactPhone, string? idempotencyKey, CancellationToken ct)
+        Guid timeSlotId, string deliveryAddress, string contactPhone, bool consentAccepted,
+        string? idempotencyKey, CancellationToken ct)
     {
         if (_user.UserId is not Guid customerId)
             return Error.Unauthorized("Złożenie zamówienia wymaga zalogowania.");
@@ -170,6 +176,11 @@ public sealed class OrderingService
         if (!store.IsAcceptingOrders) return Error.Validation("Sklep aktualnie nie przyjmuje zamówień (zamknięty lub niedostępny).");
         if (cart.Subtotal < store.MinimumOrderValue)
             return Error.Validation($"Minimalna wartość zamówienia to {store.MinimumOrderValue:0.00}. Wartość koszyka: {cart.Subtotal:0.00}.");
+
+        // Bramka zgód: gdy sklep wymaga akceptacji dokumentów, klient musi ją potwierdzić przed zakupem.
+        var legal = await _legal.GetAsync(cart.StoreId, ct);
+        if (legal is { RequiresAcceptance: true } && !consentAccepted)
+            return Error.Validation("Aby złożyć zamówienie, zaakceptuj regulamin i politykę prywatności sklepu.");
 
         var zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.Id == deliveryZoneId && z.StoreId == cart.StoreId, ct);
         if (zone is null || !zone.IsActive) return Error.NotFound("Strefa dostaw nie istnieje.");
@@ -224,7 +235,7 @@ public sealed class OrderingService
 
         var isOwner = _user.UserId == order.CustomerId;
         var isStaff = _user.Roles.Contains("Admin")
-                      || (_user.Roles.Contains("StoreEmployee") && _user.StoreId == order.StoreId)
+                      || (_user.Roles.Contains("StoreEmployee") && _user.StoreIds.Contains(order.StoreId))
                       || _user.Roles.Contains("Driver");
         if (!isOwner && !isStaff) return Error.Forbidden("Brak dostępu do zamówienia.");
 
@@ -257,6 +268,69 @@ public sealed class OrderingService
 
         var orders = await query.OrderByDescending(o => o.PlacedAtUtc).ToListAsync(ct);
         return Result.Success<IReadOnlyList<OrderDto>>(orders.Select(o => OrderDto.From(o)).ToList());
+    }
+
+    /// <summary>
+    /// Eksport zamówień sklepu do CSV dla księgowości — jeden wiersz na zamówienie
+    /// (numer, data, status, liczba pozycji, wartości finansowe). Zakres dat po dacie złożenia
+    /// (włącznie z dniem `to`); opcjonalny filtr statusu. Izolacja najemcy jak w podglądzie.
+    /// </summary>
+    public async Task<Result<string>> ExportStoreOrdersAsync(
+        Guid storeId, string? status, DateOnly? from, DateOnly? to, CancellationToken ct)
+    {
+        var guard = EnsureCanManageStore(storeId);
+        if (guard.IsFailure) return guard.Error;
+
+        var query = _db.Orders.AsNoTracking().Where(o => o.StoreId == storeId);
+        if (Enum.TryParse<OrderStatus>(status, ignoreCase: true, out var parsed))
+            query = query.Where(o => o.Status == parsed);
+        if (from is { } fd)
+        {
+            var f = DateTime.SpecifyKind(fd.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            query = query.Where(o => o.PlacedAtUtc >= f);
+        }
+        if (to is { } td)
+        {
+            var t = DateTime.SpecifyKind(td.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            query = query.Where(o => o.PlacedAtUtc < t);
+        }
+
+        var rows = await query.OrderBy(o => o.PlacedAtUtc)
+            .Select(o => new
+            {
+                o.Id, o.PlacedAtUtc, o.Status, ItemCount = o.Items.Count,
+                o.Subtotal, o.CommissionAmount, o.DeliveryFee, o.Total, o.Currency,
+            }).ToListAsync(ct);
+
+        var sb = new StringBuilder();
+        sb.Append("numer;data;status;pozycje;produkty;prowizja;dostawa;suma;waluta\r\n");
+        foreach (var r in rows)
+        {
+            sb.Append(r.Id).Append(';')
+              .Append(r.PlacedAtUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)).Append(';')
+              .Append(StatusLabel(r.Status)).Append(';')
+              .Append(r.ItemCount.ToString(CultureInfo.InvariantCulture)).Append(';')
+              .Append(Money(r.Subtotal)).Append(';')
+              .Append(Money(r.CommissionAmount)).Append(';')
+              .Append(Money(r.DeliveryFee)).Append(';')
+              .Append(Money(r.Total)).Append(';')
+              .Append(r.Currency).Append("\r\n");
+        }
+        return sb.ToString();
+
+        static string Money(decimal v) => v.ToString("0.00", CultureInfo.InvariantCulture).Replace('.', ',');
+        static string StatusLabel(OrderStatus s) => s switch
+        {
+            OrderStatus.Placed => "Złożone",
+            OrderStatus.Confirmed => "Potwierdzone",
+            OrderStatus.Picking => "Kompletowane",
+            OrderStatus.ReadyForPickup => "Gotowe do odbioru",
+            OrderStatus.InDelivery => "W dostawie",
+            OrderStatus.Delivered => "Dostarczone",
+            OrderStatus.Completed => "Zrealizowane",
+            OrderStatus.Cancelled => "Anulowane",
+            _ => s.ToString(),
+        };
     }
 
     public async Task<Result<OrderDto>> ChangeStatusAsync(Guid orderId, OrderAction action, CancellationToken ct)
@@ -303,16 +377,14 @@ public sealed class OrderingService
         => cart.CartToken == token || (_user.UserId is Guid uid && cart.CustomerId == uid);
 
     private Result EnsureCanManageStore(Guid storeId)
-    {
-        if (_user.Roles.Contains("Admin")) return Result.Success();
-        if (_user.Roles.Contains("StoreEmployee") && _user.StoreId == storeId) return Result.Success();
-        return Result.Failure(Error.Forbidden("Brak uprawnień do zarządzania tym sklepem."));
-    }
+        => _user.ManagesStore(storeId)
+            ? Result.Success()
+            : Result.Failure(Error.Forbidden("Brak uprawnień do zarządzania tym sklepem."));
 
     private Result Authorize(OrderAction action, Order order)
     {
         var isAdmin = _user.Roles.Contains("Admin");
-        var isStoreStaff = _user.Roles.Contains("StoreEmployee") && _user.StoreId == order.StoreId;
+        var isStoreStaff = _user.Roles.Contains("StoreEmployee") && _user.StoreIds.Contains(order.StoreId);
         var isDriver = _user.Roles.Contains("Driver");
 
         var allowed = action switch

@@ -24,6 +24,12 @@ public sealed class HttpContextCurrentUser : ICurrentUser
     public Guid? StoreId =>
         Guid.TryParse(Principal?.FindFirstValue("store_id"), out var storeId) ? storeId : null;
 
+    public IReadOnlyCollection<Guid> StoreIds =>
+        Principal?.FindAll("store_id")
+            .Select(c => Guid.TryParse(c.Value, out var id) ? id : (Guid?)null)
+            .Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray()
+        ?? Array.Empty<Guid>();
+
     public IReadOnlyCollection<string> Roles =>
         Principal?.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToArray() ?? Array.Empty<string>();
 

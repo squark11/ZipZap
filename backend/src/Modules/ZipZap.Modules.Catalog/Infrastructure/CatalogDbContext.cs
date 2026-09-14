@@ -37,6 +37,9 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.Property(s => s.City).IsRequired().HasMaxLength(120);
             e.Property(s => s.Address).HasMaxLength(300);
             e.Property(s => s.Phone).HasMaxLength(32);
+            e.Property(s => s.LogoUrl).HasMaxLength(500);
+            e.Property(s => s.Latitude);
+            e.Property(s => s.Longitude);
             e.Property(s => s.CommissionRate).HasColumnType("numeric(5,4)");
             e.Property(s => s.MinimumOrderValue).HasColumnType("numeric(12,2)");
             e.Property(s => s.Status).HasConversion<string>().HasMaxLength(24);

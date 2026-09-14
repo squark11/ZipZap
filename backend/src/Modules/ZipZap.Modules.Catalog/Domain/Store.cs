@@ -15,6 +15,13 @@ public sealed class Store : AggregateRoot
     public string? Address { get; private set; }
     public string? Phone { get; private set; }
 
+    /// <summary>Logo sklepu (URL) — branding widoczny dla klienta. Puste = brak.</summary>
+    public string? LogoUrl { get; private set; }
+
+    /// <summary>Współrzędne sklepu — do proponowania sklepów wg odległości. Null = nieustalone.</summary>
+    public double? Latitude { get; private set; }
+    public double? Longitude { get; private set; }
+
     /// <summary>Prowizja ZipZap od wartości koszyka (0.10 = 10%).</summary>
     public decimal CommissionRate { get; private set; }
 
@@ -60,4 +67,16 @@ public sealed class Store : AggregateRoot
     public void SetStatus(StoreStatus status) => Status = status;
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
+
+    public void SetLogoUrl(string? logoUrl)
+        => LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
+
+    /// <summary>Ustawia współrzędne; przekazanie null czyści (np. po zmianie adresu do ponownego geokodowania).</summary>
+    public void SetLocation(double? latitude, double? longitude)
+    {
+        if (latitude is < -90 or > 90) throw new ArgumentOutOfRangeException(nameof(latitude), "Szerokość musi być w zakresie -90..90.");
+        if (longitude is < -180 or > 180) throw new ArgumentOutOfRangeException(nameof(longitude), "Długość musi być w zakresie -180..180.");
+        Latitude = latitude;
+        Longitude = longitude;
+    }
 }

@@ -235,6 +235,19 @@ public sealed class IdentityService
         return UserDto.From(user);
     }
 
+    /// <summary>
+    /// Przypisuje istniejącemu użytkownikowi kolejny sklep jako pracownika (multi-lokalizacja).
+    /// Idempotentne (domena deduplikuje rolę). Zwraca zaktualizowaną listę StoreIds użytkownika.
+    /// </summary>
+    public async Task<Result<UserDto>> AssignStoreEmployeeAsync(Guid userId, Guid storeId, CancellationToken ct)
+    {
+        var user = await _db.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Error.NotFound("Użytkownik nie istnieje.");
+        user.AssignRole(Role.StoreEmployee, storeId);
+        await _db.SaveChangesAsync(ct);
+        return UserDto.From(user);
+    }
+
     /// <summary>Zespół sklepu: pracownicy i kierowcy przypisani do danego sklepu.</summary>
     public async Task<IReadOnlyList<TeamMemberDto>> ListStoreTeamAsync(Guid storeId, CancellationToken ct)
     {

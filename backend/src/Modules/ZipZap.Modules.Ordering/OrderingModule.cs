@@ -28,6 +28,9 @@ public static class OrderingModule
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<OrderingDbContext>>();
         services.AddScoped<OrderingService>();
 
+        // Domyślnie brak polityki prawnej sklepu; host nadpisuje adapterem nad magazynem dokumentów.
+        services.AddSingleton<IStoreLegalPolicyProvider, NullStoreLegalPolicyProvider>();
+
         // Konsumpcja zdarzeń Catalog → lokalny read-model (cross-module tylko przez eventy).
         services.AddScoped<CatalogStoreProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<StoreRegistered>>(sp => sp.GetRequiredService<CatalogStoreProjectionHandler>());

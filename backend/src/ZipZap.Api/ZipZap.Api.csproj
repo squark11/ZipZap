@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Modules\ZipZap.Modules.Notifications\ZipZap.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Modules\ZipZap.Modules.Integrations\ZipZap.Modules.Integrations.csproj" />
     <ProjectReference Include="..\Modules\ZipZap.Modules.Audit\ZipZap.Modules.Audit.csproj" />
+    <ProjectReference Include="..\Modules\ZipZap.Modules.Feedback\ZipZap.Modules.Feedback.csproj" />
   </ItemGroup>
 
 </Project>

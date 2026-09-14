@@ -1,30 +1,30 @@
 using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using ZipZap.Modules.Identity.Application;
 
 namespace ZipZap.Modules.Identity.Infrastructure;
 
 /// <summary>
 /// Weryfikuje token ID Google biblioteką Google.Apis.Auth (sprawdza podpis
-/// kluczami Google, wystawcę i audience = skonfigurowany ClientId).
+/// kluczami Google, wystawcę i audience = aktualny Client ID z <see cref="IGoogleClientIdProvider"/>).
 /// </summary>
 public sealed class GoogleTokenValidator : IGoogleTokenValidator
 {
-    private readonly GoogleOptions _options;
+    private readonly IGoogleClientIdProvider _clientIds;
     private readonly ILogger<GoogleTokenValidator> _logger;
 
-    public GoogleTokenValidator(IOptions<GoogleOptions> options, ILogger<GoogleTokenValidator> logger)
+    public GoogleTokenValidator(IGoogleClientIdProvider clientIds, ILogger<GoogleTokenValidator> logger)
     {
-        _options = options.Value;
+        _clientIds = clientIds;
         _logger = logger;
     }
 
     public async Task<GoogleUserInfo?> ValidateAsync(string idToken, CancellationToken ct = default)
     {
-        if (!_options.Enabled)
+        var clientId = await _clientIds.GetClientIdAsync(ct);
+        if (string.IsNullOrWhiteSpace(clientId))
         {
-            _logger.LogWarning("Logowanie Google nie jest skonfigurowane (brak Google:ClientId).");
+            _logger.LogWarning("Logowanie Google nie jest skonfigurowane (brak Client ID w panelu ani env).");
             return null;
         }
         if (string.IsNullOrWhiteSpace(idToken)) return null;
@@ -33,7 +33,7 @@ public sealed class GoogleTokenValidator : IGoogleTokenValidator
         {
             var settings = new GoogleJsonWebSignature.ValidationSettings
             {
-                Audience = new[] { _options.ClientId },
+                Audience = new[] { clientId },
             };
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             return new GoogleUserInfo(payload.Subject, payload.Email, payload.Name ?? payload.Email, payload.EmailVerified);

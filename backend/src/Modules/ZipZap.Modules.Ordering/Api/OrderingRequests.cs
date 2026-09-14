@@ -12,4 +12,5 @@ public sealed record CreateSlotRequest(
     Guid DeliveryZoneId, DateOnly Date, TimeOnly StartTime, TimeOnly EndTime, int MaxOrders);
 
 public sealed record PlaceOrderRequest(
-    string Token, Guid DeliveryZoneId, Guid TimeSlotId, string DeliveryAddress, string ContactPhone);
+    string Token, Guid DeliveryZoneId, Guid TimeSlotId, string DeliveryAddress, string ContactPhone,
+    bool ConsentAccepted = false);

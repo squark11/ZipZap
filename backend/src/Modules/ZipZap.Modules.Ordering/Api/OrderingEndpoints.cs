@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using ZipZap.BuildingBlocks.Auditing;
 using ZipZap.BuildingBlocks.Domain;
 using ZipZap.Modules.Ordering.Application;
 
@@ -47,11 +48,22 @@ public static class OrderingEndpoints
 
         // ---------- Zamówienia ----------
 
-        group.MapPost("/carts/{cartId:guid}/checkout", async (Guid cartId, PlaceOrderRequest req, HttpContext http, OrderingService svc, CancellationToken ct) =>
+        group.MapPost("/carts/{cartId:guid}/checkout", async (Guid cartId, PlaceOrderRequest req, HttpContext http,
+            OrderingService svc, IStoreLegalPolicyProvider legal, IAuditLogger audit, CancellationToken ct) =>
         {
             var idempotencyKey = http.Request.Headers.TryGetValue("Idempotency-Key", out var k) ? k.ToString() : null;
-            return Respond(await svc.PlaceOrderAsync(cartId, req.Token, req.DeliveryZoneId, req.TimeSlotId,
-                req.DeliveryAddress, req.ContactPhone, idempotencyKey, ct));
+            var result = await svc.PlaceOrderAsync(cartId, req.Token, req.DeliveryZoneId, req.TimeSlotId,
+                req.DeliveryAddress, req.ContactPhone, req.ConsentAccepted, idempotencyKey, ct);
+
+            // Trwały dowód zgody: gdy sklep wymagał akceptacji, zapisz przyjęte dokumenty (URL + czas) w audycie.
+            if (result.IsSuccess && req.ConsentAccepted)
+            {
+                var policy = await legal.GetAsync(result.Value.StoreId, ct);
+                if (policy is { RequiresAcceptance: true })
+                    await audit.LogAsync("order.consent.accepted", "order", result.Value.Id.ToString(), result.Value.StoreId,
+                        new { result.Value.CustomerId, policy.TermsUrl, policy.PrivacyUrl, policy.GdprUrl, acceptedAtUtc = DateTime.UtcNow }, ct);
+            }
+            return Respond(result);
         })
         .RequireAuthorization(); // wymaga zalogowanego klienta (rejestracja przy płatności)
 
@@ -66,6 +78,18 @@ public static class OrderingEndpoints
         group.MapGet("/stores/{storeId:guid}/orders", async (Guid storeId, string? status, OrderingService svc, CancellationToken ct) =>
             Respond(await svc.ListStoreOrdersAsync(storeId, status, ct)))
             .RequireAuthorization("StoreEmployee");
+
+        // Eksport zamówień do księgowości (CSV, per sklep + zakres dat + opcjonalny status).
+        group.MapGet("/stores/{storeId:guid}/orders/export",
+            async (Guid storeId, string? status, DateOnly? from, DateOnly? to, OrderingService svc, CancellationToken ct) =>
+        {
+            var result = await svc.ExportStoreOrdersAsync(storeId, status, from, to, ct);
+            if (result.IsFailure)
+                return Results.Problem(detail: result.Error.Message, statusCode: result.Error.ToStatusCode(), title: result.Error.Code);
+            var bytes = System.Text.Encoding.UTF8.GetBytes("﻿" + result.Value); // BOM UTF‑8
+            var fileName = $"zamowienia-{storeId:N}-{DateTime.UtcNow:yyyyMMdd}.csv";
+            return Results.File(bytes, "text/csv; charset=utf-8", fileName);
+        }).RequireAuthorization("StoreEmployee");
 
         // Przejścia statusów (autoryzacja per-akcja w serwisie)
         // Akcje sklepu/administracji. Odbiór i dostarczenie prowadzi kierowca

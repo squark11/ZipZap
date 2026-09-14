@@ -15,8 +15,8 @@ public static class CatalogEndpoints
 
         // ---------- Publiczne (przeglądanie bez logowania) ----------
 
-        group.MapGet("/stores", async (bool? onlyActive, CatalogService svc, CancellationToken ct) =>
-            Results.Ok(await svc.ListStoresAsync(onlyActive ?? true, ct)));
+        group.MapGet("/stores", async (bool? onlyActive, double? lat, double? lng, CatalogService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListStoresAsync(onlyActive ?? true, lat, lng, ct)));
 
         group.MapGet("/stores/{idOrSlug}", async (string idOrSlug, CatalogService svc, CancellationToken ct) =>
         {
@@ -52,16 +52,17 @@ public static class CatalogEndpoints
         {
             var result = await svc.CreateStoreAsync(
                 req.Name, req.Slug, req.Description, req.City, req.Address, req.Phone,
-                req.CommissionRate, req.MinimumOrderValue, ct);
+                req.CommissionRate, req.MinimumOrderValue, ct, req.LogoUrl, req.Latitude, req.Longitude);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("Admin");
 
         group.MapPatch("/stores/{storeId:guid}", async (Guid storeId, UpdateStoreRequest req, CatalogService svc, IAuditLogger audit, CancellationToken ct) =>
         {
-            var result = await svc.UpdateStoreAsync(storeId, req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, ct);
+            var result = await svc.UpdateStoreAsync(storeId, req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, ct,
+                req.LogoUrl, req.Latitude, req.Longitude);
             if (result.IsSuccess)
                 await audit.LogAsync("store.updated", "store", storeId.ToString(), storeId,
-                    new { req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue }, ct);
+                    new { req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, req.LogoUrl, req.Latitude, req.Longitude }, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 
@@ -87,6 +88,31 @@ public static class CatalogEndpoints
                 id, req.Name, req.Price, req.IsAvailable, req.CategoryId,
                 req.StockQty, req.Description, req.ImageUrl, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+        }).RequireAuthorization("StoreEmployee");
+
+        // Import asortymentu z CSV. `commit=false` (domyślnie) = podgląd/walidacja bez zapisu;
+        // `commit=true` = upsert produktów i kategorii po nazwie.
+        group.MapPost("/stores/{storeId:guid}/products/import",
+            async (Guid storeId, bool? commit, ImportProductsRequest req, CatalogService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var doCommit = commit ?? false;
+            var result = await svc.ImportProductsAsync(storeId, req.Content, doCommit, ct);
+            if (result.IsSuccess && doCommit)
+                await audit.LogAsync("catalog.import", "store", storeId.ToString(), storeId,
+                    new { result.Value.Total, result.Value.Created, result.Value.Updated, result.Value.Failed }, ct);
+            return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+        }).RequireAuthorization("StoreEmployee");
+
+        // Eksport asortymentu do CSV (format zgodny z importem — round-trip: pobierz, edytuj, wgraj).
+        group.MapGet("/stores/{storeId:guid}/products/export",
+            async (Guid storeId, CatalogService svc, CancellationToken ct) =>
+        {
+            var result = await svc.ExportProductsAsync(storeId, ct);
+            if (result.IsFailure) return Problem(result.Error);
+            // Prefiks ﻿ = BOM UTF‑8 (poprawne polskie znaki w Excelu).
+            var bytes = System.Text.Encoding.UTF8.GetBytes("﻿" + result.Value);
+            var fileName = $"asortyment-{storeId:N}-{DateTime.UtcNow:yyyyMMdd}.csv";
+            return Results.File(bytes, "text/csv; charset=utf-8", fileName);
         }).RequireAuthorization("StoreEmployee");
 
         return app;

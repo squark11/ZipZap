@@ -139,8 +139,7 @@ public static class PaymentsEndpoints
         return app;
     }
 
-    private static bool CanViewStore(ICurrentUser user, Guid storeId)
-        => user.Roles.Contains("Admin") || (user.Roles.Contains("StoreEmployee") && user.StoreId == storeId);
+    private static bool CanViewStore(ICurrentUser user, Guid storeId) => user.ManagesStore(storeId);
 
     private static IResult Forbidden()
         => Results.Problem(detail: "Brak dostępu do danych tego sklepu.", statusCode: 403, title: "forbidden");
