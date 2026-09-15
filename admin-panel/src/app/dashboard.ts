@@ -13,7 +13,7 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
 
   <div class="tiles">
     <div class="tile">
-      <div class="k">Prowizja ZipZap (rozliczona)</div>
+      <div class="k">Prowizja Dowózka.pl (rozliczona)</div>
       <div class="v accent">{{ (commission?.totalCommission ?? 0) | number:'1.2-2' }} zł</div>
       <div class="muted">{{ commission?.entries ?? 0 }} rozliczonych zamówień</div>
     </div>

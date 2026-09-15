@@ -22,11 +22,11 @@ interface BillingDto { plan: string; }
   <div class="card pad" style="margin-bottom:16px">
     <div class="inv-head">
       <div>
-        <div class="k">Faktura miesięczna ZipZap → sklep</div>
+        <div class="k">Faktura miesięczna Dowózka.pl → sklep</div>
         <div class="muted" style="font-size:13px">
           Plan
           <select [(ngModel)]="plan" (ngModelChange)="savePlan()" style="margin:0 6px">
-            <option value="A">A — dostawa ZipZap ({{ invoice?.unitFee ?? 25 | number:'1.2-2' }} zł/dostawę)</option>
+            <option value="A">A — dostawa Dowózka.pl ({{ invoice?.unitFee ?? 25 | number:'1.2-2' }} zł/dostawę)</option>
             <option value="B">B — kurier sklepu (prowizja)</option>
           </select>
           · miesiąc
@@ -45,7 +45,7 @@ interface BillingDto { plan: string; }
 
   <div class="tiles">
     <div class="tile">
-      <div class="k">Prowizja ZipZap (rozliczona)</div>
+      <div class="k">Prowizja Dowózka.pl (rozliczona)</div>
       <div class="v accent">{{ (summary?.settledCommission ?? 0) | number:'1.2-2' }} zł</div>
       <div class="muted">{{ ledger.length }} rozliczonych zamówień</div>
     </div>

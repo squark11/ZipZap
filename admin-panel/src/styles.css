@@ -1,6 +1,6 @@
 :root {
-  --zz-orange: #F97316;
-  --zz-orange-600: #EA6A0C;
+  --zz-orange: #14B9BA;
+  --zz-orange-600: #0E9A9B;
   --zz-green: #22C55E;
   --zz-graphite: #3A3F4B;
   --rail: #23272F;
@@ -16,7 +16,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
-  font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+  font-family: 'Poppins', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
   color: var(--text);
   background: var(--bg);
   font-size: 14px;
@@ -28,12 +28,13 @@ input, select { font-family: inherit; }
 .auth { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 100vh; }
 .auth-brand {
   position: relative; overflow: hidden; color: #fff; padding: 56px 60px;
-  background: radial-gradient(1200px 600px at -10% -20%, #FBA94C 0%, transparent 55%),
-              linear-gradient(140deg, var(--zz-orange) 0%, #F35C2E 45%, #16A34A 130%);
+  background: radial-gradient(1200px 600px at -10% -20%, #3FD0D1 0%, transparent 55%),
+              linear-gradient(140deg, var(--zz-orange) 0%, #0E9A9B 55%, #0B7E7F 130%);
   display: flex; flex-direction: column;
 }
 .auth-brand .logo { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
-.auth-brand .logo .zap { color: #23272F; }
+.auth-brand .logo { display: flex; align-items: center; }
+.auth-brand .logo .zap { color: rgba(255,255,255,.72); }
 .auth-brand h1 { font-size: 40px; line-height: 1.1; margin: auto 0 18px; max-width: 12ch; font-weight: 800; }
 .auth-brand p.lead { font-size: 16px; opacity: .95; max-width: 42ch; margin: 0 0 26px; }
 .auth-brand ul.points { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 12px; }
@@ -50,10 +51,10 @@ input, select { font-family: inherit; }
   padding: 13px 14px; border: 1px solid transparent; border-radius: 12px;
   background: #EEF2F8; font-size: 15px; color: var(--text); transition: .15s;
 }
-.field input:focus { outline: none; background: #fff; border-color: var(--zz-orange); box-shadow: 0 0 0 3px rgba(249,115,22,.15); }
+.field input:focus { outline: none; background: #fff; border-color: var(--zz-orange); box-shadow: 0 0 0 3px rgba(20,185,186,.18); }
 .btn-lg {
   width: 100%; padding: 14px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 15px;
-  background: linear-gradient(135deg, var(--zz-orange), #F35C2E); box-shadow: 0 8px 20px rgba(243,92,46,.28);
+  background: linear-gradient(135deg, var(--zz-orange), #0E9A9B); box-shadow: 0 8px 20px rgba(20,185,186,.30);
 }
 .btn-lg:disabled { opacity: .65; box-shadow: none; }
 .auth .error { color: #DC2626; font-size: 14px; margin: 12px 0 0; }
@@ -67,14 +68,14 @@ input, select { font-family: inherit; }
 }
 .rail .rail-logo {
   width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 14px;
-  background: linear-gradient(135deg, var(--zz-orange), #F35C2E); color: #fff; font-weight: 800; font-size: 18px;
+  background: linear-gradient(135deg, var(--zz-orange), #0E9A9B); color: #fff; font-weight: 800; font-size: 20px;
 }
 .rail-btn {
   width: 46px; height: 46px; border-radius: 13px; background: transparent; color: #AEB6C2;
   display: grid; place-items: center; position: relative;
 }
 .rail-btn:hover { background: var(--rail-2); color: #fff; }
-.rail-btn.active { background: rgba(249,115,22,.16); color: var(--zz-orange); }
+.rail-btn.active { background: rgba(20,185,186,.16); color: var(--zz-orange); }
 .rail-btn svg { width: 22px; height: 22px; }
 .rail .spacer { margin-top: auto; }
 .rail-btn .tip {
@@ -160,7 +161,7 @@ input, select { font-family: inherit; }
   background: transparent; color: var(--text); font-size: 14px; text-align: left;
 }
 .statusnav button:hover { background: #F3F5F9; }
-.statusnav button.active { background: rgba(249,115,22,.1); color: var(--zz-orange); font-weight: 600; }
+.statusnav button.active { background: rgba(20,185,186,.1); color: var(--zz-orange); font-weight: 600; }
 .statusnav .dotc { width: 9px; height: 9px; border-radius: 50%; background: #CBD2DD; }
 .statusnav button.active .dotc { background: var(--zz-orange); }
 .statusnav .count { margin-left: auto; background: #EEF2F8; color: var(--muted); border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700; }

@@ -101,7 +101,7 @@ export interface StoreLegal {
     .set { color:#128040; font-weight:600; }
     .lbl { display:block; font-size:13px; font-weight:600; color:#3A3F4B; margin:14px 0 6px; }
     input, select { border:1px solid #E5E7EB; border-radius:8px; padding:9px 11px; font-size:14px; width:100%; box-sizing:border-box; background:#fff; }
-    input:focus, select:focus { outline:none; border-color:#F97316; }
+    input:focus, select:focus { outline:none; border-color:#14B9BA; }
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     .chk { display:flex; align-items:center; gap:8px; margin:16px 0 0; font-size:14px; }
     .chk input { width:auto; }

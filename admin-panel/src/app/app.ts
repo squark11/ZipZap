@@ -21,7 +21,12 @@ import { FeedbackComponent } from './feedback';
   @if (!api.isLoggedIn()) {
     <div class="auth">
       <div class="auth-brand">
-        <div class="logo">Zip<span class="zap">Zap</span></div>
+        <div class="logo">
+          <svg viewBox="0 0 128 128" width="34" height="34" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-7px;margin-right:6px">
+            <path d="M18 30 H32 L46 86 H98"/><path d="M36 46 H108 L98 86"/>
+            <circle cx="56" cy="103" r="7.5"/><circle cx="92" cy="103" r="7.5"/>
+            <path d="M50 59 H86 V50 L112 65 L86 80 V71 H50 Z" fill="#fff" stroke="none"/>
+          </svg>Dowózka<span class="zap">.pl</span></div>
         <h1>Zakupy z lokalnych sklepów z dostawą</h1>
         <p class="lead">Panel sprzedawcy do zarządzania zamówieniami, ofertą i dostawami — z jednego miejsca.</p>
         <ul class="points">
@@ -52,7 +57,13 @@ import { FeedbackComponent } from './feedback';
   } @else {
     <div class="app-shell">
       <aside class="rail">
-        <div class="rail-logo">Z</div>
+        <div class="rail-logo">
+          <svg viewBox="0 0 128 128" width="24" height="24" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 30 H32 L46 86 H98"/><path d="M36 46 H108 L98 86"/>
+            <circle cx="56" cy="103" r="7.5"/><circle cx="92" cy="103" r="7.5"/>
+            <path d="M50 59 H86 V50 L112 65 L86 80 V71 H50 Z" fill="#fff" stroke="none"/>
+          </svg>
+        </div>
         <button class="rail-btn" [class.active]="tab==='onboarding'" (click)="tab='onboarding'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <span class="tip">Start</span>

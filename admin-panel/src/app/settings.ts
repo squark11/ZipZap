@@ -24,6 +24,9 @@ export interface PlatformSettings {
 
 export interface PlatformIntegrations {
   googleClientId?: string;
+  captchaProvider?: string;
+  captchaSiteKey?: string;
+  hasCaptchaSecret?: boolean;
 }
 
 @Component({
@@ -112,8 +115,30 @@ export interface PlatformIntegrations {
     <label class="lbl">Google OAuth — Client ID (Web)</label>
     <input type="text" name="gid" [(ngModel)]="integrations.googleClientId"
            placeholder="123456789-abc.apps.googleusercontent.com" />
+    <p class="muted" style="font-size:12px;margin-top:6px">Puste = logowanie Google wyłączone (zadziała fallback z env, jeśli ustawiony).</p>
+
+    <hr style="border:none;border-top:1px solid #eef0f3;margin:16px 0" />
+    <b style="font-size:14px">Captcha (ochrona formularzy)</b>
+    <p class="muted" style="font-size:13px;margin:4px 0 10px">Chroni publiczne formularze (rejestracja, uwagi). Rekomendacja: <b>Cloudflare Turnstile</b> (darmowy). Puste = wyłączona.</p>
+    <div class="grid2">
+      <div>
+        <label class="lbl">Dostawca</label>
+        <select name="capprov" [(ngModel)]="integrations.captchaProvider">
+          <option value="">— wyłączona —</option>
+          <option value="turnstile">Cloudflare Turnstile</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">Site key (jawny)</label>
+        <input type="text" name="capsite" [(ngModel)]="integrations.captchaSiteKey" placeholder="0x4AAAA..." />
+      </div>
+    </div>
+    <label class="lbl">Secret key @if (integrations.hasCaptchaSecret) { <span style="color:#128040;font-weight:600">• ustawiony</span> }</label>
+    <input type="password" name="capsecret" [(ngModel)]="captchaSecret"
+           [placeholder]="integrations.hasCaptchaSecret ? '•••••••• (bez zmian)' : 'wklej secret key'" />
+
     @if (integError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ integError }}</p> }
-    <p class="muted" style="font-size:12px;margin-top:8px">Puste = logowanie Google wyłączone (zadziała fallback z env, jeśli ustawiony).</p>
+    <p class="note" style="margin-top:12px">🔒 Secret jest szyfrowany i nigdy nie pokazywany z powrotem. Site key jest jawny (renderowany u klienta).</p>
   </div>
 
   <div class="card pad">
@@ -130,6 +155,20 @@ export interface PlatformIntegrations {
       <li>Hosting / CI — Cloudflare / Fly.io / Neon (jako sekrety CI)</li>
     </ul>
   </div>
+
+  <div class="card pad">
+    <div class="page-head" style="margin-bottom:6px">
+      <h1 style="font-size:16px;margin:0">Dane demo (pilotaż)</h1>
+      <div class="controls">
+        @if (seedMsg) { <span class="ok-msg">{{ seedMsg }}</span> }
+        <button class="btn ghost sm" (click)="seedDemo()" [disabled]="seeding">Zasiej sklepy demo</button>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:0">Tworzy przykładowe sklepy <b>Rapacz</b> i <b>Lewiatan</b> z logo, produktami (zdjęcia),
+      strefą i terminem dostawy — gotowe do sprzedaży i widoczne wg odległości. Idempotentne (nie duplikuje).
+      Dane są <b>do podmiany</b> przez sklep.</p>
+    @if (seedError) { <p class="warn">{{ seedError }}</p> }
+  </div>
   `,
   styles: [`
     .cfg { display:flex; flex-direction:column; gap:2px; }
@@ -137,11 +176,13 @@ export interface PlatformIntegrations {
     .cfg .row:last-child { border-bottom:0; }
     .cfg .row span { color:#6B7280; }
     .warn { margin-top:12px; background:#FFF3EA; color:#EA6A0C; padding:10px 12px; border-radius:8px; font-size:13px; }
+    .note { background:#F1F3F5; color:#6B7280; padding:10px 12px; border-radius:8px; font-size:13px; }
+    select { border:1px solid #E5E7EB; border-radius:8px; padding:9px 11px; font-size:14px; width:100%; box-sizing:border-box; background:#fff; }
     .check { margin:8px 0 0; padding-left:18px; color:#3A3F4B; line-height:1.9; }
     code { background:#F1F3F5; padding:1px 6px; border-radius:5px; font-size:12px; }
     .lbl { display:block; font-size:13px; font-weight:600; color:#3A3F4B; margin:14px 0 6px; }
     input { border:1px solid #E5E7EB; border-radius:8px; padding:9px 11px; font-size:14px; width:100%; box-sizing:border-box; }
-    input:focus { outline:none; border-color:#F97316; }
+    input:focus { outline:none; border-color:#14B9BA; }
     .waves { display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
     .wave { display:flex; gap:8px; align-items:center; }
     .wave input { width:130px; }
@@ -157,10 +198,14 @@ export class SettingsComponent implements OnInit {
   savingP = false;
   savedP = false;
 
-  integrations: PlatformIntegrations = { googleClientId: '' };
+  integrations: PlatformIntegrations = { googleClientId: '', captchaProvider: '', captchaSiteKey: '', hasCaptchaSecret: false };
+  captchaSecret = '';
   savingI = false;
   savedI = false;
   integError = '';
+  seeding = false;
+  seedMsg = '';
+  seedError = '';
 
   ngOnInit() { this.load(); }
 
@@ -174,19 +219,33 @@ export class SettingsComponent implements OnInit {
       error: () => {},
     });
     this.api.get<PlatformIntegrations>('/admin/config/integrations').subscribe({
-      next: i => this.integrations = { googleClientId: i.googleClientId || '' },
+      next: i => { this.integrations = this.mapIntegrations(i); this.captchaSecret = ''; },
       error: () => {},
     });
+  }
+
+  private mapIntegrations(i: PlatformIntegrations): PlatformIntegrations {
+    return {
+      googleClientId: i.googleClientId || '',
+      captchaProvider: i.captchaProvider || '',
+      captchaSiteKey: i.captchaSiteKey || '',
+      hasCaptchaSecret: !!i.hasCaptchaSecret,
+    };
   }
 
   saveIntegrations() {
     this.savingI = true;
     this.savedI = false;
     this.integError = '';
-    const body: PlatformIntegrations = { googleClientId: (this.integrations.googleClientId || '').trim() || undefined };
+    const body: any = {
+      googleClientId: (this.integrations.googleClientId || '').trim() || undefined,
+      captchaProvider: (this.integrations.captchaProvider || '').trim(),
+      captchaSiteKey: (this.integrations.captchaSiteKey || '').trim() || undefined,
+    };
+    if (this.captchaSecret.trim()) body.captchaSecret = this.captchaSecret.trim();
     this.api.put<PlatformIntegrations>('/admin/config/integrations', body).subscribe({
       next: i => {
-        this.integrations = { googleClientId: i.googleClientId || '' };
+        this.integrations = this.mapIntegrations(i); this.captchaSecret = '';
         this.savingI = false; this.savedI = true; setTimeout(() => this.savedI = false, 2500);
         this.load(); // odśwież status „Logowanie Google"
       },
@@ -209,6 +268,19 @@ export class SettingsComponent implements OnInit {
     this.api.put<PlatformSettings>('/admin/config/platform', body).subscribe({
       next: p => { this.applyPlatform(p); this.savingP = false; this.savedP = true; setTimeout(() => this.savedP = false, 2500); },
       error: () => { this.savingP = false; },
+    });
+  }
+
+  seedDemo() {
+    this.seeding = true; this.seedMsg = ''; this.seedError = '';
+    this.api.post<{ created: string[]; skipped: string[] }>('/admin/seed/pilot', {}).subscribe({
+      next: r => {
+        this.seeding = false;
+        const c = r.created?.length ?? 0, s = r.skipped?.length ?? 0;
+        this.seedMsg = `✓ utworzono ${c}, pominięto ${s}`;
+        setTimeout(() => this.seedMsg = '', 4000);
+      },
+      error: e => { this.seeding = false; this.seedError = 'Nie udało się: ' + (e?.error?.detail ?? 'błąd'); },
     });
   }
 
