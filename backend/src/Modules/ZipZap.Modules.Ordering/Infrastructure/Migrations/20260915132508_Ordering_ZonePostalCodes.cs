@@ -16,7 +16,8 @@ namespace ZipZap.Modules.Ordering.Infrastructure.Migrations
                 schema: "ordering",
                 table: "delivery_zones",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                defaultValueSql: "'{}'::text[]"); // istniejące strefy = brak kodów (obsługują wszędzie)
         }
 
         /// <inheritdoc />
