@@ -4,9 +4,9 @@ Lista braków po przeglądzie kodu (właściciel, 2026-09-15). Legenda: 🔴 P0 
 Skrót stanu: **BE** = backend, **FE** = aplikacja/panel. „BE gotowe" = endpoint istnieje, brakuje tylko UI/dopięcia.
 
 ## 1. Rejestracja i konto (auth) — 🔴 P0
-- 🔴 **Hasło 2×** (powtórz hasło) przy rejestracji — aplikacja mobilna (`login_screen.dart`, tryb rejestracji) **oraz** web „Załóż sklep"/„Zostań dostawcą" (`admin-panel` `app.ts`). Dziś jedno pole.
+- ✅ **Hasło 2×** (powtórz hasło) przy rejestracji (2026-09-15) — aplikacja mobilna (`login_screen.dart`) **oraz** web „Załóż sklep"/„Zostań dostawcą" (`app.ts`): pole „Powtórz hasło" + walidacja zgodności i min. 6 znaków.
+- ✅ **Zmiana hasła (klient)** (2026-09-15) — ekran `change_password_screen.dart` (obecne+nowe+powtórz), wejście w „Konto", trasa `/change-password`, `AuthRepository.changePassword` → `POST /api/identity/password/change`.
 - 🔴 **Potwierdzenie e-mail (realne)**. BE ma endpointy `/api/identity/email/verify` i `/email/resend-verification` oraz wysyłkę linku — ALE sender to **`LoggingEmailSender` (mock, nic nie wysyła)**; login **NIE** wymusza `IsEmailVerified`. Trzeba: (a) realny sender SMTP (dane w `.env`, sekcja Email — dziś zakomentowane), (b) ekran „potwierdź e-mail" + „wyślij ponownie" w aplikacji, (c) decyzja: miękkie (baner) czy twarde (blokada zakupu do potwierdzenia).
-- 🔴 **Zmiana hasła (klient)** — BE gotowe (`POST /api/identity/password/change`), brak UI w aplikacji (ekran „Konto" nie ma tej opcji).
 - 🟠 **Edycja profilu** (imię, telefon) klienta — brak (dziś tylko podgląd).
 
 ## 2. Adresy dostaw klienta — 🔴/🟠

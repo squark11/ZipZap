@@ -66,6 +66,7 @@ import { PANEL_MODULES } from './modules';
                 <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
                 <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
                 <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                <div class="field"><label>Powtórz hasło</label><input name="confirmPassword" [(ngModel)]="confirmPassword" type="password" required /></div>
                 <div class="field"><label>Nazwa sklepu</label><input name="storeName" [(ngModel)]="storeName" required /></div>
                 <div class="field"><label>NIP (10 cyfr)</label><input name="nip" [(ngModel)]="nip" inputmode="numeric" maxlength="13" required /></div>
                 <div class="field"><label>Miasto</label><input name="city" [(ngModel)]="city" required /></div>
@@ -96,6 +97,7 @@ import { PANEL_MODULES } from './modules';
                   <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
                   <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
                   <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                  <div class="field"><label>Powtórz hasło</label><input name="confirmPassword" [(ngModel)]="confirmPassword" type="password" required /></div>
                   <button class="btn-lg" type="submit" [disabled]="loading">Wyślij zgłoszenie</button>
                   @if (error) { <p class="error">{{ error }}</p> }
                 </form>
@@ -189,6 +191,7 @@ export class App {
   storeName = '';
   city = '';
   nip = '';
+  confirmPassword = '';
   driverDone = false;
   driverMsg = '';
 
@@ -219,7 +222,7 @@ export class App {
     this.authMode = m;
     this.error = '';
     this.driverDone = false;
-    this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = ''; this.nip = '';
+    this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = ''; this.nip = ''; this.confirmPassword = '';
     if (m === 'login') { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
     else { this.email = ''; this.password = ''; }
   }
@@ -242,6 +245,8 @@ export class App {
       this.error = 'Podaj poprawny NIP (10 cyfr).';
       return;
     }
+    if (this.password.length < 6) { this.error = 'Hasło musi mieć co najmniej 6 znaków.'; return; }
+    if (this.password !== this.confirmPassword) { this.error = 'Hasła nie są takie same.'; return; }
     this.loading = true; this.error = '';
     this.api.registerStore({
       email: this.email.trim(), password: this.password, fullName: this.fullName.trim(),
@@ -257,6 +262,8 @@ export class App {
       this.error = 'Uzupełnij imię i nazwisko, e-mail i hasło.';
       return;
     }
+    if (this.password.length < 6) { this.error = 'Hasło musi mieć co najmniej 6 znaków.'; return; }
+    if (this.password !== this.confirmPassword) { this.error = 'Hasła nie są takie same.'; return; }
     this.loading = true; this.error = '';
     this.api.registerDriver({
       email: this.email.trim(), password: this.password, fullName: this.fullName.trim(),

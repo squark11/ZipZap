@@ -12,7 +12,8 @@ class AccountScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authControllerProvider).user;
+    final auth = ref.watch(authControllerProvider);
+    final user = auth.user;
     final mode = ref.watch(themeModeProvider);
 
     return Scaffold(
@@ -71,6 +72,15 @@ class AccountScreen extends ConsumerWidget {
                   trailing: ZzIcon('chevron_right', size: 20, color: context.zz.textMuted),
                   onTap: () => context.push('/feedback?from=account'),
                 ),
+                if (auth.isAuthenticated) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: Icon(Icons.lock_outline, size: 22, color: context.zz.heading),
+                    title: const Text('Zmień hasło'),
+                    trailing: ZzIcon('chevron_right', size: 20, color: context.zz.textMuted),
+                    onTap: () => context.push('/change-password'),
+                  ),
+                ],
               ],
             ),
           ),

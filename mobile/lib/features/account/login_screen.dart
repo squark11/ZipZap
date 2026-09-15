@@ -20,6 +20,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _fullName = TextEditingController();
   bool _register = false;
   bool _busy = false;
@@ -30,6 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     _fullName.dispose();
     super.dispose();
   }
@@ -41,6 +43,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
     if (_register && _fullName.text.trim().isEmpty) {
       _snack('Podaj imię i nazwisko.');
+      return;
+    }
+    if (_register && _password.text.length < 6) {
+      _snack('Hasło musi mieć co najmniej 6 znaków.');
+      return;
+    }
+    if (_register && _password.text != _confirmPassword.text) {
+      _snack('Hasła nie są takie same.');
       return;
     }
     if (_register && captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
@@ -112,6 +122,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             onSubmitted: (_) => _submit(captchaEnabled),
           ),
+          if (_register) ...[
+            const SizedBox(height: 14),
+            TextField(
+              controller: _confirmPassword,
+              obscureText: _obscure,
+              decoration: const InputDecoration(labelText: 'Powtórz hasło'),
+              onSubmitted: (_) => _submit(captchaEnabled),
+            ),
+          ],
           if (_register && captchaEnabled)
             CaptchaField(
               siteKey: config?.captchaSiteKey,

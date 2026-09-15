@@ -53,4 +53,9 @@ class AuthRepository {
   /// Zawsze kończy się sukcesem po stronie backendu (bez enumeracji kont).
   Future<void> forgotPassword(String email) =>
       _api.post('/identity/password/forgot', body: {'email': email});
+
+  /// Zmiana hasła zalogowanego użytkownika (backend unieważnia pozostałe sesje).
+  Future<void> changePassword(String currentPassword, String newPassword) =>
+      _api.post('/identity/password/change',
+          body: {'currentPassword': currentPassword, 'newPassword': newPassword});
 }
