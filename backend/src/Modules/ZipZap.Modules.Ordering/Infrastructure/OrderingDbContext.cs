@@ -126,7 +126,8 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(z => z.Name).IsRequired().HasMaxLength(150);
             e.Property(z => z.DeliveryFee).HasColumnType("numeric(12,2)");
             e.HasIndex(z => z.StoreId);
-            e.Ignore(z => z.PostalCodes); // dopasowanie po kodach — przyszła iteracja
+            // Kody pocztowe strefy: kolekcja prymitywów (kolumna JSON).
+            e.PrimitiveCollection(z => z.PostalCodes);
         });
 
         b.Entity<TimeSlot>(e =>

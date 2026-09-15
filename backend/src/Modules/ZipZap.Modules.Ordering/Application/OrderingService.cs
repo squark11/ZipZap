@@ -321,6 +321,13 @@ public sealed class OrderingService
         foreach (var o in others) o.ClearDefault();
     }
 
+    /// <summary>Zbiór StoreId, które dowożą pod dany kod pocztowy (aktywna strefa: pusta lista kodów = wszędzie).</summary>
+    public async Task<HashSet<Guid>> StoresServingPostalCodeAsync(string postalCode, CancellationToken ct)
+    {
+        var zones = await _db.DeliveryZones.AsNoTracking().Where(z => z.IsActive).ToListAsync(ct);
+        return zones.Where(z => z.Covers(postalCode)).Select(z => z.StoreId).ToHashSet();
+    }
+
     public async Task<Result<IReadOnlyList<OrderDto>>> ListStoreOrdersAsync(Guid storeId, string? status, CancellationToken ct)
     {
         // Izolacja najemcy: tylko admin lub pracownik TEGO sklepu.

@@ -412,6 +412,18 @@ app.MapPost("/api/admin/drivers/{userId:guid}/approve",
         : Results.Ok();
 }).RequireAuthorization("Admin").WithTags("Registration");
 
+// Sklepy dowożące pod kod pocztowy klienta. Bez kodu → wszystkie (posortowane wg odległości gdy lat/lng).
+// Zasięg = aktywna strefa sklepu, która obejmuje kod (pusta lista kodów strefy = obsługuje wszędzie).
+app.MapGet("/api/stores/serving",
+    async (string? postalCode, double? lat, double? lng, CatalogService catalog, OrderingService ordering, CancellationToken ct) =>
+{
+    var stores = await catalog.ListStoresAsync(true, lat, lng, ct);
+    var digits = new string((postalCode ?? "").Where(char.IsDigit).ToArray());
+    if (digits.Length != 5) return Results.Ok(stores);
+    var serving = await ordering.StoresServingPostalCodeAsync(postalCode!, ct);
+    return Results.Ok(stores.Where(s => serving.Contains(s.Id)).ToList());
+}).WithTags("Catalog");
+
 // Onboarding: status gotowości sklepu do sprzedaży (checklista). Agreguje Catalog + Ordering + dokumenty/integracje.
 app.MapGet("/api/stores/{storeId:guid}/readiness",
     async (Guid storeId, ICurrentUser user, CatalogService catalog, OrderingService ordering,
