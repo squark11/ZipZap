@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dowózka.pl — dowóz z lokalnych sklepów i restauracji</title>
+<meta name="description" content="Dowózka.pl łączy lokalne sklepy i restauracje z klientami w okolicy. Dołącz jako sklep i sprzedawaj z dowozem — albo pobierz aplikację i zamawiaj z telefonu.">
+<meta property="og:title" content="Dowózka.pl — dowóz z lokalnych sklepów i restauracji">
+<meta property="og:description" content="Dołącz do sklepów korzystających z Dowózka.pl albo zamawiaj z aplikacji mobilnej.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#14b9ba">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#14b9ba; --teal-600:#0f9a9b; --teal-700:#0c7d7e; --teal-050:#e7f7f7;
+    --ink:#0f2a2a; --body:#3a4a4a; --muted:#6b7c7c;
+    --bg:#ffffff; --bg-soft:#f4faf9; --line:#e2eeed; --white:#fff;
+    --amber:#ff9f1c;
+    --radius:18px; --shadow:0 18px 45px -22px rgba(12,125,126,.45);
+    --maxw:1160px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--body);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  img{max-width:100%}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3{color:var(--ink);line-height:1.15;margin:0 0 .5em;font-weight:700}
+  h1{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:800;letter-spacing:-.02em}
+  h2{font-size:clamp(1.6rem,3.2vw,2.4rem);font-weight:700;letter-spacing:-.01em}
+  p{margin:0 0 1rem}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  .btn{display:inline-flex;align-items:center;gap:.55rem;font-weight:600;font-size:1rem;padding:.85rem 1.5rem;border-radius:999px;border:2px solid transparent;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background .15s ease;white-space:nowrap}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--teal);color:#fff;box-shadow:var(--shadow)}
+  .btn-primary:hover{background:var(--teal-600)}
+  .btn-ghost{background:#fff;color:var(--teal-700);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--teal)}
+  .btn-dark{background:var(--ink);color:#fff}
+  .btn svg{width:20px;height:20px;flex:none}
+
+  /* Header */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;gap:20px;height:70px}
+  .brand{display:flex;align-items:center;gap:.6rem;font-weight:800;color:var(--ink);font-size:1.25rem}
+  .brand .logo{width:38px;height:38px;flex:none}
+  .nav-links{display:flex;gap:26px;margin-left:24px}
+  .nav-links a{color:var(--body);font-weight:500;font-size:.97rem}
+  .nav-links a:hover{color:var(--teal-700)}
+  .nav-cta{margin-left:auto;display:flex;gap:12px;align-items:center}
+  .menu-toggle{display:none}
+
+  /* Hero */
+  .hero{position:relative;background:linear-gradient(160deg,var(--teal-050) 0%,#fff 62%);overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:64px 0 72px}
+  .eyebrow{display:inline-flex;align-items:center;gap:.5rem;background:#fff;border:1px solid var(--line);color:var(--teal-700);font-weight:600;font-size:.85rem;padding:.4rem .85rem;border-radius:999px;margin-bottom:1.1rem}
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+  .hero p.lead{font-size:1.18rem;max-width:32em;color:var(--body)}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:1.6rem}
+  .trust{display:flex;gap:26px;margin-top:2rem;flex-wrap:wrap}
+  .trust .t{display:flex;flex-direction:column}
+  .trust .t b{color:var(--ink);font-size:1.35rem;font-weight:800}
+  .trust .t span{font-size:.85rem;color:var(--muted)}
+
+  /* Phone mock */
+  .phone{position:relative;justify-self:center;width:min(300px,80%);aspect-ratio:300/610;background:var(--ink);border-radius:38px;padding:12px;box-shadow:0 40px 80px -30px rgba(12,125,126,.5);border:1px solid #0a1f1f}
+  .phone .screen{width:100%;height:100%;border-radius:28px;background:linear-gradient(180deg,#fff, #f4faf9);overflow:hidden;display:flex;flex-direction:column}
+  .phone .sbar{height:26px;background:var(--teal);border-radius:28px 28px 0 0}
+  .phone .pcontent{padding:16px;display:flex;flex-direction:column;gap:12px}
+  .sk{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 18px -14px rgba(12,125,126,.4)}
+  .sk .ico{width:40px;height:40px;border-radius:10px;background:var(--teal-050);display:flex;align-items:center;justify-content:center;flex:none}
+  .sk .ico svg{width:22px;height:22px}
+  .sk .ln{flex:1}
+  .sk .ln i{display:block;height:9px;background:#eef5f4;border-radius:5px;margin-bottom:6px}
+  .sk .ln i.short{width:55%}
+  .sk .pill{font-size:.7rem;font-weight:600;color:var(--teal-700);background:var(--teal-050);padding:.2rem .5rem;border-radius:999px}
+
+  /* Sections */
+  section{padding:72px 0}
+  .section-head{text-align:center;max-width:40em;margin:0 auto 44px}
+  .section-head .eyebrow{margin-bottom:.8rem}
+  .section-head p{color:var(--muted);font-size:1.05rem}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px 24px;transition:transform .18s ease,box-shadow .18s ease}
+  .card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .card .ico{width:52px;height:52px;border-radius:14px;background:var(--teal-050);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .card .ico svg{width:27px;height:27px;color:var(--teal-700)}
+  .card h3{font-size:1.2rem;margin-bottom:.4rem}
+  .card p{font-size:.96rem;margin:0;color:var(--body)}
+
+  /* For stores band */
+  .stores{background:var(--bg-soft)}
+  .stores-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  .checklist{list-style:none;padding:0;margin:1.4rem 0 0}
+  .checklist li{display:flex;gap:.7rem;align-items:flex-start;margin-bottom:.85rem;font-size:1.02rem;color:var(--body)}
+  .checklist li svg{width:24px;height:24px;color:var(--teal);flex:none;margin-top:2px}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:step}
+  .step{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px 22px;position:relative}
+  .step .num{width:40px;height:40px;border-radius:50%;background:var(--teal);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .step h3{font-size:1.12rem;margin-bottom:.35rem}
+  .step p{font-size:.94rem;margin:0}
+
+  /* App section */
+  .app{background:linear-gradient(160deg,#0c7d7e,#0f9a9b);color:#fff}
+  .app h2{color:#fff}
+  .app-grid{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+  .app p{color:rgba(255,255,255,.9)}
+  .app .lead{font-size:1.15rem;max-width:30em}
+  .dl-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:1.6rem;align-items:center}
+  .store-badge{display:inline-flex;align-items:center;gap:.6rem;background:#0a1f1f;border:1px solid rgba(255,255,255,.18);color:#fff;padding:.7rem 1.15rem;border-radius:14px;font-weight:500}
+  .store-badge small{display:block;font-size:.68rem;opacity:.8;font-weight:400;line-height:1}
+  .store-badge b{font-size:1.02rem;font-weight:600}
+  .store-badge.disabled{opacity:.55}
+  .store-badge svg{width:26px;height:26px}
+  .qr{background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink);width:170px}
+  .qr canvas,.qr img{width:140px;height:140px}
+  .qr span{font-size:.75rem;color:var(--muted);text-align:center}
+  .app-note{font-size:.85rem;color:rgba(255,255,255,.75);margin-top:1rem}
+
+  /* Drivers strip */
+  .drivers{background:#fff}
+  .drivers-inner{display:flex;gap:28px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--teal-050);border:1px solid var(--line);border-radius:var(--radius);padding:34px 34px}
+  .drivers-inner h3{font-size:1.35rem;margin:0 0 .3rem}
+  .drivers-inner p{margin:0;color:var(--body)}
+
+  /* Final CTA */
+  .final{background:var(--ink);color:#fff;text-align:center}
+  .final h2{color:#fff}
+  .final p{color:rgba(255,255,255,.82);max-width:34em;margin:0 auto 1.6rem}
+  .final .hero-cta{justify-content:center}
+
+  /* Footer */
+  footer{background:#0a1f1f;color:rgba(255,255,255,.7);padding:46px 0 30px;font-size:.92rem}
+  .foot-grid{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;margin-bottom:26px}
+  .foot-brand{display:flex;align-items:center;gap:.6rem;color:#fff;font-weight:700;font-size:1.15rem;margin-bottom:.6rem}
+  .foot-brand .logo{width:32px;height:32px}
+  footer a:hover{color:#fff}
+  .foot-col h4{color:#fff;font-size:.95rem;margin:0 0 .7rem}
+  .foot-col a{display:block;margin-bottom:.45rem}
+  .foot-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.85rem}
+
+  @media (max-width:900px){
+    .nav-links{display:none}
+    .hero-grid,.stores-grid,.app-grid{grid-template-columns:1fr}
+    .phone{grid-row:1;margin-bottom:10px}
+    .cards,.steps{grid-template-columns:1fr}
+    .trust{gap:20px}
+  }
+  @media (max-width:640px){
+    .nav-cta .btn-ghost{display:none}
+    .btn{padding:.8rem 1.2rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" aria-label="Dowózka.pl">
+      <svg class="logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="48" height="48" rx="12" fill="#14b9ba"/>
+        <path d="M13 15h3.2l2.2 12.8a2 2 0 0 0 2 1.7h8.9a2 2 0 0 0 2-1.6l1.7-8.2H18.2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="21" cy="34" r="2.2" fill="#fff"/><circle cx="31" cy="34" r="2.2" fill="#fff"/>
+        <path d="M31 12.5l4 3.5-4 3.5" stroke="#ff9f1c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Dowózka.pl
+    </a>
+    <nav class="nav-links">
+      <a href="#dla-sklepow">Dla sklepów</a>
+      <a href="#jak">Jak to działa</a>
+      <a href="#aplikacja">Aplikacja</a>
+      <a href="#dostawcy">Dla dostawców</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#aplikacja">Pobierz aplikację</a>
+      <a class="btn btn-primary" href="#dolacz">Dołącz jako sklep</a>
+    </div>
+  </div>
+</header>
+
+<span id="top"></span>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> Lokalny dowóz zakupów i jedzenia</span>
+      <h1>Lokalne sklepy i&nbsp;restauracje z&nbsp;dowozem pod Twoje drzwi</h1>
+      <p class="lead">Dowózka.pl łączy sklepy i restauracje z Twojej okolicy z klientami, którzy chcą zamawiać online. Sprzedawaj z dowozem albo zamawiaj z aplikacji — wszystko lokalnie.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#dolacz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
+          Dołącz jako sklep
+        </a>
+        <a class="btn btn-ghost" href="#aplikacja">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 12l5 5 5-5"/><path d="M5 21h14"/></svg>
+          Pobierz aplikację
+        </a>
+      </div>
+      <div class="trust">
+        <div class="t"><b>0 zł</b><span>na start dla sklepu</span></div>
+        <div class="t"><b>Twoi</b><span>klienci i Twoja marka</span></div>
+        <div class="t"><b>Lokalnie</b><span>dowóz w Twojej strefie</span></div>
+      </div>
+    </div>
+
+    <!-- Phone mockup -->
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <div class="sbar"></div>
+        <div class="pcontent">
+          <div class="sk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#0c7d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><div class="ln"><i></i><i class="short"></i></div><span class="pill">Otwarte</span></div>
+          <div class="sk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#0c7d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></div><div class="ln"><i></i><i class="short"></i></div><span class="pill">15 min</span></div>
+          <div class="sk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#0c7d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4M18 2l-1.5 4M3 6h18l-1.5 9a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7z"/></svg></div><div class="ln"><i></i><i class="short"></i></div><span class="pill">Nowość</span></div>
+          <div class="sk"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#0c7d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-7-10a7 7 0 0 1 14 0c0 5.65-7 10-7 10z"/><circle cx="12" cy="11" r="2.5"/></svg></div><div class="ln"><i></i><i class="short"></i></div><span class="pill">1,2 km</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHY / BENEFITS ============ -->
+<section id="dlaczego">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow"><span class="dot"></span> Dlaczego Dowózka.pl</span>
+      <h2>Sprzedaż online bez oddawania klientów wielkim platformom</h2>
+      <p>Prowadź dowóz na własnych zasadach — z własną bazą klientów, cenami i strefami dostaw.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M5 7v14h14V7"/><path d="M9 11h6"/></svg></div>
+        <h3>Twój sklep online</h3>
+        <p>Gotowa oferta, kategorie, ceny i promocje. Klient zamawia z telefonu, Ty realizujesz dowóz w swojej okolicy.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-7-10a7 7 0 0 1 14 0c0 5.65-7 10-7 10z"/><circle cx="12" cy="11" r="2.5"/></svg></div>
+        <h3>Strefy i kody pocztowe</h3>
+        <p>Sam ustalasz obszar dowozu i opłaty. Klient widzi tylko te sklepy, które dowożą pod jego adres.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <h3>Własna bramka płatności</h3>
+        <p>Podłącz Przelewy24 lub Stripe — pieniądze trafiają wprost do Ciebie. Dowózka.pl nie jest pośrednikiem płatności.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <h3>Panel zarządzania</h3>
+        <p>Zamówienia, oferta, dostawy, rozliczenia i integracje — wszystko w jednym, przejrzystym panelu w przeglądarce.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Sloty i terminy</h3>
+        <p>Definiuj godziny dowozu i limity zamówień w slotach — bez przeciążania kuchni czy magazynu.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/></svg></div>
+        <h3>Prosty start</h3>
+        <p>Rejestracja z numerem NIP, dodanie oferty i publikacja — pomożemy Ci uruchomić dowóz krok po kroku.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOR STORES / DOŁĄCZ ============ -->
+<section id="dla-sklepow" class="stores">
+  <div class="wrap stores-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> Dla sklepów i restauracji</span>
+      <h2>Dołącz do sklepów korzystających z Dowózka.pl</h2>
+      <p>Dodaj swój lokal do platformy i zacznij przyjmować zamówienia z dowozem od klientów z okolicy — bez własnej aplikacji i kosztownych wdrożeń.</p>
+      <ul class="checklist">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/></svg> Rejestracja online z numerem NIP — bez umów papierowych.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/></svg> Własna oferta, ceny i strefy dowozu w kilka minut.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/></svg> Płatności prosto na Twoje konto przez własną bramkę.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/></svg> Panel z zamówieniami, dostawami i rozliczeniami.</li>
+      </ul>
+      <div class="hero-cta" id="dolacz">
+        <!-- TODO: docelowo https://panel.dowózka.pl (po utworzeniu subdomeny). Teraz działający panel na Azure. -->
+        <a class="btn btn-primary" href="https://thankful-river-02050190f.5.azurestaticapps.net" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Zarejestruj sklep
+        </a>
+        <a class="btn btn-ghost" href="mailto:kontakt@dowózka.pl">Porozmawiajmy</a>
+      </div>
+    </div>
+    <div>
+      <div class="steps" style="grid-template-columns:1fr">
+        <div class="step"><div class="num">1</div><h3>Załóż konto sklepu</h3><p>Podaj dane firmy i NIP, ustaw hasło. Weryfikujemy i aktywujemy konto.</p></div>
+        <div class="step"><div class="num">2</div><h3>Dodaj ofertę i strefy</h3><p>Wgraj produkty, ustal ceny, godziny dowozu i obszar (kody pocztowe).</p></div>
+        <div class="step"><div class="num">3</div><h3>Publikuj i sprzedawaj</h3><p>Twój sklep pojawia się w aplikacji u klientów z okolicy. Przyjmujesz zamówienia.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS (customers) ============ -->
+<section id="jak">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow"><span class="dot"></span> Dla klientów</span>
+      <h2>Zamawianie w 3 krokach</h2>
+      <p>Zakupy i jedzenie z lokalnych sklepów — prosto z telefonu.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>Podaj adres</h3><p>Wpisz swój kod pocztowy — zobaczysz sklepy i restauracje, które dowożą pod Twój adres.</p></div>
+      <div class="step"><div class="num">2</div><h3>Złóż zamówienie</h3><p>Wybierz produkty, dodaj do koszyka i wybierz termin dowozu w wygodnym slocie.</p></div>
+      <div class="step"><div class="num">3</div><h3>Odbierz pod drzwiami</h3><p>Zapłać online i śledź status. Kurier dowozi zamówienie w wybranym oknie czasowym.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP / DOWNLOAD ============ -->
+<section id="aplikacja" class="app">
+  <div class="wrap app-grid">
+    <div>
+      <span class="eyebrow" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><span class="dot" style="background:#fff"></span> Aplikacja mobilna</span>
+      <h2>Zamawiaj z aplikacji Dowózka.pl</h2>
+      <p class="lead">Aplikacja dla klientów działa na telefonie — przeglądaj lokalne sklepy, składaj zamówienia i śledź dostawę w jednym miejscu.</p>
+      <div class="dl-row">
+        <a class="store-badge" id="btn-android" href="/pobierz/dowozka.apk">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.6 9.5l1.4-2.4a.4.4 0 0 0-.7-.4l-1.4 2.5A8.7 8.7 0 0 0 12 8c-1.8 0-3.5.5-4.9 1.2L5.7 6.7a.4.4 0 0 0-.7.4l1.4 2.4C4 11 2.5 13.4 2.3 16.2h19.4c-.2-2.8-1.7-5.2-4.1-6.7zM7.5 14a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8zm9 0a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8z"/></svg>
+          <span><small>Pobierz na</small><b>Androida (APK)</b></span>
+        </a>
+        <span class="store-badge disabled" title="Wkrótce w App Store">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M16.4 12.6c0-2 1.6-3 1.7-3-.9-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.4 2 2.4 2 1 0 1.3-.6 2.5-.6s1.5.6 2.5.6 1.6-1 2.3-2c.7-1 1-2 1-2-.1 0-2-.8-2-3zM14.8 6.3c.5-.7.9-1.6.8-2.5-.8 0-1.7.5-2.3 1.2-.5.6-.9 1.5-.8 2.4.9.1 1.8-.4 2.3-1.1z"/></svg>
+          <span><small>Wkrótce w</small><b>App Store</b></span>
+        </span>
+      </div>
+      <p class="app-note">Aplikacja przeznaczona jest na telefony. Na komputerze zeskanuj kod QR, aby pobrać ją na telefon.</p>
+    </div>
+    <div style="display:flex;justify-content:center">
+      <div class="qr">
+        <div id="qr-box" style="width:140px;height:140px;display:flex;align-items:center;justify-content:center"></div>
+        <span>Zeskanuj telefonem,<br>aby pobrać aplikację</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DRIVERS ============ -->
+<section id="dostawcy" class="drivers">
+  <div class="wrap">
+    <div class="drivers-inner">
+      <div>
+        <h3>Zostań dostawcą Dowózka.pl</h3>
+        <p>Dowoź zamówienia w swojej okolicy i zarabiaj w elastycznych godzinach.</p>
+      </div>
+      <!-- TODO: docelowo https://panel.dowózka.pl -->
+      <a class="btn btn-dark" href="https://thankful-river-02050190f.5.azurestaticapps.net" target="_blank" rel="noopener">Zarejestruj się jako dostawca</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="final">
+  <div class="wrap">
+    <h2>Gotowy, żeby dowozić z Dowózka.pl?</h2>
+    <p>Dołącz do lokalnych sklepów i restauracji, które sprzedają z dowozem na własnych zasadach.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#dolacz">Dołącz jako sklep</a>
+      <a class="btn btn-ghost" href="#aplikacja" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">Pobierz aplikację</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div style="max-width:22em">
+        <div class="foot-brand">
+          <svg class="logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#14b9ba"/><path d="M13 15h3.2l2.2 12.8a2 2 0 0 0 2 1.7h8.9a2 2 0 0 0 2-1.6l1.7-8.2H18.2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21" cy="34" r="2.2" fill="#fff"/><circle cx="31" cy="34" r="2.2" fill="#fff"/><path d="M31 12.5l4 3.5-4 3.5" stroke="#ff9f1c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Dowózka.pl
+        </div>
+        <p style="margin:0">Lokalny dowóz zakupów i jedzenia. Łączymy lokalne sklepy z klientami w okolicy.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Dla sklepów</h4>
+        <a href="#dla-sklepow">Dlaczego warto</a>
+        <a href="#dolacz">Zarejestruj sklep</a>
+        <a href="#jak">Jak to działa</a>
+      </div>
+      <div class="foot-col">
+        <h4>Aplikacja</h4>
+        <a href="#aplikacja">Pobierz na Androida</a>
+        <a href="#dostawcy">Zostań dostawcą</a>
+      </div>
+      <div class="foot-col">
+        <h4>Kontakt</h4>
+        <a href="mailto:kontakt@dowózka.pl">kontakt@dowózka.pl</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="year">2026</span> Dowózka.pl — wszystkie prawa zastrzeżone.</span>
+      <span>Made in Poland 🇵🇱</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Adres pobrania APK (na produkcji: https://dowózka.pl/pobierz/dowozka.apk).
+  var APK_URL = (location.protocol.indexOf('http') === 0 ? location.origin : 'https://dowózka.pl') + '/pobierz/dowozka.apk';
+
+  // Kod QR do pobrania aplikacji na telefon.
+  (function(){
+    var box = document.getElementById('qr-box');
+    if(!box || typeof qrcode === 'undefined') return;
+    try{
+      var qr = qrcode(0, 'M');
+      qr.addData(APK_URL);
+      qr.make();
+      box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+      var svg = box.querySelector('svg');
+      if(svg){ svg.setAttribute('width','140'); svg.setAttribute('height','140'); }
+    }catch(e){ box.textContent = 'QR'; }
+  })();
+
+  // Na telefonie "Pobierz na Androida" prowadzi wprost do APK;
+  // na komputerze przewijamy do kodu QR (aplikacja jest tylko mobilna).
+  (function(){
+    var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    var btn = document.getElementById('btn-android');
+    if(btn){ btn.setAttribute('href', APK_URL); }
+    if(!isMobile && btn){
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        document.getElementById('aplikacja').scrollIntoView({behavior:'smooth'});
+        var box = document.getElementById('qr-box');
+        if(box){ box.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:600}); }
+      }, {passive:false});
+    }
+  })();
+</script>
+</body>
+</html>
