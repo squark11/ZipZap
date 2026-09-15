@@ -39,55 +39,71 @@ import { FeedbackComponent } from './feedback';
       </div>
 
       <div class="auth-form">
-        @switch (authMode) {
-          @case ('login') {
-            <form class="auth-card" (ngSubmit)="login()">
-              <h2>Zaloguj się do panelu</h2>
-              <div class="field"><label>Login (e-mail)</label><input name="email" [(ngModel)]="email" type="email" required /></div>
-              <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
-              <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
-              @if (error) { <p class="error">{{ error }}</p> }
-              <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
-              <p class="hint">Prowadzisz sklep? <a [style]="linkStyle" (click)="setMode('store')">Załóż sklep</a> · Chcesz dostarczać? <a [style]="linkStyle" (click)="setMode('driver')">Zostań dostawcą</a></p>
-            </form>
+        <div class="auth-top">
+          @if (authMode === 'login') {
+            <span>Nie masz konta?</span>
+            <button type="button" class="pill-cta" (click)="setMode('store')">Zarejestruj się</button>
+          } @else {
+            <span>Masz już konto?</span>
+            <button type="button" class="pill-cta" (click)="setMode('login')">Zaloguj się</button>
           }
-          @case ('store') {
-            <form class="auth-card" (ngSubmit)="registerStore()">
-              <h2>Załóż sklep</h2>
-              <p class="hint">Konto administratora sklepu — od razu przejdziesz do konfiguracji oferty i dostaw.</p>
-              <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
-              <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
-              <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
-              <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
-              <div class="field"><label>Nazwa sklepu</label><input name="storeName" [(ngModel)]="storeName" required /></div>
-              <div class="field"><label>Miasto</label><input name="city" [(ngModel)]="city" required /></div>
-              <button class="btn-lg" type="submit" [disabled]="loading">Załóż sklep i zacznij</button>
-              @if (error) { <p class="error">{{ error }}</p> }
-              <p class="hint">Masz już konto? <a [style]="linkStyle" (click)="setMode('login')">Zaloguj się</a></p>
-            </form>
-          }
-          @case ('driver') {
-            @if (driverDone) {
-              <div class="auth-card">
-                <h2>Dziękujemy! 🎉</h2>
-                <p>{{ driverMsg }}</p>
-                <button class="btn-lg" (click)="setMode('login')">Wróć do logowania</button>
-              </div>
-            } @else {
-              <form class="auth-card" (ngSubmit)="registerDriver()">
-                <h2>Zostań dostawcą</h2>
-                <p class="hint">Konto zostanie aktywowane po weryfikacji przez administratora serwisu.</p>
+        </div>
+        <div class="auth-body">
+          @switch (authMode) {
+            @case ('login') {
+              <form class="auth-card" (ngSubmit)="login()">
+                <h2>Zaloguj się do panelu</h2>
+                <div class="field"><label>Login (e-mail)</label><input name="email" [(ngModel)]="email" type="email" required /></div>
+                <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
+                @if (error) { <p class="error">{{ error }}</p> }
+                <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
+              </form>
+            }
+            @case ('store') {
+              <form class="auth-card" (ngSubmit)="registerStore()">
+                <h2>Załóż konto</h2>
+                <div class="seg">
+                  <button type="button" [class.active]="true" (click)="switchRegType('store')">🏪 Sklep</button>
+                  <button type="button" (click)="switchRegType('driver')">🚗 Dostawca</button>
+                </div>
+                <p class="hint" style="margin:0 0 18px;text-align:left">Konto administratora sklepu — od razu przejdziesz do konfiguracji oferty i dostaw.</p>
                 <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
                 <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
                 <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
                 <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
-                <button class="btn-lg" type="submit" [disabled]="loading">Wyślij zgłoszenie</button>
+                <div class="field"><label>Nazwa sklepu</label><input name="storeName" [(ngModel)]="storeName" required /></div>
+                <div class="field"><label>Miasto</label><input name="city" [(ngModel)]="city" required /></div>
+                <button class="btn-lg" type="submit" [disabled]="loading">Załóż sklep i zacznij</button>
                 @if (error) { <p class="error">{{ error }}</p> }
-                <p class="hint">Masz już konto? <a [style]="linkStyle" (click)="setMode('login')">Zaloguj się</a></p>
               </form>
             }
+            @case ('driver') {
+              @if (driverDone) {
+                <div class="auth-card">
+                  <h2>Dziękujemy! 🎉</h2>
+                  <p>{{ driverMsg }}</p>
+                  <button class="btn-lg" (click)="setMode('login')">Wróć do logowania</button>
+                </div>
+              } @else {
+                <form class="auth-card" (ngSubmit)="registerDriver()">
+                  <h2>Załóż konto</h2>
+                  <div class="seg">
+                    <button type="button" (click)="switchRegType('store')">🏪 Sklep</button>
+                    <button type="button" [class.active]="true" (click)="switchRegType('driver')">🚗 Dostawca</button>
+                  </div>
+                  <p class="hint" style="margin:0 0 18px;text-align:left">Konto zostanie aktywowane po weryfikacji przez administratora serwisu.</p>
+                  <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
+                  <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
+                  <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
+                  <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                  <button class="btn-lg" type="submit" [disabled]="loading">Wyślij zgłoszenie</button>
+                  @if (error) { <p class="error">{{ error }}</p> }
+                </form>
+              }
+            }
           }
-        }
+        </div>
       </div>
     </div>
   } @else {
@@ -191,7 +207,6 @@ export class App {
   city = '';
   driverDone = false;
   driverMsg = '';
-  readonly linkStyle = 'color:#14b9ba;cursor:pointer;font-weight:600';
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
@@ -227,6 +242,14 @@ export class App {
     this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = '';
     if (m === 'login') { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
     else { this.email = ''; this.password = ''; }
+  }
+
+  // Przełączanie typu rejestracji (Sklep/Dostawca) bez czyszczenia wspólnych pól.
+  switchRegType(m: 'store' | 'driver') {
+    this.authMode = m;
+    this.error = '';
+    this.driverDone = false;
+    if (m === 'driver') { this.storeName = ''; this.city = ''; }
   }
 
   registerStore() {

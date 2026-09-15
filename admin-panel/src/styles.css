@@ -42,8 +42,18 @@ input, select { font-family: inherit; }
 .auth-brand ul.points li .dot { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.22); display: grid; place-items: center; font-size: 13px; }
 .auth-brand .mock { position: absolute; right: -60px; bottom: -40px; width: 320px; height: 220px; background: rgba(255,255,255,.12); border-radius: 18px 0 0 0; }
 
-.auth-form { display: grid; place-items: center; padding: 40px; background: var(--card); }
+.auth-form { display: flex; flex-direction: column; padding: 20px 40px 40px; background: var(--card); }
+.auth-top { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); min-height: 40px; }
+.pill-cta {
+  border: 1.5px solid var(--zz-orange); color: var(--zz-orange); background: transparent;
+  padding: 8px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; transition: .15s;
+}
+.pill-cta:hover { background: rgba(20,185,186,.08); }
+.auth-body { flex: 1; display: grid; place-items: center; }
 .auth-card { width: 100%; max-width: 380px; }
+.seg { display: flex; gap: 6px; background: #EEF2F8; padding: 5px; border-radius: 12px; margin-bottom: 22px; }
+.seg button { flex: 1; padding: 9px; border-radius: 9px; font-weight: 700; font-size: 14px; color: var(--muted); background: transparent; cursor: pointer; transition: .15s; }
+.seg button.active { background: #fff; color: var(--zz-orange); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 .auth-card h2 { font-size: 24px; margin: 0 0 24px; }
 .field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
 .field label { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
