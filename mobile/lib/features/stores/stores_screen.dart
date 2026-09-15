@@ -32,7 +32,7 @@ class StoresScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ZipZap'),
+        title: const Text('Dowózka.pl'),
         actions: [
           if (auth.isAuthenticated) const NotificationsBell(),
         ],

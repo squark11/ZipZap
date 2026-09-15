@@ -36,8 +36,8 @@ class AuthController extends Notifier<AuthState> {
     await _apply(r);
   }
 
-  Future<void> register(String email, String password, String fullName) async {
-    final r = await _repo.register(email, password, fullName);
+  Future<void> register(String email, String password, String fullName, {String? captchaToken}) async {
+    final r = await _repo.register(email, password, fullName, captchaToken: captchaToken);
     await _apply(r);
   }
 

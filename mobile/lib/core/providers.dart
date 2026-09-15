@@ -10,6 +10,7 @@ import '../features/cart/ordering_repository.dart';
 import '../features/payment/payments_repository.dart';
 import '../features/notifications/notifications_repository.dart';
 import '../features/feedback/feedback_repository.dart';
+import 'config/public_config.dart';
 
 // --- Infrastruktura ---
 final tokenStoreProvider = Provider<TokenStore>((ref) => TokenStore());
@@ -32,3 +33,13 @@ final notificationsRepositoryProvider =
     Provider<NotificationsRepository>((ref) => NotificationsRepository(ref.read(apiClientProvider)));
 final feedbackRepositoryProvider =
     Provider<FeedbackRepository>((ref) => FeedbackRepository(ref.read(apiClientProvider)));
+
+/// Publiczna konfiguracja (captcha/Google) — pobierana raz, łagodny fallback przy błędzie.
+final publicConfigProvider = FutureProvider<PublicConfig>((ref) async {
+  try {
+    final data = await ref.read(apiClientProvider).get('/config/public');
+    return PublicConfig.fromJson(data as Map<String, dynamic>);
+  } catch (_) {
+    return const PublicConfig();
+  }
+});

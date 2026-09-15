@@ -19,7 +19,7 @@ class AppNotification {
   String get title {
     switch (template) {
       case 'customer.welcome':
-        return 'Witaj w ZipZap';
+        return 'Witaj w Dowózka.pl';
       case 'order.placed':
         return 'Zamówienie złożone';
       case 'payment.authorized':

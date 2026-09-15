@@ -1,10 +1,10 @@
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img">
-  <title>ZipZap — ikona aplikacji</title>
-  <rect width="512" height="512" rx="96" fill="#FFF3EA"/>
-  <g transform="translate(108,84) scale(1.8)">
-    <ellipse cx="62" cy="48" rx="10" ry="24" fill="#22C55E" transform="rotate(-25 62 48)"/>
-    <ellipse cx="82" cy="40" rx="10" ry="26" fill="#34D874"/>
-    <ellipse cx="102" cy="48" rx="10" ry="24" fill="#22C55E" transform="rotate(25 102 48)"/>
-    <path d="M45,72 Q82,55 119,72 L101,152 Q92,178 82,192 Q72,178 63,152 Z" fill="#F97316"/>
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dowózka.pl">
+  <title>Dowózka.pl</title>
+  <g fill="none" stroke="#14b9ba" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 30 H32 L46 86 H98"/>
+    <path d="M36 46 H108 L98 86"/>
+    <circle cx="56" cy="103" r="7.5"/>
+    <circle cx="92" cy="103" r="7.5"/>
   </g>
+  <path d="M50 59 H86 V50 L112 65 L86 80 V71 H50 Z" fill="#14b9ba"/>
 </svg>

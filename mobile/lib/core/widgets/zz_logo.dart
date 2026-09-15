@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/zz_theme.dart';
 
-/// Pozioma sygnatura marki: znak (marchewka) + wordmark „ZipZap”.
+/// Pozioma sygnatura marki: znak (wózek + strzałka) + wordmark „Dowózka.pl”.
 ///
 /// W aplikacji komponujemy znak (SVG) z tekstem w Poppins — dzięki temu
 /// krój jest spójny z resztą UI (bez zależności od fontu wewnątrz SVG).
@@ -17,6 +17,10 @@ class ZzLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final base = Theme.of(context).textTheme.displaySmall?.copyWith(
+          color: wordmarkColor ?? context.zz.heading,
+          fontSize: height * 0.72,
+        );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -25,11 +29,15 @@ class ZzLogo extends StatelessWidget {
           height: height,
         ),
         SizedBox(width: height * 0.22),
-        Text('ZipZap',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: wordmarkColor ?? context.zz.heading,
-                  fontSize: height * 0.87,
-                )),
+        RichText(
+          text: TextSpan(
+            style: base,
+            children: [
+              const TextSpan(text: 'Dowózka'),
+              TextSpan(text: '.pl', style: TextStyle(color: mono ? (wordmarkColor ?? Colors.white) : ZzColors.orange)),
+            ],
+          ),
+        ),
       ],
     );
   }

@@ -6,6 +6,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/config/app_config.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/widgets/captcha_field.dart';
 import '../../core/widgets/zz_icon.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _register = false;
   bool _busy = false;
   bool _obscure = true;
+  String? _captchaToken;
 
   @override
   void dispose() {
@@ -32,7 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(bool captchaEnabled) async {
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
       _snack('Podaj e-mail i hasło.');
       return;
@@ -41,11 +43,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _snack('Podaj imię i nazwisko.');
       return;
     }
+    if (_register && captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      _snack('Potwierdź, że nie jesteś robotem.');
+      return;
+    }
     setState(() => _busy = true);
     try {
       final ctrl = ref.read(authControllerProvider.notifier);
       if (_register) {
-        await ctrl.register(_email.text.trim(), _password.text, _fullName.text.trim());
+        await ctrl.register(_email.text.trim(), _password.text, _fullName.text.trim(), captchaToken: _captchaToken);
       } else {
         await ctrl.login(_email.text.trim(), _password.text);
       }
@@ -62,6 +68,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final config = ref.watch(publicConfigProvider).valueOrNull;
+    final captchaEnabled = config?.captchaEnabled ?? false;
     return Scaffold(
       appBar: AppBar(title: Text(_register ? 'Rejestracja' : 'Logowanie')),
       body: ListView(
@@ -94,6 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             obscureText: _obscure,
             decoration: InputDecoration(
               labelText: 'Hasło',
+              helperText: _register ? 'Min. 6 znaków' : null,
               suffixIcon: IconButton(
                 tooltip: _obscure ? 'Pokaż hasło' : 'Ukryj hasło',
                 icon: ZzIcon(_obscure ? 'eye' : 'eye_off',
@@ -101,11 +110,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
-            onSubmitted: (_) => _submit(),
+            onSubmitted: (_) => _submit(captchaEnabled),
           ),
+          if (_register && captchaEnabled)
+            CaptchaField(
+              siteKey: config?.captchaSiteKey,
+              onToken: (t) => setState(() => _captchaToken = t),
+            ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _busy ? null : _submit,
+            onPressed: _busy ? null : () => _submit(captchaEnabled),
             child: _busy
                 ? const SizedBox(
                     height: 22,

@@ -30,9 +30,10 @@ class AuthRepository {
     return AuthResult.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<AuthResult> register(String email, String password, String fullName) async {
-    final data = await _api.post('/identity/register',
-        body: {'email': email, 'password': password, 'fullName': fullName});
+  Future<AuthResult> register(String email, String password, String fullName, {String? captchaToken}) async {
+    final body = <String, dynamic>{'email': email, 'password': password, 'fullName': fullName};
+    if (captchaToken != null && captchaToken.isNotEmpty) body['captchaToken'] = captchaToken;
+    final data = await _api.post('/identity/register', body: body);
     return AuthResult.fromJson(data as Map<String, dynamic>);
   }
 

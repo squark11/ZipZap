@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/widgets/captcha_field.dart';
 
 /// Ekran „Zgłoś uwagę" — użytkownik pisze, co poprawić. Dołączamy kontekst dla zespołu.
 class FeedbackScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   final _email = TextEditingController();
   String _type = 'Idea';
   bool _sending = false;
+  String? _captchaToken;
 
   @override
   void initState() {
@@ -34,9 +36,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(bool captchaEnabled) async {
     if (_message.text.trim().isEmpty) {
       _snack('Napisz, co chcesz zgłosić.');
+      return;
+    }
+    if (captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      _snack('Potwierdź, że nie jesteś robotem.');
       return;
     }
     setState(() => _sending = true);
@@ -46,6 +52,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             message: _message.text,
             contactEmail: _email.text,
             screen: widget.screen,
+            captchaToken: _captchaToken,
           );
       if (!mounted) return;
       _snack('Dziękujemy! Uwaga została wysłana.');
@@ -62,6 +69,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final config = ref.watch(publicConfigProvider).valueOrNull;
+    final captchaEnabled = config?.captchaEnabled ?? false;
     return Scaffold(
       appBar: AppBar(title: const Text('Zgłoś uwagę')),
       body: ListView(
@@ -107,9 +116,14 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               hintText: 'gdybyśmy chcieli dopytać',
             ),
           ),
+          if (captchaEnabled)
+            CaptchaField(
+              siteKey: config?.captchaSiteKey,
+              onToken: (t) => setState(() => _captchaToken = t),
+            ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _sending ? null : _submit,
+            onPressed: _sending ? null : () => _submit(captchaEnabled),
             child: _sending
                 ? const SizedBox(
                     height: 22,

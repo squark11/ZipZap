@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Akcenty marki ZipZap — stałe niezależne od trybu (jasny/ciemny).
+/// Akcenty marki Dowózka.pl — stałe niezależne od trybu (jasny/ciemny).
+/// Uwaga: tokeny `orange*` niosą teraz kolor marki (teal #14b9ba) — nazwy zachowane,
+/// by nie zmieniać wszystkich miejsc użycia.
 class ZzColors {
-  static const orange = Color(0xFFF97316); // primary
-  static const orange600 = Color(0xFFEA6A0C);
-  static const orange50 = Color(0xFFFFF3EA);
+  static const orange = Color(0xFF14B9BA); // primary (brand teal)
+  static const orange600 = Color(0xFF0E9A9B);
+  static const orange50 = Color(0xFFE6F7F7);
   static const green = Color(0xFF22C55E); // secondary / sukces
   static const green50 = Color(0xFFE9FBF0);
   static const danger = Color(0xFFEF4444);
@@ -57,7 +59,7 @@ class ZzPalette extends ThemeExtension<ZzPalette> {
     text: Color(0xFF3A3F4B),
     textMuted: Color(0xFF6B7280),
     heading: Color(0xFF3A3F4B),
-    orangeTint: Color(0xFFFFF3EA),
+    orangeTint: Color(0xFFE6F7F7),
     greenTint: Color(0xFFE9FBF0),
   );
 
@@ -68,7 +70,7 @@ class ZzPalette extends ThemeExtension<ZzPalette> {
     text: Color(0xFFE6E8ED),
     textMuted: Color(0xFF9AA0AB),
     heading: Color(0xFFF2F3F6),
-    orangeTint: Color(0xFF37291A),
+    orangeTint: Color(0xFF0F2B2C),
     greenTint: Color(0xFF17301F),
   );
 

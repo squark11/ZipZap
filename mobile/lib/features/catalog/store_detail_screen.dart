@@ -118,20 +118,36 @@ class _ProductRow extends ConsumerWidget {
         : ref.read(cartControllerProvider.notifier).quantityOf(product.id);
     final controller = ref.read(cartControllerProvider.notifier);
     final available = product.isAvailable;
+    final placeholder = Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: context.zz.surface,
+        borderRadius: BorderRadius.circular(ZzRadius.md),
+      ),
+      child: Icon(Icons.local_grocery_store_outlined, color: context.zz.textMuted),
+    );
+    final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: context.zz.surface,
-                borderRadius: BorderRadius.circular(ZzRadius.md),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(ZzRadius.md),
+              child: SizedBox(
+                width: 46,
+                height: 46,
+                child: hasImage
+                    ? Image.network(
+                        product.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => placeholder,
+                        loadingBuilder: (context, child, progress) => progress == null ? child : placeholder,
+                      )
+                    : placeholder,
               ),
-              child: Icon(Icons.local_grocery_store_outlined, color: context.zz.textMuted),
             ),
             const SizedBox(width: 12),
             Expanded(
