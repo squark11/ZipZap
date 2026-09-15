@@ -1,6 +1,25 @@
 # Deploy Dowózka.pl
 
-## ✅ Pilotaż na żywo (Render + Netlify + Neon) — stan bieżący
+## ✅ Frontendy na Azure Static Web Apps (Free) — 2026-09-15 (stan bieżący)
+> Frontendy przeniesione z Netlify na **Azure SWA Free** (darmowy na stałe, darmowy SSL, globalny CDN). Backend nadal **Render**, baza **Neon** — bez zmian. CORS backendu = `AllowAnyOrigin`, więc nowe originy działają bez zmian.
+- **PWA (klient):** https://yellow-sea-04acc220f.6.azurestaticapps.net — SWA `dowozka-pwa`, RG `dowozka-rg`, region `eastus2`, sku `Free`.
+- **Panel admina:** https://thankful-river-02050190f.5.azurestaticapps.net — SWA `dowozka-admin`.
+- **SPA-fallback:** `staticwebapp.config.json` (`navigationFallback` → `/index.html`) w `mobile/web/` i `admin-panel/public/` (kopiowane do buildu). Odpowiednik `_redirects` z Netlify.
+- **Redeploy** (Azure CLI zalogowane jako właściciel; SWA CLI przez `npx`, token pobierany z Azure — nie trzymać w repo):
+```powershell
+$az="C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
+# PWA
+cd mobile; flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.onrender.com/api
+$env:SWA_CLI_DEPLOYMENT_TOKEN=(& $az staticwebapp secrets list -n dowozka-pwa -g dowozka-rg --query properties.apiKey -o tsv)
+npx -y @azure/static-web-apps-cli deploy build/web --env production
+# Panel
+cd ..\admin-panel; npm run build
+$env:SWA_CLI_DEPLOYMENT_TOKEN=(& $az staticwebapp secrets list -n dowozka-admin -g dowozka-rg --query properties.apiKey -o tsv)
+npx -y @azure/static-web-apps-cli deploy dist/admin-panel/browser --env production
+```
+- **Domena `dowózka.pl` (IDN) — ograniczenie Azure:** SWA **nie przyjmuje domen IDN** (punycode `xn--dowzka-dxa.pl` → REST 51005 „Name is not valid"), także żadnej subdomeny pod nią. Rozwiązanie: **Cloudflare (Free) przed Azure** — DNS+TLS na Cloudflare, proxy do SWA z **Host Header Override** na nazwę `*.azurestaticapps.net` (bez override SWA zwraca **404** dla obcego `Host` — zweryfikowane), SSL/TLS = **Full**. Rekordy (wszystkie Proxied): apex `@` + `www` CNAME → `yellow-sea-04acc220f.6.azurestaticapps.net`; `panel` CNAME → `thankful-river-02050190f.5.azurestaticapps.net`. NS domeny zmienić u seohost na nameservery Cloudflare.
+
+## ⏸️ Poprzednio: Render + Netlify + Neon (Netlify jako fallback)
 > Migracja z Fly.io (trial się skończył, 2026-09-15). Backend → **Render**, statyczne frontendy → **Netlify**, baza → **Neon** (bez zmian).
 - **API:** https://dowozka-api.onrender.com (Render, service `srv-dakj0oou01pc73faip10`, Docker z `backend/Dockerfile`, region frankfurt) — baza **Neon** Postgres. Health: `/health`, `/health/ready`. ⚠ **Free tier usypia po ~15 min bezczynności** → pierwsze żądanie po przerwie ~30–60 s (cold start). Przed pokazem rozgrzej: `GET /health`.
 - **PWA (klient):** https://dowozka.netlify.app (Netlify site `5a6b2bcf-…`) — instalowalna „Dodaj do ekranu głównego".
