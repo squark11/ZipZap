@@ -10,9 +10,9 @@ Skrót stanu: **BE** = backend, **FE** = aplikacja/panel. „BE gotowe" = endpoi
 - 🟠 **Edycja profilu** (imię, telefon) klienta — brak (dziś tylko podgląd).
 
 ## 2. Adresy dostaw klienta — 🔴/🟠
-- 🔴 **Zapisane adresy klienta (CRUD + domyślny)**. BE: **BRAK** encji adresu klienta — checkout przyjmuje adres jako **wolny tekst** (`checkout_screen.dart`, jedno pole „ul. Przykładowa 12/3"). Trzeba: model adresu + API + wybór/dodawanie adresu w Koncie i przy checkoucie.
-- 🔴 **Ustrukturyzowany adres**: osobne pola **ulica, nr domu/lokalu, kod pocztowy, miasto** (+ uwagi dla kuriera). Dziś jedno pole → brak kodu pocztowego, brak walidacji.
-- 🟠 **Autouzupełnianie adresu (Google Places API)** — podpowiedzi przy wpisywaniu + geokodowanie (adres → współrzędne, do doboru sklepów wg zasięgu). Klucz **konfigurowalny w panelu admina** (zgodnie z zasadą „config w panelu, nie w env" — jak Google Client ID / captcha). Alternatywa open-source: Nominatim/OSM (P4b w roadmapie).
+- ✅ **Zapisane adresy klienta (CRUD + domyślny)** (2026-09-15) — encja `CustomerAddress` (Ordering) + migracja, `OrderingService` CRUD per `ICurrentUser`, endpointy `/api/ordering/addresses` (+`/{id}/default`). Aplikacja: **Konto → „Moje adresy"** (lista/dodaj/edytuj/usuń/domyślny). ✅ **Ustrukturyzowany adres** (ulica, nr domu/lokalu, **kod pocztowy** z walidacją PL, miasto, uwagi). Zweryfikowane na żywo (API).
+- 🔴 **Wpiąć adres w checkout** — dziś checkout ma **wolne pole tekstowe** (`checkout_screen.dart`); trzeba: wybór zapisanego adresu / dodanie nowego + przekazanie ustrukturyzowanego adresu do zamówienia (dziś `deliveryAddress` = string).
+- 🟠 **Autouzupełnianie adresu (Google Places API)** — podpowiedzi + geokodowanie (adres → współrzędne, do zasięgu). Klucz **konfigurowalny w panelu** (jak Google Client ID / captcha). Alternatywa: Nominatim/OSM (P4b).
 
 ## 3. Dobór sklepów wg miejsca zamieszkania — 🔴 P0
 - 🔴 Dziś: sklepy **sortowane wg odległości** (Haversine, `distanceKm`), ale **NIE filtrowane** po tym, czy dowożą pod adres klienta. Przy checkoucie klient **ręcznie wybiera „strefę dostawy"** — zła UX (klient nie powinien zgadywać strefy).
