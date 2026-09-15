@@ -3,7 +3,7 @@ using ZipZap.BuildingBlocks.Domain;
 namespace ZipZap.Modules.Ordering.Domain;
 
 /// <summary>Wartość wejściowa do złożenia zamówienia (snapshot pozycji koszyka).</summary>
-public readonly record struct OrderLine(Guid ProductId, string ProductName, decimal UnitPrice, int Quantity);
+public readonly record struct OrderLine(Guid ProductId, string ProductName, decimal UnitPrice, string Unit, int Quantity);
 
 /// <summary>Zdarzenie domenowe: zamówienie złożone (wewnątrz modułu).</summary>
 public sealed record OrderPlacedDomainEvent(Guid OrderId, Guid StoreId, decimal Total) : IDomainEvent

@@ -22,7 +22,7 @@ public static class OrderingEndpoints
             Respond(await svc.GetCartAsync(cartId, token, ct)));
 
         group.MapPost("/carts/{cartId:guid}/items", async (Guid cartId, string token, AddCartItemRequest req, OrderingService svc, CancellationToken ct) =>
-            Respond(await svc.AddItemAsync(cartId, token, req.ProductId, req.Quantity, ct)));
+            Respond(await svc.AddItemAsync(cartId, token, req.ProductId, req.Unit, req.Quantity, ct)));
 
         group.MapPut("/carts/{cartId:guid}/items/{productId:guid}", async (Guid cartId, Guid productId, string token, SetCartItemQuantityRequest req, OrderingService svc, CancellationToken ct) =>
             Respond(await svc.SetItemQuantityAsync(cartId, token, productId, req.Quantity, ct)));

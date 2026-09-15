@@ -54,7 +54,7 @@ public sealed class OrderingService
         return CartDto.From(cart);
     }
 
-    public async Task<Result<CartDto>> AddItemAsync(Guid cartId, string token, Guid productId, int quantity, CancellationToken ct)
+    public async Task<Result<CartDto>> AddItemAsync(Guid cartId, string token, Guid productId, string? unit, int quantity, CancellationToken ct)
     {
         var cart = await LoadCartAsync(cartId, ct);
         if (cart is null) return Error.NotFound("Koszyk nie istnieje.");
@@ -65,11 +65,33 @@ public sealed class OrderingService
         if (product.StoreId != cart.StoreId) return Error.Validation("Produkt należy do innego sklepu.");
         if (!product.IsAvailable) return Error.Validation("Produkt jest niedostępny.");
 
-        try { cart.AddItem(product.Id, product.Name, product.Price, quantity); }
+        // Autorytatywne rozwiązanie ceny dla wybranej jednostki (klient nie podaje ceny).
+        var (chosenUnit, chosenPrice) = ResolveUnitPrice(product, unit);
+
+        try { cart.AddItem(product.Id, product.Name, chosenPrice, chosenUnit, quantity); }
         catch (OrderingDomainException ex) { return Error.Validation(ex.Message); }
 
         await _db.SaveChangesAsync(ct);
         return CartDto.From(cart);
+    }
+
+    /// <summary>Zwraca (jednostka, cena) dla wybranej jednostki z opcji produktu; domyślną gdy brak/niedopasowana.</summary>
+    private static (string unit, decimal price) ResolveUnitPrice(
+        ZipZap.Modules.Ordering.Domain.ReadModel.CatalogProductView product, string? requestedUnit)
+    {
+        if (!string.IsNullOrWhiteSpace(product.UnitOptionsJson) && !string.IsNullOrWhiteSpace(requestedUnit))
+        {
+            try
+            {
+                var opts = System.Text.Json.JsonSerializer
+                    .Deserialize<List<ZipZap.Contracts.Catalog.ProductUnitOption>>(product.UnitOptionsJson!);
+                var match = opts?.FirstOrDefault(o =>
+                    string.Equals(o.Unit, requestedUnit, StringComparison.OrdinalIgnoreCase));
+                if (match is not null) return (match.Unit, match.Price);
+            }
+            catch { /* zły JSON → domyślna */ }
+        }
+        return (product.Unit, product.Price);
     }
 
     public async Task<Result<CartDto>> SetItemQuantityAsync(Guid cartId, string token, Guid productId, int quantity, CancellationToken ct)
@@ -202,7 +224,7 @@ public sealed class OrderingService
         catch (OrderingDomainException ex) { return Error.Conflict(ex.Message); }
 
         var lines = cart.Items
-            .Select(i => new OrderLine(i.ProductId, i.ProductName, i.UnitPrice, i.Quantity))
+            .Select(i => new OrderLine(i.ProductId, i.ProductName, i.UnitPrice, i.Unit, i.Quantity))
             .ToList();
 
         var order = Order.Place(cart.StoreId, customerId, lines, store.CommissionRate, zone.DeliveryFee,

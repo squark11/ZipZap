@@ -2,9 +2,9 @@ using ZipZap.Modules.Ordering.Domain;
 
 namespace ZipZap.Modules.Ordering.Application;
 
-public sealed record CartItemDto(Guid ProductId, string ProductName, decimal UnitPrice, int Quantity, decimal LineTotal)
+public sealed record CartItemDto(Guid ProductId, string ProductName, decimal UnitPrice, string Unit, int Quantity, decimal LineTotal)
 {
-    public static CartItemDto From(CartItem i) => new(i.ProductId, i.ProductName, i.UnitPrice, i.Quantity, i.LineTotal);
+    public static CartItemDto From(CartItem i) => new(i.ProductId, i.ProductName, i.UnitPrice, i.Unit, i.Quantity, i.LineTotal);
 }
 
 public sealed record CartDto(Guid Id, Guid StoreId, string CartToken, string Status, decimal Subtotal, IReadOnlyList<CartItemDto> Items)
@@ -14,9 +14,9 @@ public sealed record CartDto(Guid Id, Guid StoreId, string CartToken, string Sta
             c.Items.Select(CartItemDto.From).ToList());
 }
 
-public sealed record OrderItemDto(Guid ProductId, string ProductName, decimal UnitPrice, int Quantity, decimal LineTotal)
+public sealed record OrderItemDto(Guid ProductId, string ProductName, decimal UnitPrice, string Unit, int Quantity, decimal LineTotal)
 {
-    public static OrderItemDto From(OrderItem i) => new(i.ProductId, i.ProductName, i.UnitPrice, i.Quantity, i.LineTotal);
+    public static OrderItemDto From(OrderItem i) => new(i.ProductId, i.ProductName, i.UnitPrice, i.Unit, i.Quantity, i.LineTotal);
 }
 
 public sealed record OrderStatusChangeDto(string? FromStatus, string ToStatus, DateTime ChangedAtUtc)

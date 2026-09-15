@@ -14,7 +14,12 @@ public sealed record StoreUpdated(
     string Status, decimal MinimumOrderValue) : IntegrationEvent;
 
 public sealed record ProductPublished(
-    Guid ProductId, Guid StoreId, string Name, decimal Price, string Currency, string Unit, bool IsAvailable) : IntegrationEvent;
+    Guid ProductId, Guid StoreId, string Name, decimal Price, string Currency, string Unit, bool IsAvailable,
+    string? UnitOptionsJson = null) : IntegrationEvent;
 
 public sealed record ProductUpdated(
-    Guid ProductId, Guid StoreId, string Name, decimal Price, string Currency, string Unit, bool IsAvailable) : IntegrationEvent;
+    Guid ProductId, Guid StoreId, string Name, decimal Price, string Currency, string Unit, bool IsAvailable,
+    string? UnitOptionsJson = null) : IntegrationEvent;
+
+/// <summary>Jedna sprzedażowa jednostka produktu (np. „kg" = 4,99, „szt" = 1,20). Klient wybiera.</summary>
+public sealed record ProductUnitOption(string Unit, decimal Price);

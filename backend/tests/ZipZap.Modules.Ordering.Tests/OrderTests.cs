@@ -15,8 +15,8 @@ public class OrderTests
     {
         var lines = new List<OrderLine>
         {
-            new(Guid.NewGuid(), "Marchew 1kg", 4.99m, 2), // 9.98
-            new(Guid.NewGuid(), "Ziemniaki 1kg", 3.00m, 1), // 3.00
+            new(Guid.NewGuid(), "Marchew 1kg", 4.99m, "kg", 2), // 9.98
+            new(Guid.NewGuid(), "Ziemniaki 1kg", 3.00m, "kg", 1), // 3.00
         };
         return Order.Place(StoreId, CustomerId, lines, commissionRate, deliveryFee,
             ZoneId, SlotId, "ul. Testowa 1, Koło", "600100200");

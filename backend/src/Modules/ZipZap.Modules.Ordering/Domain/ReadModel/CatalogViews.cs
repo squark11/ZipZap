@@ -28,5 +28,7 @@ public sealed class CatalogProductView
     public decimal Price { get; set; }
     public string Currency { get; set; } = "PLN";
     public string Unit { get; set; } = "szt";
+    /// <summary>Opcje jednostek (JSON: [{"unit","price"}]). Null = jedna jednostka (Unit/Price).</summary>
+    public string? UnitOptionsJson { get; set; }
     public bool IsAvailable { get; set; }
 }

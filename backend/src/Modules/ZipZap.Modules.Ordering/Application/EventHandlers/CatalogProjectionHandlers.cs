@@ -66,13 +66,13 @@ public sealed class CatalogProductProjectionHandler :
     public CatalogProductProjectionHandler(OrderingDbContext db) => _db = db;
 
     public Task HandleAsync(ProductPublished e, CancellationToken ct = default)
-        => UpsertAsync(e.ProductId, e.StoreId, e.Name, e.Price, e.Currency, e.Unit, e.IsAvailable, ct);
+        => UpsertAsync(e.ProductId, e.StoreId, e.Name, e.Price, e.Currency, e.Unit, e.IsAvailable, e.UnitOptionsJson, ct);
 
     public Task HandleAsync(ProductUpdated e, CancellationToken ct = default)
-        => UpsertAsync(e.ProductId, e.StoreId, e.Name, e.Price, e.Currency, e.Unit, e.IsAvailable, ct);
+        => UpsertAsync(e.ProductId, e.StoreId, e.Name, e.Price, e.Currency, e.Unit, e.IsAvailable, e.UnitOptionsJson, ct);
 
     private async Task UpsertAsync(Guid productId, Guid storeId, string name, decimal price,
-        string currency, string unit, bool isAvailable, CancellationToken ct)
+        string currency, string unit, bool isAvailable, string? unitOptionsJson, CancellationToken ct)
     {
         var view = await _db.CatalogProducts.FirstOrDefaultAsync(p => p.Id == productId, ct);
         if (view is null)
@@ -85,6 +85,7 @@ public sealed class CatalogProductProjectionHandler :
                 Price = price,
                 Currency = currency,
                 Unit = unit,
+                UnitOptionsJson = unitOptionsJson,
                 IsAvailable = isAvailable,
             });
         }
@@ -95,6 +96,7 @@ public sealed class CatalogProductProjectionHandler :
             view.Price = price;
             view.Currency = currency;
             view.Unit = unit;
+            view.UnitOptionsJson = unitOptionsJson;
             view.IsAvailable = isAvailable;
         }
         await _db.SaveChangesAsync(ct);

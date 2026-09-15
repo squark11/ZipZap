@@ -20,8 +20,8 @@ public sealed class OrderExportTests
         var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
         var lines = new[]
         {
-            new OrderLine(Guid.NewGuid(), "Produkt A", 10.00m, 1),
-            new OrderLine(Guid.NewGuid(), "Produkt B", 5.00m, 2),
+            new OrderLine(Guid.NewGuid(), "Produkt A", 10.00m, "szt", 1),
+            new OrderLine(Guid.NewGuid(), "Produkt B", 5.00m, "szt", 2),
         };
         var order = Order.Place(storeId, Guid.NewGuid(), lines, commissionRate: 0.10m, deliveryFee: 5.00m,
             Guid.NewGuid(), Guid.NewGuid(), "ul. Testowa 1", "600100200");

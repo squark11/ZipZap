@@ -71,6 +71,7 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.HasKey(i => i.Id);
             e.Property(i => i.ProductName).IsRequired().HasMaxLength(200);
             e.Property(i => i.UnitPrice).HasColumnType("numeric(12,2)");
+            e.Property(i => i.Unit).IsRequired().HasMaxLength(16).HasDefaultValue("szt");
             e.Ignore(i => i.LineTotal);
         });
 
@@ -107,6 +108,7 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.HasKey(i => i.Id);
             e.Property(i => i.ProductName).IsRequired().HasMaxLength(200);
             e.Property(i => i.UnitPrice).HasColumnType("numeric(12,2)");
+            e.Property(i => i.Unit).IsRequired().HasMaxLength(16).HasDefaultValue("szt");
             e.Ignore(i => i.LineTotal);
         });
 

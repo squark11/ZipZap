@@ -2,7 +2,7 @@ namespace ZipZap.Modules.Ordering.Api;
 
 public sealed record CreateCartRequest(Guid StoreId);
 
-public sealed record AddCartItemRequest(Guid ProductId, int Quantity);
+public sealed record AddCartItemRequest(Guid ProductId, int Quantity, string? Unit = null);
 
 public sealed record SetCartItemQuantityRequest(int Quantity);
 

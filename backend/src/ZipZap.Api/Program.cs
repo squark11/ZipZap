@@ -478,10 +478,13 @@ app.MapPost("/api/admin/seed/pilot",
     };
     var products = new[]
     {
-        new { name = "Jabłka", price = 4.99m, unit = "kg",   img = "food/jablka.jpg" },
-        new { name = "Mleko 2%", price = 3.49m, unit = "szt", img = "food/mleko.jpg" },
-        new { name = "Parmezan", price = 12.90m, unit = "100g", img = "food/parmezan.jpg" },
-        new { name = "Szynka", price = 8.99m, unit = "100g", img = "food/szynka.jpg" },
+        new { name = "Jabłka", price = 4.99m, unit = "kg", img = "food/jablka.jpg",
+              options = (ZipZap.Contracts.Catalog.ProductUnitOption[]?)new[] {
+                  new ZipZap.Contracts.Catalog.ProductUnitOption("kg", 4.99m),
+                  new ZipZap.Contracts.Catalog.ProductUnitOption("szt", 1.20m) } },
+        new { name = "Mleko 2%", price = 3.49m, unit = "szt", img = "food/mleko.jpg", options = (ZipZap.Contracts.Catalog.ProductUnitOption[]?)null },
+        new { name = "Parmezan", price = 12.90m, unit = "100g", img = "food/parmezan.jpg", options = (ZipZap.Contracts.Catalog.ProductUnitOption[]?)null },
+        new { name = "Szynka", price = 8.99m, unit = "100g", img = "food/szynka.jpg", options = (ZipZap.Contracts.Catalog.ProductUnitOption[]?)null },
     };
 
     var created = new List<string>();
@@ -500,7 +503,7 @@ app.MapPost("/api/admin/seed/pilot",
             {
                 var match = existingProducts.FirstOrDefault(x => x.Name == p.name);
                 if (match is not null)
-                    await catalog.UpdateProductAsync(match.Id, null, null, null, null, null, null, $"{baseUrl}/mock/{p.img}", ct);
+                    await catalog.UpdateProductAsync(match.Id, null, null, null, null, null, null, $"{baseUrl}/mock/{p.img}", p.options, ct);
             }
             refreshed.Add(s.slug);
             continue;
@@ -514,7 +517,7 @@ app.MapPost("/api/admin/seed/pilot",
         var cat = await catalog.CreateCategoryAsync(storeId, "Spożywcze", 0, null, ct);
         var catId = cat.IsSuccess ? cat.Value.Id : (Guid?)null;
         foreach (var p in products)
-            await catalog.CreateProductAsync(storeId, catId, p.name, null, p.price, "PLN", p.unit, null, $"{baseUrl}/mock/{p.img}", ct);
+            await catalog.CreateProductAsync(storeId, catId, p.name, null, p.price, "PLN", p.unit, null, $"{baseUrl}/mock/{p.img}", p.options, ct);
 
         var zone = await ordering.CreateZoneAsync(storeId, "Centrum", 8.00m, null, ct);
         if (zone.IsSuccess)

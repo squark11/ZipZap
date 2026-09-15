@@ -78,7 +78,7 @@ public static class CatalogEndpoints
         {
             var result = await svc.CreateProductAsync(
                 storeId, req.CategoryId, req.Name, req.Description, req.Price,
-                req.Currency, req.Unit, req.StockQty, req.ImageUrl, ct);
+                req.Currency, req.Unit, req.StockQty, req.ImageUrl, req.UnitOptions, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 
@@ -86,7 +86,7 @@ public static class CatalogEndpoints
         {
             var result = await svc.UpdateProductAsync(
                 id, req.Name, req.Price, req.IsAvailable, req.CategoryId,
-                req.StockQty, req.Description, req.ImageUrl, ct);
+                req.StockQty, req.Description, req.ImageUrl, req.UnitOptions, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 

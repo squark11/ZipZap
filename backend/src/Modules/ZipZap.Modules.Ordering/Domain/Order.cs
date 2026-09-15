@@ -79,7 +79,7 @@ public sealed class Order : AggregateRoot
         };
 
         foreach (var line in lines)
-            order._items.Add(new OrderItem(line.ProductId, line.ProductName, line.UnitPrice, line.Quantity));
+            order._items.Add(new OrderItem(line.ProductId, line.ProductName, line.UnitPrice, line.Unit, line.Quantity));
 
         order.Subtotal = order._items.Sum(i => i.LineTotal);
         order.CommissionAmount = Math.Round(order.Subtotal * commissionRate, 2, MidpointRounding.AwayFromZero);

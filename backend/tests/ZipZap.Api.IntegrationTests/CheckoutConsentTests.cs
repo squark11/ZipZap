@@ -44,7 +44,7 @@ public sealed class CheckoutConsentTests
         db.TimeSlots.Add(slot);
 
         var cart = Cart.Create(storeId, customerId);
-        cart.AddItem(productId, "Produkt", 10.00m, 1);
+        cart.AddItem(productId, "Produkt", 10.00m, "szt", 1);
         db.Carts.Add(cart);
 
         await db.SaveChangesAsync();

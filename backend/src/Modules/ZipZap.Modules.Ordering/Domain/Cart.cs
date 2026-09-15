@@ -11,16 +11,19 @@ public sealed class CartItem : Entity
     public Guid ProductId { get; private set; }
     public string ProductName { get; private set; } = default!;
     public decimal UnitPrice { get; private set; }
+    /// <summary>Wybrana jednostka (kg/szt/...) — snapshot z chwili dodania.</summary>
+    public string Unit { get; private set; } = "szt";
     public int Quantity { get; private set; }
     public decimal LineTotal => UnitPrice * Quantity;
 
     private CartItem() { } // EF
 
-    public CartItem(Guid productId, string productName, decimal unitPrice, int quantity)
+    public CartItem(Guid productId, string productName, decimal unitPrice, string unit, int quantity)
     {
         ProductId = productId;
         ProductName = productName;
         UnitPrice = unitPrice;
+        Unit = unit;
         Quantity = quantity;
     }
 
@@ -57,13 +60,14 @@ public sealed class Cart : AggregateRoot
             UpdatedAtUtc = DateTime.UtcNow,
         };
 
-    public void AddItem(Guid productId, string productName, decimal unitPrice, int quantity)
+    public void AddItem(Guid productId, string productName, decimal unitPrice, string unit, int quantity)
     {
         EnsureActive();
         if (quantity <= 0) throw new OrderingDomainException("Ilość musi być dodatnia.");
 
+        // Jedna linia na produkt: jednostka/cena ustalone przy pierwszym dodaniu (snapshot).
         var existing = _items.FirstOrDefault(i => i.ProductId == productId);
-        if (existing is null) _items.Add(new CartItem(productId, productName, unitPrice, quantity));
+        if (existing is null) _items.Add(new CartItem(productId, productName, unitPrice, unit, quantity));
         else existing.Add(quantity);
         Touch();
     }

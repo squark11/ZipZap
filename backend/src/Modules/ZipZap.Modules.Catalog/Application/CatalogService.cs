@@ -227,7 +227,8 @@ public sealed class CatalogService
 
     public async Task<Result<ProductDto>> CreateProductAsync(
         Guid storeId, Guid? categoryId, string name, string? description,
-        decimal price, string? currency, string? unit, int? stockQty, string? imageUrl, CancellationToken ct)
+        decimal price, string? currency, string? unit, int? stockQty, string? imageUrl,
+        IReadOnlyList<ProductUnitOption>? unitOptions, CancellationToken ct)
     {
         var guard = EnsureCanManageStore(storeId);
         if (guard.IsFailure) return guard.Error;
@@ -235,14 +236,17 @@ public sealed class CatalogService
         if (price < 0) return Error.Validation("Cena nie może być ujemna.");
         if (!await StoreExists(storeId, ct)) return Error.NotFound("Sklep nie istnieje.");
 
-        var product = Product.Create(storeId, categoryId, name, description, price,
+        var fallbackUnit = string.IsNullOrWhiteSpace(unit) ? "szt" : unit!;
+        var (effUnit, effPrice, optsJson) = ResolveUnitOptions(unitOptions, fallbackUnit, price);
+
+        var product = Product.Create(storeId, categoryId, name, description, effPrice,
             string.IsNullOrWhiteSpace(currency) ? "PLN" : currency!.ToUpperInvariant(),
-            string.IsNullOrWhiteSpace(unit) ? "szt" : unit!, stockQty, imageUrl);
+            effUnit, stockQty, imageUrl, optsJson);
 
         _db.Products.Add(product);
         _db.AddOutboxMessage(
             new ProductPublished(product.Id, product.StoreId, product.Name, product.Price,
-                product.Currency, product.Unit, product.IsAvailable),
+                product.Currency, product.Unit, product.IsAvailable, product.UnitOptionsJson),
             _events);
 
         await _db.SaveChangesAsync(ct);
@@ -251,7 +255,8 @@ public sealed class CatalogService
 
     public async Task<Result<ProductDto>> UpdateProductAsync(
         Guid productId, string? name, decimal? price, bool? isAvailable,
-        Guid? categoryId, int? stockQty, string? description, string? imageUrl, CancellationToken ct)
+        Guid? categoryId, int? stockQty, string? description, string? imageUrl,
+        IReadOnlyList<ProductUnitOption>? unitOptions, CancellationToken ct)
     {
         var product = await _db.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == productId, ct);
         if (product is null) return Error.NotFound("Produkt nie istnieje.");
@@ -261,13 +266,35 @@ public sealed class CatalogService
         if (price is < 0) return Error.Validation("Cena nie może być ujemna.");
 
         product.Update(name, price, isAvailable, categoryId, stockQty, description, imageUrl);
+        // Jednostki podane w update nadpisują komplet (pierwsza = domyślna).
+        if (unitOptions is { Count: > 0 })
+        {
+            var (effUnit, effPrice, optsJson) = ResolveUnitOptions(unitOptions, product.Unit, product.Price);
+            product.SetUnitOptions(effUnit, effPrice, optsJson);
+        }
         _db.AddOutboxMessage(
             new ProductUpdated(product.Id, product.StoreId, product.Name, product.Price,
-                product.Currency, product.Unit, product.IsAvailable),
+                product.Currency, product.Unit, product.IsAvailable, product.UnitOptionsJson),
             _events);
 
         await _db.SaveChangesAsync(ct);
         return ProductDto.From(product);
+    }
+
+    /// <summary>Normalizuje opcje jednostek: pierwsza = domyślna (Unit/Price); JSON tylko gdy &gt;1 opcja.</summary>
+    private static (string unit, decimal price, string? json) ResolveUnitOptions(
+        IReadOnlyList<ProductUnitOption>? options, string fallbackUnit, decimal fallbackPrice)
+    {
+        if (options is { Count: > 0 })
+        {
+            var norm = options
+                .Where(o => !string.IsNullOrWhiteSpace(o.Unit) && o.Price >= 0)
+                .Select(o => new ProductUnitOption(o.Unit.Trim(), o.Price))
+                .ToList();
+            if (norm.Count == 1) return (norm[0].Unit, norm[0].Price, null);
+            if (norm.Count > 1) return (norm[0].Unit, norm[0].Price, System.Text.Json.JsonSerializer.Serialize(norm));
+        }
+        return (fallbackUnit, fallbackPrice, null);
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using ZipZap.Contracts.Catalog;
 using ZipZap.Modules.Catalog.Domain;
 
 namespace ZipZap.Modules.Catalog.Application;
@@ -20,9 +21,25 @@ public sealed record CategoryDto(Guid Id, Guid StoreId, string Name, int SortOrd
 
 public sealed record ProductDto(
     Guid Id, Guid StoreId, Guid? CategoryId, string Name, string? Description,
-    decimal Price, string Currency, string Unit, int? StockQty, bool IsAvailable, string? ImageUrl)
+    decimal Price, string Currency, string Unit, int? StockQty, bool IsAvailable, string? ImageUrl,
+    IReadOnlyList<ProductUnitOption> UnitOptions)
 {
     public static ProductDto From(Product p) =>
         new(p.Id, p.StoreId, p.CategoryId, p.Name, p.Description, p.Price, p.Currency, p.Unit,
-            p.StockQty, p.IsAvailable, p.ImageUrl);
+            p.StockQty, p.IsAvailable, p.ImageUrl, ParseUnitOptions(p.UnitOptionsJson, p.Unit, p.Price));
+
+    /// <summary>Zawsze zwraca ≥1 opcję: z JSON (gdy jest) albo domyślną (Unit/Price).</summary>
+    public static IReadOnlyList<ProductUnitOption> ParseUnitOptions(string? json, string unit, decimal price)
+    {
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            try
+            {
+                var opts = System.Text.Json.JsonSerializer.Deserialize<List<ProductUnitOption>>(json!);
+                if (opts is { Count: > 0 }) return opts;
+            }
+            catch { /* zły JSON → domyślna */ }
+        }
+        return new List<ProductUnitOption> { new(unit, price) };
+    }
 }

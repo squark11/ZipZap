@@ -12,6 +12,8 @@ public sealed class Product : AggregateRoot
     public decimal Price { get; private set; }
     public string Currency { get; private set; } = "PLN";
     public string Unit { get; private set; } = "szt";
+    /// <summary>Opcje jednostek (JSON: [{"unit","price"}]). Null/puste = jedna jednostka (Unit/Price). Pierwsza = domyślna.</summary>
+    public string? UnitOptionsJson { get; private set; }
     public int? StockQty { get; private set; }
     public bool IsAvailable { get; private set; }
     public string? ImageUrl { get; private set; }
@@ -20,7 +22,7 @@ public sealed class Product : AggregateRoot
     private Product() { } // EF
 
     private Product(Guid id, Guid storeId, Guid? categoryId, string name, string? description,
-        decimal price, string currency, string unit, int? stockQty, string? imageUrl)
+        decimal price, string currency, string unit, int? stockQty, string? imageUrl, string? unitOptionsJson)
     {
         Id = id;
         StoreId = storeId;
@@ -30,6 +32,7 @@ public sealed class Product : AggregateRoot
         Price = price;
         Currency = currency;
         Unit = unit;
+        UnitOptionsJson = unitOptionsJson;
         StockQty = stockQty;
         ImageUrl = imageUrl;
         IsAvailable = true;
@@ -37,9 +40,9 @@ public sealed class Product : AggregateRoot
     }
 
     public static Product Create(Guid storeId, Guid? categoryId, string name, string? description,
-        decimal price, string currency, string unit, int? stockQty, string? imageUrl)
+        decimal price, string currency, string unit, int? stockQty, string? imageUrl, string? unitOptionsJson = null)
         => new(Guid.NewGuid(), storeId, categoryId, name.Trim(), description,
-               price, currency, unit, stockQty, imageUrl);
+               price, currency, unit, stockQty, imageUrl, unitOptionsJson);
 
     public void Update(string? name, decimal? price, bool? isAvailable,
         Guid? categoryId, int? stockQty, string? description, string? imageUrl)
@@ -51,5 +54,13 @@ public sealed class Product : AggregateRoot
         if (stockQty.HasValue) StockQty = stockQty.Value;
         if (description is not null) Description = description;
         if (imageUrl is not null) ImageUrl = imageUrl;
+    }
+
+    /// <summary>Ustawia jednostki sprzedaży. Pierwsza opcja staje się domyślną (Unit/Price).</summary>
+    public void SetUnitOptions(string unit, decimal price, string? unitOptionsJson)
+    {
+        Unit = unit;
+        Price = price;
+        UnitOptionsJson = unitOptionsJson;
     }
 }
