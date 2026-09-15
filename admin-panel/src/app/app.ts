@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api, StoreDto } from './api';
+import { PANEL_MODULES, PanelTab } from './modules';
 import { OrdersComponent } from './orders';
 import { CatalogComponent } from './catalog';
 import { DashboardComponent } from './dashboard';
@@ -64,57 +65,25 @@ import { FeedbackComponent } from './feedback';
             <path d="M50 59 H86 V50 L112 65 L86 80 V71 H50 Z" fill="#fff" stroke="none"/>
           </svg>
         </div>
-        <button class="rail-btn" [class.active]="tab==='onboarding'" (click)="tab='onboarding'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <span class="tip">Start</span>
-        </button>
-        <button class="rail-btn" [class.active]="tab==='dashboard'" (click)="tab='dashboard'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-          <span class="tip">Pulpit</span>
-        </button>
-        <button class="rail-btn" [class.active]="tab==='orders'" (click)="tab='orders'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
-          <span class="tip">Zamówienia</span>
-        </button>
-        <button class="rail-btn" [class.active]="tab==='deliveries'" (click)="tab='deliveries'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          <span class="tip">Dostawy</span>
-        </button>
-        <button class="rail-btn" [class.active]="tab==='catalog'" (click)="tab='catalog'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
-          <span class="tip">Oferta</span>
-        </button>
-        <button class="rail-btn" [class.active]="tab==='integrations'" (click)="tab='integrations'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H6a3 3 0 0 0 0 6h3M15 7h3a3 3 0 0 1 0 6h-3M8 10h8"/></svg>
-          <span class="tip">Integracje</span>
-        </button>
-        @if (api.isAdmin()) {
-        <button class="rail-btn" [class.active]="tab==='team'" (click)="tab='team'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span class="tip">Zespół</span>
-        </button>
-        }
-        <button class="rail-btn" [class.active]="tab==='finance'" (click)="tab='finance'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
-          <span class="tip">Rozliczenia</span>
-        </button>
-        @if (api.isAdmin()) {
-        <button class="rail-btn" [class.active]="tab==='stores'" (click)="tab='stores'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>
-          <span class="tip">Sklepy</span>
-        </button>
-        }
-        @if (api.isAdmin()) {
-        <button class="rail-btn" [class.active]="tab==='feedback'" (click)="tab='feedback'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span class="tip">Uwagi</span>
-        </button>
-        }
-        @if (api.isAdmin()) {
-        <button class="rail-btn" [class.active]="tab==='settings'" (click)="tab='settings'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.2.61.76 1.05 1.42 1.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span class="tip">Konfiguracja</span>
-        </button>
+        @for (m of visibleModules(); track m.id) {
+          <button class="rail-btn" [class.active]="tab===m.id" (click)="tab=m.id">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              @switch (m.icon) {
+                @case ('start') { <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/> }
+                @case ('dashboard') { <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/> }
+                @case ('orders') { <path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M8 13h8M8 17h6"/> }
+                @case ('deliveries') { <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/> }
+                @case ('catalog') { <path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/> }
+                @case ('integrations') { <path d="M9 7H6a3 3 0 0 0 0 6h3M15 7h3a3 3 0 0 1 0 6h-3M8 10h8"/> }
+                @case ('finance') { <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/> }
+                @case ('team') { <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/> }
+                @case ('stores') { <path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/> }
+                @case ('feedback') { <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/> }
+                @case ('settings') { <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.2.61.76 1.05 1.42 1.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/> }
+              }
+            </svg>
+            <span class="tip">{{ m.label }}</span>
+          </button>
         }
         <div class="spacer"></div>
         <button class="rail-btn" (click)="logout()">
@@ -140,12 +109,14 @@ import { FeedbackComponent } from './feedback';
           </div>
           <div class="userchip">
             <div class="avatar">{{ initials }}</div>
-            <div class="who"><b>{{ api.isAdmin() ? 'Administrator' : 'Pracownik sklepu' }}</b><span>{{ api.userEmail() }}</span></div>
+            <div class="who"><b>{{ api.roleLabel() }}</b><span>{{ api.userEmail() }}</span></div>
           </div>
         </div>
 
         <div class="content">
-          @if (stores.length === 0 && tab !== 'stores' && tab !== 'settings' && tab !== 'feedback') {
+          @if (isDriverOnly) {
+            <div class="card pad"><p class="muted">Panel <strong>dostawcy</strong> jest w przygotowaniu — wkrótce zobaczysz tu swoje dostawy, dostępność (online/offline) i zarobki.</p></div>
+          } @else if (stores.length === 0 && (currentModule?.storeScoped ?? false)) {
             <div class="card pad"><p class="muted">Brak sklepów. Przejdź do zakładki <strong>Sklepy</strong>, aby utworzyć pierwszy.</p></div>
           } @else {
             @switch (tab) {
@@ -180,7 +151,15 @@ export class App {
   stores: StoreDto[] = [];
   selectedStoreId = '';
   addingLocation = false;
-  tab: 'onboarding' | 'dashboard' | 'orders' | 'deliveries' | 'catalog' | 'integrations' | 'team' | 'finance' | 'stores' | 'feedback' | 'settings' = 'onboarding';
+  tab: PanelTab = 'onboarding';
+
+  /// Moduły widoczne dla ról zalogowanego usera (nawigacja generowana z rejestru).
+  readonly visibleModules = computed(() => PANEL_MODULES.filter(m => this.api.hasAnyRole(m.roles)));
+
+  get currentModule() { return PANEL_MODULES.find(m => m.id === this.tab); }
+
+  /// Dostawca bez roli admina/sklepu — pełny interfejs kierowcy dopiero w R8 (placeholder).
+  get isDriverOnly() { return this.api.isDriver() && !this.api.isAdmin() && !this.api.isStoreAdmin(); }
 
   get initials(): string {
     const e = this.api.userEmail();
@@ -197,15 +176,22 @@ export class App {
   }
 
   loadStores() {
+    // Dostawca nie zarządza katalogiem sklepów — nie pobiera listy do przełącznika.
+    if (this.api.isDriver() && !this.api.isAdmin() && !this.api.isStoreAdmin()) { this.ensureVisibleTab(); return; }
     this.api.getPublic<StoreDto[]>('/catalog/stores?onlyActive=false').subscribe(all => {
-      // Pracownik sklepu widzi tylko swój sklep; admin — wszystkie.
+      // Administrator sklepu widzi tylko swoje sklepy; administrator serwisu — wszystkie.
       const s = this.api.isAdmin() ? all : all.filter(x => this.api.storeIds().includes(x.id));
       this.stores = s;
       const stillThere = s.some(x => x.id === this.selectedStoreId);
       if (!stillThere && s.length) { this.selectedStoreId = s[0].id; }
-      // Pracownik nie ma dostępu do zakładek administracyjnych.
-      if (!this.api.isAdmin() && (this.tab === 'stores' || this.tab === 'team')) this.tab = 'dashboard';
+      this.ensureVisibleTab();
     });
+  }
+
+  /// Jeśli bieżąca zakładka nie jest dostępna dla roli — przełącz na pierwszy widoczny moduł.
+  private ensureVisibleTab() {
+    const visible = this.visibleModules();
+    if (!visible.some(m => m.id === this.tab)) this.tab = visible[0]?.id ?? 'dashboard';
   }
 
   // Multi-lokalizacja: właściciel dodaje kolejną lokalizację (nowy sklep przypisany do siebie).

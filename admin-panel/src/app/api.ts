@@ -55,6 +55,23 @@ export class Api {
   readonly storeIds = signal<string[]>([]);
   readonly isLoggedIn = computed(() => !!this.token());
   readonly isAdmin = computed(() => this.roles().includes('Admin'));
+  readonly isStoreAdmin = computed(() => this.roles().includes('StoreEmployee'));
+  readonly isDriver = computed(() => this.roles().includes('Driver'));
+  readonly isCustomer = computed(() => this.roles().includes('Customer'));
+  /// Etykieta roli do UI (nazwy wg właściciela). Admin serwisu ma pierwszeństwo.
+  readonly roleLabel = computed(() => {
+    const r = this.roles();
+    if (r.includes('Admin')) return 'Administrator serwisu';
+    if (r.includes('StoreEmployee')) return 'Administrator sklepu';
+    if (r.includes('Driver')) return 'Dostawca';
+    if (r.includes('Customer')) return 'Klient';
+    return 'Użytkownik';
+  });
+  /// Czy zalogowany user ma którąkolwiek z podanych ról (dla rejestru modułów).
+  hasAnyRole(roles: readonly string[]): boolean {
+    const mine = this.roles();
+    return roles.some(r => mine.includes(r));
+  }
 
   private apply(r: AuthResponse, fallbackEmail?: string) {
     this.token.set(r.accessToken);
