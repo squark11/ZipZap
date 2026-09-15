@@ -12,7 +12,8 @@
 - ➕ **Faza H** (dwa plany rozliczeń + restauracje + **fale dostaw**) — wpięta w **R4** i **R7**.
 - 🎨 **Rebranding ZipZap → Dowózka.pl** ✅ (2026-09-14): logo wektorowe (wózek + strzałka „dowozu") w [brand/](brand/), kolor **#14b9ba**, font **Poppins**, nazwa w apce i panelu. Zakres warstwy widocznej; wewnętrzne identyfikatory `ZipZap.*` bez zmian.
 - 🎯 **Pilot Rapacz** — sekcja niżej; analiza/kryteria w [PILOT_RAPACZ.md](PILOT_RAPACZ.md). ✅ **żywy deploy (2026-09-15)**: API `dowozka-api.fly.dev` + PWA `dowozka.fly.dev` (Fly.io + Neon).
-- 🎯 **PRIORYTET BIEŻĄCY (2026-09-15): Role, rejestracja per‑kanał i modularny panel (web)** — sekcja „🔐" niżej.
+- ✅ **Role, rejestracja per‑kanał i modularny panel (web)** — sekcja „🔐" niżej: P‑Role1/2/3 ukończone (nawigacja rolowa, rejestracja sklep/dostawca + zatwierdzanie, Angular Router + guardy).
+- 🎯 **PRIORYTET BIEŻĄCY (2026-09-15): braki UX zamawiania** — przegląd luk w **[WYMAGANIA.md](WYMAGANIA.md)** (hasło 2×, potwierdzenie e-mail, zmiana hasła, adresy klienta + kod pocztowy + Google Places, dobór sklepów wg zasięgu, audyt panelu sklepu/dostawcy).
 
 ---
 
