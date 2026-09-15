@@ -11,7 +11,8 @@
 - 🔧 **Rozwój do zaawansowanej aplikacji** — Fazy **R1–R11** (Dev·UX·UI·Grafika + deploy + mobile + prawne).
 - ➕ **Faza H** (dwa plany rozliczeń + restauracje + **fale dostaw**) — wpięta w **R4** i **R7**.
 - 🎨 **Rebranding ZipZap → Dowózka.pl** ✅ (2026-09-14): logo wektorowe (wózek + strzałka „dowozu") w [brand/](brand/), kolor **#14b9ba**, font **Poppins**, nazwa w apce i panelu. Zakres warstwy widocznej; wewnętrzne identyfikatory `ZipZap.*` bez zmian.
-- 🎯 **PRIORYTET BIEŻĄCY: Pilot Rapacz** — sekcja niżej; analiza/kryteria w [PILOT_RAPACZ.md](PILOT_RAPACZ.md).
+- 🎯 **Pilot Rapacz** — sekcja niżej; analiza/kryteria w [PILOT_RAPACZ.md](PILOT_RAPACZ.md). ✅ **żywy deploy (2026-09-15)**: API `dowozka-api.fly.dev` + PWA `dowozka.fly.dev` (Fly.io + Neon).
+- 🎯 **PRIORYTET BIEŻĄCY (2026-09-15): Role, rejestracja per‑kanał i modularny panel (web)** — sekcja „🔐" niżej.
 
 ---
 
@@ -27,8 +28,30 @@ Analiza luk, zależności i decyzje: **[PILOT_RAPACZ.md](PILOT_RAPACZ.md)**. Kol
 - 🔧 **P7 Branding edytowalny + seed mockami**: ✅ **seed pilotażu** `POST /api/admin/seed/pilot` (Admin, idempotentny) — tworzy **Rapacz** i **Lewiatan** z logo, produktami ze zdjęciami, strefą i terminem dostawy; grafiki demo serwowane z API (`wwwroot/mock/*`, `UseStaticFiles`). ✅ Panel: „Zasiej sklepy demo" (Konfiguracja). ✅ Apka: kafelek produktu renderuje **zdjęcie** (`imageUrl` + fallback). ✅ Edytowalne: logo/GPS sklepu (P1/P3), `imageUrl` produktu przez API. Testy: `PilotSeedTests` (3). ⬜ pole zdjęcia produktu w formularzu panelu (dziś przez API/seed) + upload plików.
 - 🔧 **P8 Instalacja na telefonach**: ✅ **PWA gotowa** — ikony (192/512 + maskable + favicon) **przegenerowane z nowego logo Dowózka.pl**, manifest/`theme_color`/nazwa zaktualizowane, `sw.js` offline; „Dodaj do ekranu" działa na Android/iOS. ✅ Android przygotowany: `android:label="Dowózka.pl"`, ikony launchera (mipmap 48–192) z nowego logo; przewodnik build/podpis/dystrybucja w [DEPLOY.md](DEPLOY.md). ⬜ **realny build APK/AAB** — na maszynie z Android SDK (tu brak toolchainu); ⬜ iOS (po pilotażu).
 - 🔧 **P9 Twarda ścieżka E2E** + poprawa tarcia: ✅ **test E2E** `CustomerJourneyE2ETests` — rejestracja → sklep **wg odległości** → koszyk → **checkout ze zgodą** → śledzenie → **potwierdzenie przez sklep** (suma 2×6+8=20 zł); ✅ podpowiedź hasła przy rejestracji; puste/błędne/offline stany już są (R2). ⬜ płatność **realną bramką Rapacza (sandbox)** w ścieżce — tuż przed wizytą; ⬜ pełny przegląd tarcia na urządzeniu.
-- ⬜ **P10 Gotowość operacyjna**: deploy publiczny (HTTPS), konto Rapacza + instrukcja „1 strona", monitoring, pętla poprawek.
+- 🔧 **P10 Gotowość operacyjna**: ✅ **deploy publiczny (HTTPS)** — Fly.io (org `squark`, region `fra`): API **dowozka-api.fly.dev** (Neon Postgres, wolumen `App_Data`, seed Rapacz+Lewiatan) + PWA **dowozka.fly.dev** (instalowalna); tryb `Development` na czas pilotażu mock‑płatności; sekrety w `fly secrets` (nie w repo). Szczegóły [DEPLOY.md](DEPLOY.md), [pilot-live-deploy]. ⬜ **panel admina (Angular) wdrożony** (potrzebny sprzedawcy), ⬜ konto Rapacza + instrukcja „1 strona", ⬜ monitoring/uptime, ⬜ pętla poprawek.
 - ✅ Decyzje (właściciel, 2026-09-14): rejestracja = klient + **self-service sklepu**; multi‑lokalizacja = **lekka** (wspólny admin wielu sklepów); płatności = **mock teraz, sandbox przed wizytą**. Do potwierdzenia przy odpowiednich fazach: captcha (P6), geokoder (P4), APK/PWA (P8).
+
+---
+
+## 🔐 Role, rejestracja per‑kanał i modularny panel (web) [P0 — bieżący]
+Cel (właściciel, 2026-09-15): **czytelny podział ról w wersji przeglądarkowej**, rejestracja **per‑kanał** i **modularny panel** (skalowalny na kolejne formularze). Backend ma **już 4 role** (`Identity/Domain/Role.cs`: `Admin`, `StoreEmployee`, `Driver`, `Customer` + `UserRole` ze scope `StoreId`, emitowane jako claim `role`/`store_id` w JWT). Brakuje **warstwy web**: dziś panel (`admin-panel/src/app/app.ts`) rozróżnia tylko `isAdmin()` vs reszta (brak `Driver`, brak `Customer`), nawigacja i `@switch` są **inline w jednym komponencie**, a **rejestracji sklepu/dostawcy w web nie ma** (tylko klient z apki + ręczne tworzenie przez admina).
+
+**Mapowanie ról (nazwa właściciela → enum) i zakres w web:**
+- **Administrator serwisu** = `Role.Admin` — cała platforma: sklepy, globalny zespół, konfiguracja/integracje, uwagi, rozliczenia globalne, seed.
+- **Administrator sklepu** = `Role.StoreEmployee` (scope: `StoreId[]`) — swój sklep/sklepy: oferta, zamówienia, dostawy, integracje+dokumenty, zespół sklepu, rozliczenia sklepu, onboarding.
+- **Dostawca** = `Role.Driver` (scope: `StoreId[]`) — widok dostaw: dostępne/moje, dostępność online/offline, trasa, zarobki (pełny interfejs kierowcy → **R8**; tu minimalny web).
+- **Klient** = `Role.Customer` — kanał główny: **apka mobilna/PWA**. W web: co najwyżej konto + historia zamówień (do decyzji: czy web klienta w ogóle, czy tylko mobile).
+
+- ⬜ **P‑Role1 — Uprawnienia i nawigacja per rola (web).** Shell panelu wybiera **layout + nawigację wg roli** (dziś `isAdmin()` gate’uje pojedyncze przyciski). `Api` udostępnia `roles()`, `isStoreAdmin()`, `isDriver()`; userchip pokazuje właściwą rolę (dziś na sztywno „Administrator/Pracownik sklepu"). Guardy tras — każda sekcja deklaruje wymagane role; backend już egzekwuje `RequireAuthorization("Admin")`/scope per sklep.
+- ⬜ **P‑Role2 — Rejestracja per‑kanał.**
+  - **Apka mobilna = tylko klient** (`POST /identity/register` → `Role.Customer`; utrzymać, że apka nie tworzy innych ról).
+  - **Web „Załóż sklep"** — self‑service: konto właściciela (`StoreEmployee` = administrator sklepu) + sklep (realizuje odłożone **P3b**).
+  - **Web „Zostań dostawcą"** — self‑service `Driver` (status „do weryfikacji"; aktywacja/przypisanie do sklepu/obszaru przez admina).
+  - **Administrator serwisu** — nie self‑service (seed/zaproszenie).
+  - Backend: publiczne endpointy rejestracji **sklepu** i **dostawcy** (dziś tylko klient + `AdminCreateUser`), e‑mail weryfikacyjny, moderacja/aktywacja konta.
+- ⬜ **P‑Role3 — Modularny panel (skalowalny na kolejne formularze).** Refaktor `admin-panel` z **monolitu** (`app.ts`: inline nav + `@switch`) na **rejestr modułów**: moduł = `{ id, label, ikona, roles[], komponent, ścieżka }`. **Angular Router + lazy‑loaded feature routes + `canActivate` per rola** zamiast `@switch`; nawigacja **generowana z rejestru** i filtrowana po roli. **Layouty per‑rola** (admin serwisu / admin sklepu / dostawca) + **dashboard z kart/widgetów** zależnych od roli. Dodanie formularza = dopisanie modułu do rejestru (czytelnie). Zachować istniejące komponenty (orders/catalog/deliveries/finance/team/stores/integrations/feedback/settings/onboarding/dashboard).
+
+Powiązania: rozszerza **P3b** (self‑service sklepu), zasila **R8** (interfejs kierowcy), korzysta z ról już w `Role`/JWT.
 
 ---
 
@@ -108,7 +131,7 @@ Analiza luk, zależności i decyzje: **[PILOT_RAPACZ.md](PILOT_RAPACZ.md)**. Kol
 - ✅ **Rozliczenia (model przychodu ZipZap→sklep)**: faktura miesięczna wg planu — **A: dostawa ZipZap = liczba dostaw × stała 25 zł**, **B: kurier sklepu = suma prowizji**; plan per‑sklep + opłata w ustawieniach platformy; endpoint `/invoice?month=` + karta w panelu (Rozliczenia). Klient płaci bramką sklepu — ZipZap nie jest płatnikiem. (rdzeń billingu Fazy H)
 - 🔧 **Konfiguracja z kontami**: ✅ `.env.example` + panel **Konfiguracja** (status + checklist) + ✅ **edytowalne ustawienia platformy** + ✅ **per‑store integracja bramki płatniczej** (każdy sklep podpina swoje konto; tokeny **szyfrowane** Data Protection, write‑only, dostęp per‑sklep) + ✅ **routing per‑store w flow płatności** (resolver dostawcy sklepu → fallback mock, gotowe pod realny adapter) + ✅ **integracje platformy w panelu, nie w env**: Google OAuth **Client ID edytowalny w panelu** (`GET/PUT /api/admin/config/integrations`, walidacja `*.apps.googleusercontent.com`; port `IGoogleClientIdProvider` → magazyn panelu, env tylko fallback) + publiczny `GET /api/config/public` (Client ID dla `serverClientId` aplikacji). Env zostaje wyłącznie dla sekretów infrastruktury (JWT, DB). Testy: `PlatformIntegrationsTests` (3). ⬜ **adapter realnej bramki** (Przelewy24 — odszyfrowanie i użycie tokenów) + store ustawień w DB; ⬜ e‑mail/SMTP i inne integracje przenieść do panelu tym samym wzorcem.
 - ⬜ Środowiska dev→staging→prod; sekrety z env (guard jest).
-- 🔧 Deploy **darmowo/Docker**: ✅ `web.Dockerfile` (nginx) + serwis compose `web` + `DEPLOY.md` (warstwa nginx zweryfikowana lokalnie); ⬜ realny hosting: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase), web (Cloudflare Pages/Netlify) pod publicznym HTTPS.
+- ✅ Deploy **darmowo/Docker**: ✅ `web.Dockerfile` (nginx) + serwis compose `web` + `DEPLOY.md`; ✅ **realny hosting żywy (2026-09-15)** — Fly.io: backend `dowozka-api` (Docker) + web `dowozka` (nginx serwuje prebuilt `build/web`, `web.static.Dockerfile`), DB **Neon** Postgres, publiczne HTTPS. `Program.cs` `UseForwardedHeaders` (https za proxy Fly). ⬜ panel admina (Angular) do wdrożenia.
 - 🔧 **CI/CD** (GitHub Actions): ✅ build + testy (`.github/workflows/ci.yml` — backend z Postgres service 30/30, mobile analyze+test 17/17); ⬜ krok deploy na main.
 - ⬜ Kopie zapasowe DB + odtwarzanie; TLS (reverse proxy); uptime monitor na `/health/ready`.
 
