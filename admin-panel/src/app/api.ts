@@ -46,7 +46,11 @@ export interface AuthResponse {
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);
-  readonly base = 'http://localhost:5080/api';
+  // Dev (localhost) → lokalne API; wdrożony panel → API na Fly. (Docelowo: konfiguracja env.)
+  readonly base = (typeof location !== 'undefined'
+      && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
+    ? 'https://dowozka-api.fly.dev/api'
+    : 'http://localhost:5080/api';
 
   readonly token = signal<string | null>(null);
   private readonly refreshToken = signal<string | null>(null);

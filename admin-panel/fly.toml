@@ -1,0 +1,27 @@
+# Fly.io config for the Dowozka.pl admin panel (Angular, served by nginx).
+# Deploy from admin-panel/. Build locally FIRST, then `fly deploy`:
+#   npm run build   (→ dist/admin-panel/browser)
+# The panel calls the API at https://dowozka-api.fly.dev/api (host heuristic in api.ts).
+app = "dowozka-admin"
+primary_region = "fra"
+
+[build]
+  dockerfile = "web.static.Dockerfile"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "15s"
+  timeout = "3s"
+  method = "GET"
+  path = "/"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -1,0 +1,12 @@
+# Serwujemy tylko prebuilt dist/admin-panel/browser — reszta nie jest potrzebna w obrazie.
+node_modules
+.angular
+src
+public
+.vscode
+.editorconfig
+*.md
+tsconfig*.json
+angular.json
+package.json
+package-lock.json
