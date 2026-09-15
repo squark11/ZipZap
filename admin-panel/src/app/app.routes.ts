@@ -5,6 +5,7 @@ import { roleGuard } from './role.guard';
 // Leniwe ładowanie komponentów sekcji (mniejszy bundle startowy).
 const loaders: Record<string, () => Promise<any>> = {
   onboarding:   () => import('./onboarding').then(m => m.OnboardingComponent),
+  'driver-home': () => import('./driver-home').then(m => m.DriverHomeComponent),
   dashboard:    () => import('./dashboard').then(m => m.DashboardComponent),
   orders:       () => import('./orders').then(m => m.OrdersComponent),
   deliveries:   () => import('./deliveries').then(m => m.DeliveriesComponent),

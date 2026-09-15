@@ -12,7 +12,7 @@ export type PanelRole = 'Admin' | 'StoreEmployee' | 'Driver' | 'Customer';
 
 export type PanelTab =
   | 'onboarding' | 'dashboard' | 'orders' | 'deliveries' | 'catalog'
-  | 'integrations' | 'team' | 'drivers' | 'finance' | 'stores' | 'feedback' | 'settings';
+  | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings';
 
 export interface PanelModule {
   id: PanelTab;
@@ -23,10 +23,11 @@ export interface PanelModule {
 }
 
 export const PANEL_MODULES: readonly PanelModule[] = [
+  { id: 'driver-home',  label: 'Moje dostawy', icon: 'deliveries',   roles: ['Driver'],                           storeScoped: false },
   { id: 'onboarding',   label: 'Start',        icon: 'start',        roles: ['StoreEmployee', 'Admin'],           storeScoped: true },
-  { id: 'dashboard',    label: 'Pulpit',       icon: 'dashboard',    roles: ['Admin', 'StoreEmployee', 'Driver'], storeScoped: true },
+  { id: 'dashboard',    label: 'Pulpit',       icon: 'dashboard',    roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
   { id: 'orders',       label: 'Zamówienia',   icon: 'orders',       roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['Admin', 'StoreEmployee', 'Driver'], storeScoped: true },
+  { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
   { id: 'catalog',      label: 'Oferta',       icon: 'catalog',      roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
   { id: 'integrations', label: 'Integracje',   icon: 'integrations', roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
   { id: 'finance',      label: 'Rozliczenia',  icon: 'finance',      roles: ['Admin', 'StoreEmployee'],           storeScoped: true },

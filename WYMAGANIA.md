@@ -18,13 +18,17 @@ Skrót stanu: **BE** = backend, **FE** = aplikacja/panel. „BE gotowe" = endpoi
 - 🔴 Dziś: sklepy **sortowane wg odległości** (Haversine, `distanceKm`), ale **NIE filtrowane** po tym, czy dowożą pod adres klienta. Przy checkoucie klient **ręcznie wybiera „strefę dostawy"** — zła UX (klient nie powinien zgadywać strefy).
 - 🔴 Trzeba: **model zasięgu sklepu** (obsługiwane **kody pocztowe** lub **promień + współrzędne**), **filtr „tylko sklepy dowożące pod mój adres"**, oraz **automatyczny dobór strefy + opłaty** na podstawie adresu (zamiast ręcznego dropdownu w checkoucie).
 
-## 4. Panel sklepu (administrator sklepu) — 🟠 do weryfikacji
-- 🟠 **Przejść i przetestować cały panel sklepu** (właściciel nie weryfikował). Sekcje są: Start/onboarding, Pulpit, Zamówienia, Dostawy, Oferta, Integracje, Rozliczenia.
-- 🟠 Znane luki: **pole zdjęcia produktu + upload** w formularzu Oferty (dziś tylko przez API/seed); **godziny otwarcia** sklepu; **konfiguracja zasięgu/kodów pocztowych** (pkt 3); **geokoder adresu sklepu** (auto-współrzędne, P4b); NIP/edycja danych firmy w profilu sklepu (NIP zbierany przy rejestracji — brak edycji w panelu).
+## 4. Panel sklepu (administrator sklepu) — 🟠 (audyt 2026-09-15)
+Sekcje: Start, Pulpit, Zamówienia, Dostawy, Oferta, Integracje, Rozliczenia. Wyniki przeglądu kodu:
+- **Start (onboarding.ts):** ✅ checklista gotowości, ✅ strefy (z **kodami pocztowymi** — pole jest!), ✅ terminy/sloty, ✅ publikacja. 🔴 **Profil sklepu edytuje TYLKO logo-URL / GPS / status** — brak edycji **nazwy, opisu, adresu, telefonu, miasta, NIP** oraz **godzin otwarcia**. 🟠 Logo tylko jako URL (**brak uploadu pliku**). 🟠 GPS ręczne (**brak geokodera** adres→współrzędne, P4b).
+- **Oferta (catalog.ts):** ✅ lista, dodawanie (nazwa/cena/jednostka/kategoria), ukryj/pokaż, zmiana ceny (prompt), ✅ import/eksport CSV. 🔴 **Brak pola zdjęcia produktu i uploadu** (dziś tylko przez API/seed; CSV też bez zdjęcia). 🟠 Edycja produktu ograniczona (tylko cena+dostępność) — brak edycji nazwy/jednostki/kategorii/opisu, **brak usuwania**, **brak zarządzania stanem magazynowym** (`stockQty` w modelu, brak UI).
+- **Integracje (integrations.ts):** ✅✅ **podpięcie bramki płatniczej** (Przelewy24/Stripe, Merchant/POS ID, sandbox, klucz API+CRC — **szyfrowane, write-only, maskowane**) — spełnia wymóg „Rapacz łatwo podpina bramkę". ✅ dokumenty prawne (regulamin/polityka/RODO + wymóg akceptacji). 🔴 **Realny adapter bramki NIE podpięty** — płatność wciąż mock do R5 (odszyfrowanie i użycie tokenów). 🟡 Brak „testuj połączenie".
+- **Zamówienia / Dostawy / Rozliczenia / Pulpit:** obecne z MVP (zweryfikowany live: Pulpit pokazuje metryki + listę dostaw). 🟠 **Do funkcjonalnego przetestowania** na koncie sklepu (nie audytowane liniowo).
 
-## 5. Panel dostawcy (kierowca) — 🟠 do zbudowania (R8)
-- 🟠 Dziś: **placeholder** (nawigacja rolowa jest, treści brak). Trzeba pełny interfejs: **dostępne/moje dostawy**, akceptacja, **dostępność online/offline**, **nawigacja + mapa/ETA**, **zarobki**, oznaczanie „dostarczono". Backend workflow kierowcy istnieje (moduł Delivery) — brak UI.
-- 🟠 **Przetestować** ścieżkę dostawcy end-to-end (rejestracja → akceptacja przez admina → logowanie → dostawy).
+## 5. Panel dostawcy (kierowca) — 🔴 (audyt 2026-09-15)
+- ✅ **REGRESJA naprawiona (2026-09-15):** dostawca ma teraz własną trasę **„Moje dostawy"** (`driver-home.ts`, placeholder), a role `Driver` usunięto z Pulpitu/Dostaw (komponenty sklepowe). Guard przekierowuje dostawcę na jego stronę. Docelowo → pełne komponenty (niżej).
+- 🟠 **Brak jakiegokolwiek widoku dostawcy** (R8): dostępne/moje dostawy, akceptacja, **online/offline**, **mapa/nawigacja/ETA**, **zarobki**, „dostarczono". Backend (moduł Delivery, workflow kierowcy) istnieje — brakuje UI + tras/komponentów dla roli Driver.
+- 🟠 **Przetestować** ścieżkę: rejestracja dostawcy → zatwierdzenie przez admina → logowanie → dostawy.
 
 ## 6. Przekrojowe / infrastruktura — 🟠
 - 🔴 **Realny e-mail (SMTP)** — wspólne dla: weryfikacji e-mail, resetu hasła, powiadomień. Dane w `.env` (host lh.pl) — trzeba dopiąć sender (np. MailKit) za `IEmailSender` + przenieść config do panelu.
