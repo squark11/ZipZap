@@ -1,29 +1,30 @@
 # Deploy Dowózka.pl
 
-## ✅ Pilotaż na żywo (Fly.io) — stan bieżący
-- **API:** https://dowozka-api.fly.dev (app `dowozka-api`, `backend/fly.toml`, region `fra`) — baza Neon Postgres, wolumen `appdata` → `/app/App_Data`. Health: `/health`, `/health/ready`.
-- **PWA (klient):** https://dowozka.fly.dev (app `dowozka`, `mobile/fly.toml`) — instalowalna „Dodaj do ekranu głównego".
-- **Panel admina:** https://dowozka-admin.fly.dev (app `dowozka-admin`, `admin-panel/fly.toml`) — role: administrator serwisu / administrator sklepu / dostawca; rejestracja sklepu/dostawcy w web.
+## ✅ Pilotaż na żywo (Render + Netlify + Neon) — stan bieżący
+> Migracja z Fly.io (trial się skończył, 2026-09-15). Backend → **Render**, statyczne frontendy → **Netlify**, baza → **Neon** (bez zmian).
+- **API:** https://dowozka-api.onrender.com (Render, service `srv-dakj0oou01pc73faip10`, Docker z `backend/Dockerfile`, region frankfurt) — baza **Neon** Postgres. Health: `/health`, `/health/ready`. ⚠ **Free tier usypia po ~15 min bezczynności** → pierwsze żądanie po przerwie ~30–60 s (cold start). Przed pokazem rozgrzej: `GET /health`.
+- **PWA (klient):** https://dowozka.netlify.app (Netlify site `5a6b2bcf-…`) — instalowalna „Dodaj do ekranu głównego".
+- **Panel admina:** https://dowozka-admin.netlify.app (Netlify site `89f6b855-…`) — role: administrator serwisu / administrator sklepu / dostawca; rejestracja sklepu/dostawcy w web.
 - **Tryb:** `ASPNETCORE_ENVIRONMENT=Development` na czas pilotażu (mock płatności + seed admina + CORS działają tylko w Development; twardy guard produkcyjny odrzuca `Payments:Provider=mock`). Hardening produkcyjny przy podpięciu realnego P24 przed wizytą.
-- **Sekrety:** ustawione przez `fly secrets set`/`import` (NIE w repo). Realne wartości + wygenerowany `Jwt__SigningKey` i hasło admina: gitignorowany `deploy/prod.local.env`. Token Fly: gitignorowany `.env` (`FLY_API_TOKEN`).
+- **Sekrety:** env-vary usługi Render (NIE w repo). Realne wartości + wygenerowany `Jwt__SigningKey` i hasło admina: gitignorowany `deploy/prod.local.env`. Tokeny hostingu (`RENDER_API_KEY`, `NETLIFY_AUTH_TOKEN`): gitignorowany `.env`.
+- Frontendy: API base wpięty przy buildzie — PWA `--dart-define=API_BASE_URL=…onrender.com/api`, panel heurystyką hosta w `admin-panel/src/app/api.ts`. Dockerfile backendu binduje `$PORT` (Render) z fallbackiem 8080.
 
-**Redeploy backendu** (z ustawionym `FLY_API_TOKEN`):
-```bash
-cd backend && fly deploy --remote-only --app dowozka-api
-```
-**Redeploy PWA** (najpierw build lokalnie — obraz `cirruslabs/flutter:3.47.2` nie istnieje, więc serwujemy prebuild przez `web.static.Dockerfile`):
+**Redeploy backendu (Render):** push na `main` → Render auto-deploy (autoDeploy=yes). Ręcznie: dashboard usługi → „Manual Deploy", albo API `POST /v1/services/{id}/deploys`.
+**Redeploy PWA (Netlify):**
 ```bash
 cd mobile
-flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.fly.dev/api
-fly deploy --remote-only --app dowozka
+flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.onrender.com/api
+npx netlify-cli deploy --prod --dir=build/web --site=5a6b2bcf-7ebd-42cc-8998-a8c9d6d0f9bc   # NETLIFY_AUTH_TOKEN w env
 ```
-**Redeploy panelu admina** (najpierw build lokalnie → `dist/admin-panel/browser`):
+**Redeploy panelu (Netlify):**
 ```bash
 cd admin-panel
 npm run build
-fly deploy --remote-only --app dowozka-admin
+npx netlify-cli deploy --prod --dir=dist/admin-panel/browser --site=89f6b855-e894-409c-8ded-109c455b5f87
 ```
-**Seed sklepów demo** (Admin): `POST https://dowozka-api.fly.dev/api/admin/seed/pilot` (idempotentny; odświeża URL-e logo/zdjęć na https).
+**Seed sklepów demo** (Admin): `POST https://dowozka-api.onrender.com/api/admin/seed/pilot` (idempotentny; odświeża URL-e logo/zdjęć na aktualny host).
+> Netlify: nowe zespoły mają domyślnie **„Team protection" (SSO)** — wyłączone per-site i na koncie (`sso_login=false`), inaczej strona przekierowuje na login Netlify.
+> Pliki `_redirects` (`mobile/web/`, `admin-panel/public/`) dają SPA-fallback na Netlify. Configi Fly (`*/fly.toml`, `web.static.Dockerfile`) zostają jako legacy.
 
 ## Twoje konta i sekrety
 Wszystkie konta/wartości do uzupełnienia są w **[`.env.example`](.env.example)** —

@@ -46,10 +46,10 @@ export interface AuthResponse {
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);
-  // Dev (localhost) → lokalne API; wdrożony panel → API na Fly. (Docelowo: konfiguracja env.)
+  // Dev (localhost) → lokalne API; wdrożony panel → API na Render. (Docelowo: konfiguracja env.)
   readonly base = (typeof location !== 'undefined'
       && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
-    ? 'https://dowozka-api.fly.dev/api'
+    ? 'https://dowozka-api.onrender.com/api'
     : 'http://localhost:5080/api';
 
   readonly token = signal<string | null>(null);
