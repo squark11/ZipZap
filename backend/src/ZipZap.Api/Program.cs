@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -180,6 +181,17 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+// Za odwrotnym proxy (Fly/hosting kończą TLS) — honoruj X-Forwarded-Proto/For,
+// aby Request.Scheme = https. Bez tego absolutne URL-e (logo sklepu, obrazki, linki,
+// redirecty płatności) generowałyby się jako http → mixed content na stronie https.
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor,
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 // --- Migracje modułów (wygoda dev/CI; błąd nie blokuje startu Swaggera) ---
 await using (var scope = app.Services.CreateAsyncScope())
@@ -409,11 +421,26 @@ app.MapPost("/api/admin/seed/pilot",
     };
 
     var created = new List<string>();
-    var skipped = new List<string>();
+    var refreshed = new List<string>();
 
     foreach (var s in stores)
     {
-        if ((await catalog.GetStoreAsync(s.slug, ct)).IsSuccess) { skipped.Add(s.slug); continue; }
+        // Istnieje już — odśwież tylko URL-e logo/zdjęć do bieżącego (https za proxy) baseUrl.
+        var existing = await catalog.GetStoreAsync(s.slug, ct);
+        if (existing.IsSuccess)
+        {
+            var sid = existing.Value.Id;
+            await catalog.UpdateStoreAsync(sid, null, null, null, null, ct, logoUrl: $"{baseUrl}/mock/{s.logo}");
+            var existingProducts = await catalog.ListProductsAsync(sid, null, ct);
+            foreach (var p in products)
+            {
+                var match = existingProducts.FirstOrDefault(x => x.Name == p.name);
+                if (match is not null)
+                    await catalog.UpdateProductAsync(match.Id, null, null, null, null, null, null, $"{baseUrl}/mock/{p.img}", ct);
+            }
+            refreshed.Add(s.slug);
+            continue;
+        }
 
         var storeRes = await catalog.CreateStoreAsync(s.name, s.slug, demoDesc, s.city, s.address, s.phone,
             0.10m, s.min, ct, $"{baseUrl}/mock/{s.logo}", s.lat, s.lng);
@@ -432,7 +459,7 @@ app.MapPost("/api/admin/seed/pilot",
         created.Add(s.slug);
     }
 
-    return Results.Ok(new { created, skipped, note = "Sklepy demo gotowe. Zaloguj się jako sklep, by je edytować lub usunąć." });
+    return Results.Ok(new { created, refreshed, note = "Sklepy demo gotowe (URL-e logo/zdjęć odświeżone). Zaloguj się jako sklep, by je edytować lub usunąć." });
 }).RequireAuthorization("Admin").WithTags("System");
 
 // Ustawienia platformy (edytowalne, nie‑sekretne) — odczyt i zapis (admin).

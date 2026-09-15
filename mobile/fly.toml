@@ -1,0 +1,27 @@
+# Fly.io config for the Dowozka.pl PWA (Flutter web served by nginx).
+# Deploy from mobile/. Build the web bundle locally FIRST, then `fly deploy`:
+#   flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.fly.dev/api
+# (web.static.Dockerfile just serves the prebuilt build/web — no Flutter image needed.)
+app = "dowozka"
+primary_region = "fra"
+
+[build]
+  dockerfile = "web.static.Dockerfile"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "15s"
+  timeout = "3s"
+  method = "GET"
+  path = "/"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -3,9 +3,9 @@
 # Run:    docker run -p 8090:80 zipzap-web   →  http://localhost:8090
 
 # --- 1) build ---
-# Uwaga: przypnij wersję zgodną z projektem (Flutter 3.47.2). Jeśli tag nie
-# istnieje w rejestrze, użyj ghcr.io/cirruslabs/flutter:stable.
-FROM ghcr.io/cirruslabs/flutter:3.47.2 AS build
+# Uwaga: cirruslabs nie publikuje tagu 3.47.2 — używamy :stable. Alternatywa do
+# web.static.Dockerfile (który serwuje build/web zbudowany lokalnie, bez Fluttera).
+FROM ghcr.io/cirruslabs/flutter:stable AS build
 WORKDIR /app
 
 # Cache zależności — najpierw manifesty.

@@ -1,4 +1,5 @@
-build/
+build/*
+!build/web
 .dart_tool/
 .idea/
 .vscode/

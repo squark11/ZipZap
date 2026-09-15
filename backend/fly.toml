@@ -1,0 +1,37 @@
+# Fly.io config for Dowozka.pl backend API. Deploy from backend/ (uses ./Dockerfile).
+# Secrets (Jwt__SigningKey, ConnectionStrings__Postgres, etc.) are set via `fly secrets set`,
+# NOT here. Pilot runs in Development mode: mock payments + admin seed + CORS are enabled
+# there (Production hardening comes when the real Przelewy24 sandbox is wired before the visit).
+app = "dowozka-api"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ASPNETCORE_URLS = "http://+:8080"
+  ASPNETCORE_ENVIRONMENT = "Development"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "40s"
+  interval = "15s"
+  timeout = "5s"
+  method = "GET"
+  path = "/health"
+
+# Persist App_Data (Data Protection keys + panel JSON config) across redeploys/restarts.
+# Core data (accounts, stores, orders) lives in Neon Postgres, not here.
+[mounts]
+  source = "appdata"
+  destination = "/app/App_Data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
