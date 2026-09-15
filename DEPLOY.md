@@ -1,5 +1,24 @@
 # Deploy Dowózka.pl
 
+## ✅ Pilotaż na żywo (Fly.io) — stan bieżący
+- **API:** https://dowozka-api.fly.dev (app `dowozka-api`, `backend/fly.toml`, region `fra`) — baza Neon Postgres, wolumen `appdata` → `/app/App_Data`. Health: `/health`, `/health/ready`.
+- **PWA (klient):** https://dowozka.fly.dev (app `dowozka`, `mobile/fly.toml`) — instalowalna „Dodaj do ekranu głównego".
+- **Tryb:** `ASPNETCORE_ENVIRONMENT=Development` na czas pilotażu (mock płatności + seed admina + CORS działają tylko w Development; twardy guard produkcyjny odrzuca `Payments:Provider=mock`). Hardening produkcyjny przy podpięciu realnego P24 przed wizytą.
+- **Sekrety:** ustawione przez `fly secrets set`/`import` (NIE w repo). Realne wartości + wygenerowany `Jwt__SigningKey` i hasło admina: gitignorowany `deploy/prod.local.env`. Token Fly: gitignorowany `.env` (`FLY_API_TOKEN`).
+
+**Redeploy backendu** (z ustawionym `FLY_API_TOKEN`):
+```bash
+cd backend && fly deploy --remote-only --app dowozka-api
+```
+**Redeploy PWA** (najpierw build lokalnie — obraz `cirruslabs/flutter:3.47.2` nie istnieje, więc serwujemy prebuild przez `web.static.Dockerfile`):
+```bash
+cd mobile
+flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.fly.dev/api
+fly deploy --remote-only --app dowozka
+```
+**Seed sklepów demo** (Admin): `POST https://dowozka-api.fly.dev/api/admin/seed/pilot` (idempotentny; odświeża URL-e logo/zdjęć na https).
+**⬜ Panel admina (Angular)** — jeszcze niewdrożony; potrzebny sprzedawcy (Rapacz) do zarządzania lokalizacjami/asortymentem.
+
 ## Twoje konta i sekrety
 Wszystkie konta/wartości do uzupełnienia są w **[`.env.example`](.env.example)** —
 skopiuj do `.env` i wpisz swoje (`.env` jest w `.gitignore`, nie trafi do repo):
