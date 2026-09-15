@@ -1,4 +1,4 @@
-# Deploy ZipZap
+# Deploy Dowózka.pl
 
 ## Twoje konta i sekrety
 Wszystkie konta/wartości do uzupełnienia są w **[`.env.example`](.env.example)** —
@@ -47,12 +47,34 @@ docker run -p 8090:80 zipzap-web      # nginx serwuje build/web (SPA, wasm, sw.j
 ## Darmowy hosting (pilotaż)
 - **PWA (web):** `flutter build web --release --dart-define=API_BASE_URL=https://<api>/api`,
   potem wrzuć `mobile/build/web` na **Cloudflare Pages / Netlify / Vercel** (HTTPS gratis).
-  Na telefonie: „Dodaj do ekranu głównego" → instaluje się jak aplikacja (ikona ZipZap).
+  Na telefonie: „Dodaj do ekranu głównego" → instaluje się jak aplikacja (ikona Dowózka.pl).
 - **Backend:** Fly.io / Render / Railway (Docker z `backend/Dockerfile`).
 - **DB:** Neon / Supabase / Railway (Postgres). Ustaw `ConnectionStrings__Postgres`.
 - **Sekrety prod:** `ASPNETCORE_ENVIRONMENT=Production` (guard odrzuca dev‑owe sekrety),
   `Jwt__SigningKey`, `Payments__*`. Endpointy `mock/pay|complete` są tylko w Development.
 
-## Natywne aplikacje (Android/iOS)
-Store‑buildy (appbundle/ipa, podpis, TestFlight/Play) → patrz **R10** w `ROADMAP.md`.
-Do pilotażu wystarcza PWA (instalowalna na Androidzie i iOS przez „Dodaj do ekranu").
+## Instalacja na telefonach (P8)
+
+### Ścieżka pilotażu — PWA (gotowe teraz, bez builda natywnego)
+1. Zbuduj i wystaw web (jak wyżej): `flutter build web --release --dart-define=API_BASE_URL=https://<api>/api` → hosting HTTPS (Cloudflare Pages / Netlify).
+2. Tester otwiera adres w przeglądarce → menu → **„Dodaj do ekranu głównego"** (Android Chrome / iOS Safari). Aplikacja instaluje się z ikoną **Dowózka.pl** i działa pełnoekranowo (manifest `standalone`, offline‑powłoka `sw.js`).
+   - Ikony PWA (`web/icons/Icon-192/512*.png`, `favicon.png`) są już **wygenerowane z nowego logo** (teal wózek). `theme_color`/`name` = Dowózka.pl.
+
+### Android natywnie (APK/AAB) — na maszynie z Android SDK
+> Ten komputer **nie ma toolchainu Androida** (`flutter doctor` → brak Android Studio/SDK), więc APK budujesz na maszynie deweloperskiej z zainstalowanym Android SDK.
+1. **Ikony launchera** (`android/.../res/mipmap-*/ic_launcher.png`) — już wygenerowane z nowego logo (48–192 px). `AndroidManifest` `android:label="Dowózka.pl"`. `applicationId` pozostaje `pl.zipzap.zipzap` (identyfikator techniczny; zmiana zerwałaby klienta Google OAuth Android + SHA‑1).
+2. **Klucz podpisu (release)** — utwórz raz:
+   ```bash
+   keytool -genkey -v -keystore dowozka-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias dowozka
+   ```
+   Dodaj `android/key.properties` (poza repo!) i `signingConfigs.release` w `android/app/build.gradle.kts` (zamień tymczasowe podpisywanie kluczem debug).
+3. **Build**:
+   ```bash
+   flutter build apk --release --dart-define=API_BASE_URL=https://<api>/api      # APK do bezpośredniej instalacji
+   flutter build appbundle --release --dart-define=API_BASE_URL=https://<api>/api # AAB do Google Play
+   ```
+4. **Dystrybucja testerom**: albo **plik APK** bezpośrednio (tester włącza „instalacja z nieznanych źródeł"), albo **Google Play → Testy wewnętrzne** (AAB) — link do instalacji dla listy testerów.
+5. **Google Sign‑In**: do konsoli OAuth dodaj SHA‑1 klucza podpisującego (debug do testów, a **klucz Play App Signing** do dystrybucji z Play) dla pakietu `pl.zipzap.zipzap`.
+
+### iOS — poza pilotażem
+Wymaga konta Apple Developer + TestFlight; robimy po pilotażu Androida.

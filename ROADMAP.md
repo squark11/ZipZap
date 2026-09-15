@@ -10,6 +10,25 @@
 - ✅ **MVP** (silnik + aplikacja Flutter + panel Angular + hardening) — Fazy A–G, F1/F2.
 - 🔧 **Rozwój do zaawansowanej aplikacji** — Fazy **R1–R11** (Dev·UX·UI·Grafika + deploy + mobile + prawne).
 - ➕ **Faza H** (dwa plany rozliczeń + restauracje + **fale dostaw**) — wpięta w **R4** i **R7**.
+- 🎨 **Rebranding ZipZap → Dowózka.pl** ✅ (2026-09-14): logo wektorowe (wózek + strzałka „dowozu") w [brand/](brand/), kolor **#14b9ba**, font **Poppins**, nazwa w apce i panelu. Zakres warstwy widocznej; wewnętrzne identyfikatory `ZipZap.*` bez zmian.
+- 🎯 **PRIORYTET BIEŻĄCY: Pilot Rapacz** — sekcja niżej; analiza/kryteria w [PILOT_RAPACZ.md](PILOT_RAPACZ.md).
+
+---
+
+## 🎯 Pilot Rapacz [P0 — priorytet bieżący]
+Cel: **aplikacja na telefonach** + 1 klient pilotażowy **Rapacz** (wiele lokalizacji), test „czy sprzedaż ma sens".
+Analiza luk, zależności i decyzje: **[PILOT_RAPACZ.md](PILOT_RAPACZ.md)**. Kolejność: P1→P10.
+- ✅ **P1 Model sklepu**: `Store.LogoUrl` + `Latitude/Longitude` (migracja `Catalog_StoreBrandingLocation`), w `StoreDto` + create/update + panel „Sklepy" (logo/GPS, miniatura) + apka (logo na kartach i w nagłówku, `StoreLogo` z fallbackiem). Walidacja zakresu współrzędnych. Testy: `StoreProfileTests` (3). *(Metoda dostawy = plan rozliczeń A/B — bez osobnego pola, by nie dublować źródła prawdy; wystawimy klientowi z planu przy P4.)*
+- ✅ **P2 Multi‑lokalizacja Rapacza**: token już niósł wiele `store_id`; `ICurrentUser.StoreIds` (zbiór) + `ManagesStore(storeId)` — autoryzacja po zbiorze w Catalog/Ordering/Payments/host. Endpoint `POST /api/merchant/stores` (właściciel/Admin dodaje **nową lokalizację** przypisaną do siebie) + `IdentityService.AssignStoreEmployeeAsync`. Panel: przełącznik lokalizacji (istniał) + „**+ Lokalizacja**" z odświeżeniem tokenu (`Api.refresh`). Testy: `MultiLocationTests` (3).
+- 🔧 **P3 Onboarding + samodzielna rejestracja sklepu**: ✅ zakładka **„Start"** — checklista gotowości (`GET /api/stores/{id}/readiness`, agreguje produkty/dokumenty/płatność/strefy/sloty/status), **samodzielna edycja profilu** (logo/GPS/status), **strefy i terminy dostaw** (dodawanie w panelu — dotąd brak UI), **Publikuj** (Otwarty). Testy: `StoreReadinessTests` (3). ⬜ **P3b**: publiczny „Załóż sklep" (self-service konto+sklep) + dopracowanie UX rejestracji klienta.
+- 🔧 **P4 Sklepy wg odległości**: ✅ backend — `GET /catalog/stores?lat=&lng=` liczy odległość (Haversine, `distanceKm` w DTO) i sortuje od najbliższego (bez współrzędnych → koniec/alfabetycznie); ✅ apka — lokalizacja klienta (`geolocator`, GPS/przeglądarka), baner „Pokaż sklepy najbliżej Ciebie" + dystans na kartach; uprawnienia w AndroidManifest. Testy: `StoreDistanceTests` (2) + mobile distance (2). ⬜ **P4b**: geokoder (adres→współrzędne, konfig. w panelu — OSM/Nominatim) do auto-uzupełniania współrzędnych sklepu.
+- ✅ **P5 Uwagi w aplikacji** (feedback): nowy **moduł Feedback** (schema `feedback`, migracja) — `POST /api/feedback` (publiczne, typ Błąd/Pomysł/Inne + kontekst: ekran/wersja/platforma), `GET`/`PATCH` (Admin=wszystko, pracownik=swoje sklepy). Apka: ekran „Zgłoś uwagę" (Konto → wejście). Panel: zakładka **„Uwagi"** (lista + zmiana statusu New/InProgress/Closed). Testy: `FeedbackTests` (4).
+- 🔧 **P6 Captcha na formularzach**: ✅ **Cloudflare Turnstile konfigurowalny w panelu** (provider + site key jawny + **secret szyfrowany, write-only**; `GET/PUT /admin/config/integrations`, `/config/public` udostępnia site key). ✅ Weryfikacja backendu (`ICaptchaVerifier`→siteverify, **no-op gdy wyłączona**) wpięta w `POST /identity/register` i `POST /feedback`. ✅ Apka: widget Turnstile (`cloudflare_turnstile`) na rejestracji i „Zgłoś uwagę" (pokazywany, gdy captcha włączona). Testy: `CaptchaConfigTests` (3). ⬜ **weryfikacja na żywo** z prawdziwymi kluczami Turnstile (urządzenie/PWA) + ewentualnie kontakt/reset hasła.
+- 🔧 **P7 Branding edytowalny + seed mockami**: ✅ **seed pilotażu** `POST /api/admin/seed/pilot` (Admin, idempotentny) — tworzy **Rapacz** i **Lewiatan** z logo, produktami ze zdjęciami, strefą i terminem dostawy; grafiki demo serwowane z API (`wwwroot/mock/*`, `UseStaticFiles`). ✅ Panel: „Zasiej sklepy demo" (Konfiguracja). ✅ Apka: kafelek produktu renderuje **zdjęcie** (`imageUrl` + fallback). ✅ Edytowalne: logo/GPS sklepu (P1/P3), `imageUrl` produktu przez API. Testy: `PilotSeedTests` (3). ⬜ pole zdjęcia produktu w formularzu panelu (dziś przez API/seed) + upload plików.
+- 🔧 **P8 Instalacja na telefonach**: ✅ **PWA gotowa** — ikony (192/512 + maskable + favicon) **przegenerowane z nowego logo Dowózka.pl**, manifest/`theme_color`/nazwa zaktualizowane, `sw.js` offline; „Dodaj do ekranu" działa na Android/iOS. ✅ Android przygotowany: `android:label="Dowózka.pl"`, ikony launchera (mipmap 48–192) z nowego logo; przewodnik build/podpis/dystrybucja w [DEPLOY.md](DEPLOY.md). ⬜ **realny build APK/AAB** — na maszynie z Android SDK (tu brak toolchainu); ⬜ iOS (po pilotażu).
+- 🔧 **P9 Twarda ścieżka E2E** + poprawa tarcia: ✅ **test E2E** `CustomerJourneyE2ETests` — rejestracja → sklep **wg odległości** → koszyk → **checkout ze zgodą** → śledzenie → **potwierdzenie przez sklep** (suma 2×6+8=20 zł); ✅ podpowiedź hasła przy rejestracji; puste/błędne/offline stany już są (R2). ⬜ płatność **realną bramką Rapacza (sandbox)** w ścieżce — tuż przed wizytą; ⬜ pełny przegląd tarcia na urządzeniu.
+- ⬜ **P10 Gotowość operacyjna**: deploy publiczny (HTTPS), konto Rapacza + instrukcja „1 strona", monitoring, pętla poprawek.
+- ✅ Decyzje (właściciel, 2026-09-14): rejestracja = klient + **self-service sklepu**; multi‑lokalizacja = **lekka** (wspólny admin wielu sklepów); płatności = **mock teraz, sandbox przed wizytą**. Do potwierdzenia przy odpowiednich fazach: captcha (P6), geokoder (P4), APK/PWA (P8).
 
 ---
 
@@ -60,7 +79,7 @@
 - ⬜ Godziny otwarcia / harmonogram sklepu; zasięg (kody pocztowe).
 
 ### R5 — Realne płatności [P0]
-- ⬜ Adapter **Przelewy24** (BLIK/karta) za `IPaymentProvider` + webhook + sandbox. (Alt: Fiserv/Polcard, Polskie ePłatności.)
+- ⬜ Adapter **Przelewy24** (BLIK/karta) za `IPaymentProvider` + webhook + sandbox. (Alt: Fiserv/Polcard, Polskie ePłatności.) — warunek prawny podpięcia (dokumenty per‑sklep + zgoda) już ✅ w Części III.
 - ⬜ Metody płatności w UI, obsługa błędów, **zwroty**.
 - ⬜ **Zapisane adresy dostaw** (CRUD + domyślny).
 
@@ -69,9 +88,9 @@
 - ⬜ Akceptacja zamówienia przez merchanta (dźwięk/push), realny **FCM**.
 
 ### Import/Eksport danych (narzędzia sprzedawcy) [P1]
-- 🔧 **Import asortymentu z pliku** (CSV/XLSX): ✅ **szablon** `templates/asortyment-import-szablon.csv` (`nazwa;kategoria;cena;jednostka;dostepny`); ⬜ endpoint `POST /catalog/stores/{id}/products/import` (walidacja wierszy + **podgląd** + **upsert**; kategorie dopasowane po nazwie, tworzone gdy brak) + UI w „Oferta" (upload + raport błędów).
-- ⬜ **Eksport asortymentu** (CSV/XLSX) — bieżąca oferta do edycji offline i ponownego importu.
-- ⬜ **Eksport zamówień** (CSV) do księgowości — per sklep + zakres dat.
+- ✅ **Import asortymentu z pliku** (CSV): ✅ **szablon** `templates/asortyment-import-szablon.csv` (`nazwa;kategoria;cena;jednostka;dostepny`); ✅ endpoint `POST /catalog/stores/{id}/products/import?commit=` (walidacja wierszy + **podgląd** `commit=false` + **upsert po nazwie**; kategorie dopasowane po nazwie, tworzone gdy brak; BOM/przecinek dziesiętny/duplikaty obsłużone) + UI w „Oferta" (wybór pliku → podgląd z raportem → zatwierdzenie, „Pobierz szablon"). Testy: `CatalogImportTests` (4). ⬜ XLSX później.
+- ✅ **Eksport asortymentu** (CSV) — `GET /catalog/stores/{id}/products/export` (StoreEmployee/Admin) zwraca plik `text/csv` z **BOM UTF‑8**, format **identyczny z importem** (przecinek dziesiętny, `tak/nie`, sort kategoria→nazwa, cytowanie RFC 4180) → **round-trip** pobierz–edytuj–wgraj. UI: przycisk „Eksportuj CSV" w „Oferta". Testy: round-trip + 403. ⬜ XLSX później.
+- ✅ **Eksport zamówień** (CSV) do księgowości — `GET /ordering/stores/{id}/orders/export?from=&to=&status=` (StoreEmployee/Admin, izolacja najemcy) zwraca `text/csv` z BOM; kolumny `numer;data;status;pozycje;produkty;prowizja;dostawa;suma;waluta` (statusy PL, przecinek dziesiętny, filtr zakresu dat po dacie złożenia). UI: „Eksportuj CSV" w zakładce Zamówienia (honoruje „Data od/do" z filtrów). Testy: totals/nagłówek/403. ⬜ XLSX/PDF później.
 - ⬜ **Eksport rozliczeń/faktur** — CSV teraz, **faktura PDF** później (z zakładki Rozliczenia); eksport księgi prowizji.
 - ⬜ Wspólne: limit rozmiaru pliku, **UTF‑8 (BOM)**, separator `;` (Excel PL), przecinek dziesiętny, nagłówki PL.
 
@@ -87,7 +106,7 @@
 ### R9 — Deploy & Launch [P0 przed pilotażem]
 - ✅ **PWA instalowalna**: manifest ZipZap (#F97316, ikony 192/512 + maskable + SVG), własny service worker (`sw.js`, offline powłoki), `flutter build web` OK; API konfigurowalne `--dart-define=API_BASE_URL`.
 - ✅ **Rozliczenia (model przychodu ZipZap→sklep)**: faktura miesięczna wg planu — **A: dostawa ZipZap = liczba dostaw × stała 25 zł**, **B: kurier sklepu = suma prowizji**; plan per‑sklep + opłata w ustawieniach platformy; endpoint `/invoice?month=` + karta w panelu (Rozliczenia). Klient płaci bramką sklepu — ZipZap nie jest płatnikiem. (rdzeń billingu Fazy H)
-- 🔧 **Konfiguracja z kontami**: ✅ `.env.example` + panel **Konfiguracja** (status + checklist) + ✅ **edytowalne ustawienia platformy** + ✅ **per‑store integracja bramki płatniczej** (każdy sklep podpina swoje konto; tokeny **szyfrowane** Data Protection, write‑only, dostęp per‑sklep) + ✅ **routing per‑store w flow płatności** (resolver dostawcy sklepu → fallback mock, gotowe pod realny adapter); ⬜ **adapter realnej bramki** (Przelewy24 — odszyfrowanie i użycie tokenów) + store ustawień w DB.
+- 🔧 **Konfiguracja z kontami**: ✅ `.env.example` + panel **Konfiguracja** (status + checklist) + ✅ **edytowalne ustawienia platformy** + ✅ **per‑store integracja bramki płatniczej** (każdy sklep podpina swoje konto; tokeny **szyfrowane** Data Protection, write‑only, dostęp per‑sklep) + ✅ **routing per‑store w flow płatności** (resolver dostawcy sklepu → fallback mock, gotowe pod realny adapter) + ✅ **integracje platformy w panelu, nie w env**: Google OAuth **Client ID edytowalny w panelu** (`GET/PUT /api/admin/config/integrations`, walidacja `*.apps.googleusercontent.com`; port `IGoogleClientIdProvider` → magazyn panelu, env tylko fallback) + publiczny `GET /api/config/public` (Client ID dla `serverClientId` aplikacji). Env zostaje wyłącznie dla sekretów infrastruktury (JWT, DB). Testy: `PlatformIntegrationsTests` (3). ⬜ **adapter realnej bramki** (Przelewy24 — odszyfrowanie i użycie tokenów) + store ustawień w DB; ⬜ e‑mail/SMTP i inne integracje przenieść do panelu tym samym wzorcem.
 - ⬜ Środowiska dev→staging→prod; sekrety z env (guard jest).
 - 🔧 Deploy **darmowo/Docker**: ✅ `web.Dockerfile` (nginx) + serwis compose `web` + `DEPLOY.md` (warstwa nginx zweryfikowana lokalnie); ⬜ realny hosting: backend (Fly.io/Render/Railway lub VPS+compose), DB (Neon/Supabase), web (Cloudflare Pages/Netlify) pod publicznym HTTPS.
 - 🔧 **CI/CD** (GitHub Actions): ✅ build + testy (`.github/workflows/ci.yml` — backend z Postgres service 30/30, mobile analyze+test 17/17); ⬜ krok deploy na main.
@@ -105,13 +124,14 @@
 ---
 
 ## Część III — Zgodność prawna [P0 przed publiczną premierą]
-- ⬜ **RODO**: polityka prywatności, podstawy/zgody, usunięcie/eksport danych, umowy powierzenia.
+- ✅ **Dokumenty prawne per‑sklep + zgoda przy zakupie** (warunek podpięcia bramki): każdy sklep zamieszcza URL‑e (regulamin / polityka prywatności / RODO) i włącza **wymóg akceptacji**. `GET/PUT /api/stores/{id}/legal` (GET publiczny; PUT StoreEmployee/Admin, walidacja URL http/https + przy wymogu obowiązkowe regulamin+polityka). **Twarda blokada checkoutu** (`IStoreLegalPolicyProvider` w Ordering + adapter hosta): brak akceptacji → 400; zgoda zapisywana w **audycie** (`order.consent.accepted`: URL‑e + czas). UI: panel „Integracje i dokumenty" (karta *Dokumenty i zgody*) + apka klienta (linki do dokumentów + wymagany checkbox przed „Złóż zamówienie"). Testy: `StoreLegalTests` (5) + `CheckoutConsentTests` (3).
+- ⬜ **Dokumenty platformy ZipZap** (RODO / regulamin / polityka prywatności serwisu) + stopka i fallback; usunięcie/eksport danych, umowy powierzenia.
 - ⬜ **Regulamin** (klient + merchant), prawa konsumenta (odstąpienie/reklamacje/zwroty).
 - ⬜ **Cookies/consent** (web/panel).
 - ⬜ Płatności: zgodność po stronie dostawcy (PCI/PSD2); **alergeny/składniki** (gastronomia); ceny brutto + jawny koszt dostawy.
 
 ## Część IV — QA i testy
-- ✅ Jednostkowe + integracyjne API (30/30).
+- ✅ Jednostkowe + integracyjne API (55/55: 37 integracyjnych + 18 jednostkowych) + 23 testy aplikacji mobilnej.
 - ⬜ **E2E scenariusze** → [TEST_SCENARIOS.md](TEST_SCENARIOS.md) (klient/merchant/kierowca/admin + brzegowe).
 - ⬜ Live bug‑hunt (failed/empty/dark/offline), **device matrix**, E2E w CI.
 - **Defekty** (fixy wpięte w R1/R2): patrz rejestr w TEST_SCENARIOS.md.
