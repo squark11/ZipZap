@@ -15,8 +15,9 @@ Skrót stanu: **BE** = backend, **FE** = aplikacja/panel. „BE gotowe" = endpoi
 - 🟠 **Autouzupełnianie adresu (Google Places API)** — podpowiedzi + geokodowanie (adres → współrzędne, do zasięgu). Klucz **konfigurowalny w panelu** (jak Google Client ID / captcha). Alternatywa: Nominatim/OSM (P4b).
 
 ## 3. Dobór sklepów wg miejsca zamieszkania — 🔴 P0
-- 🔴 Dziś: sklepy **sortowane wg odległości** (Haversine, `distanceKm`), ale **NIE filtrowane** po tym, czy dowożą pod adres klienta. Przy checkoucie klient **ręcznie wybiera „strefę dostawy"** — zła UX (klient nie powinien zgadywać strefy).
-- 🔴 Trzeba: **model zasięgu sklepu** (obsługiwane **kody pocztowe** lub **promień + współrzędne**), **filtr „tylko sklepy dowożące pod mój adres"**, oraz **automatyczny dobór strefy + opłaty** na podstawie adresu (zamiast ręcznego dropdownu w checkoucie).
+- ✅ **Backend (2026-09-15):** naprawiono zapis **kodów pocztowych stref** (były `Ignore` w EF → teraz kolumna `text[]`, migracja `Ordering_ZonePostalCodes`); endpoint **`GET /api/stores/serving?postalCode=&lat=&lng=`** zwraca tylko sklepy z aktywną strefą obejmującą kod (pusta lista kodów strefy = obsługuje wszędzie). Zweryfikowane na żywo: sklep ze strefą „31-042" widoczny dla 31-042, niewidoczny dla 99-999; bez kodu → wszystkie.
+- ✅ **Frontend (aplikacja) (2026-09-15):** baner **kodu pocztowego** na ekranie sklepów (`stores_screen.dart` → `_PostalBanner`) z dialogiem wpisania/zmiany/wyczyszczenia kodu, **auto-uzupełnianie z domyślnego adresu klienta** (jednorazowo po zalogowaniu), `catalog_repository.listStores(postalCode:)` → woła `/stores/serving` gdy 5 cyfr, komunikat „Brak sklepów dowożących" gdy pusto. Analiza czysta; PWA zbudowana. ⏳ **Deploy Netlify oczekuje** (brak `NETLIFY_AUTH_TOKEN` na maszynie — patrz niżej).
+- 🟠 **Auto-dobór strefy + opłaty w checkoucie** na podstawie kodu adresu (zamiast ręcznego dropdownu). Panel sklepu: pokazać zapisane kody strefy (DTO `DeliveryZoneDto` nie eksponuje jeszcze `postalCodes`).
 
 ## 4. Panel sklepu (administrator sklepu) — 🟠 (audyt 2026-09-15)
 Sekcje: Start, Pulpit, Zamówienia, Dostawy, Oferta, Integracje, Rozliczenia. Wyniki przeglądu kodu:
