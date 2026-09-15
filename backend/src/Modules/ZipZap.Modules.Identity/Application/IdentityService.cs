@@ -248,6 +248,80 @@ public sealed class IdentityService
         return UserDto.From(user);
     }
 
+    /// <summary>Czy adres e-mail jest wolny (sprawdzenie przed utworzeniem sklepu, by nie osierocić rekordu).</summary>
+    public async Task<bool> IsEmailAvailableAsync(string email, CancellationToken ct)
+        => !await _db.Users.AnyAsync(u => u.Email == User.Normalize(email), ct);
+
+    /// <summary>
+    /// Rejestracja właściciela sklepu (self-service „Załóż sklep"): konto <see cref="Role.StoreEmployee"/>
+    /// przypisane do już utworzonego sklepu. Zwraca tokeny (od razu zalogowany) i wysyła e-mail weryfikacyjny.
+    /// </summary>
+    public async Task<Result<AuthResult>> RegisterStoreOwnerAsync(
+        string email, string password, string fullName, string? phone, Guid storeId, CancellationToken ct)
+    {
+        var validation = Validate(email, password, fullName);
+        if (validation is not null) return Error.Validation(validation);
+
+        var normalized = User.Normalize(email);
+        if (await _db.Users.AnyAsync(u => u.Email == normalized, ct))
+            return Error.Conflict("Użytkownik z tym adresem e-mail już istnieje.");
+
+        var user = User.Register(email, _hasher.Hash(password), fullName, phone, Role.StoreEmployee, storeId);
+        _db.Users.Add(user);
+
+        var rawVerify = CreateToken(user.Id, UserTokenType.EmailVerification, _options.EmailVerificationHours);
+        var auth = IssueTokens(user);
+        await _db.SaveChangesAsync(ct);
+
+        await SendVerificationEmailAsync(user.Email, rawVerify, ct);
+        return auth;
+    }
+
+    /// <summary>
+    /// Rejestracja dostawcy (self-service „Zostań dostawcą"): konto <see cref="Role.Driver"/> BEZ sklepu,
+    /// <b>nieaktywne</b> (do weryfikacji przez administratora serwisu). Nie loguje — czeka na aktywację.
+    /// </summary>
+    public async Task<Result> RegisterDriverAsync(
+        string email, string password, string fullName, string? phone, CancellationToken ct)
+    {
+        var validation = Validate(email, password, fullName);
+        if (validation is not null) return Result.Failure(Error.Validation(validation));
+
+        var normalized = User.Normalize(email);
+        if (await _db.Users.AnyAsync(u => u.Email == normalized, ct))
+            return Result.Failure(Error.Conflict("Użytkownik z tym adresem e-mail już istnieje."));
+
+        var user = User.Register(email, _hasher.Hash(password), fullName, phone, Role.Driver, storeId: null);
+        user.Deactivate(); // pending — administrator aktywuje i przypisuje sklep
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    /// <summary>Administrator: oczekujący dostawcy (rola Driver, konto nieaktywne).</summary>
+    public async Task<IReadOnlyList<TeamMemberDto>> ListPendingDriversAsync(CancellationToken ct)
+    {
+        var users = await _db.Users.AsNoTracking().Include(u => u.Roles)
+            .Where(u => !u.IsActive && u.Roles.Any(r => r.Role == Role.Driver))
+            .OrderBy(u => u.CreatedAtUtc)
+            .ToListAsync(ct);
+        return users.Select(u => new TeamMemberDto(
+            u.Id, u.Email, u.FullName, u.Phone, u.IsActive, u.IsEmailVerified, "Driver",
+            u.Roles.FirstOrDefault(r => r.Role == Role.Driver && r.StoreId.HasValue)?.StoreId ?? Guid.Empty)).ToList();
+    }
+
+    /// <summary>Administrator: zatwierdza dostawcę — przypisuje do sklepu jako Driver i aktywuje konto.</summary>
+    public async Task<Result> ApproveDriverAsync(Guid userId, Guid storeId, CancellationToken ct)
+    {
+        var user = await _db.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        if (!user.HasRole(Role.Driver)) return Result.Failure(Error.Validation("To konto nie jest kontem dostawcy."));
+        user.AssignRole(Role.Driver, storeId);
+        user.Activate();
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     /// <summary>Zespół sklepu: pracownicy i kierowcy przypisani do danego sklepu.</summary>
     public async Task<IReadOnlyList<TeamMemberDto>> ListStoreTeamAsync(Guid storeId, CancellationToken ct)
     {

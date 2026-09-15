@@ -86,6 +86,21 @@ export class Api {
       .pipe(tap(r => this.apply(r, email)));
   }
 
+  /// Self-service „Załóż sklep" — tworzy sklep + konto administratora sklepu i loguje.
+  registerStore(body: {
+    email: string; password: string; fullName: string; phone?: string;
+    storeName: string; city: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/register/store`, body)
+      .pipe(tap(r => this.apply(r, body.email)));
+  }
+
+  /// Self-service „Zostań dostawcą" — konto do weryfikacji przez administratora (nie loguje).
+  registerDriver(body: { email: string; password: string; fullName: string; phone?: string; }):
+    Observable<{ status: string; message: string }> {
+    return this.http.post<{ status: string; message: string }>(`${this.base}/register/driver`, body);
+  }
+
   /// Odświeża token (np. po dodaniu lokalizacji, by nowy sklep trafił do claimów).
   refresh(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/identity/refresh`, { refreshToken: this.refreshToken() })

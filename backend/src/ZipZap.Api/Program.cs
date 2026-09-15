@@ -15,6 +15,7 @@ using ZipZap.BuildingBlocks.Domain;
 using ZipZap.BuildingBlocks.Inbox;
 using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.BuildingBlocks.Persistence;
+using ZipZap.BuildingBlocks.Security;
 using ZipZap.Modules.Catalog.Application;
 using ZipZap.Modules.Identity.Application;
 using ZipZap.Modules.Ordering.Application;
@@ -359,6 +360,55 @@ app.MapPost("/api/merchant/stores",
 
     return Results.Ok(created.Value);
 }).RequireAuthorization().WithTags("Catalog");
+
+// --- Rejestracja per-kanał (P-Role2) ---
+// Sklepy i dostawcy rejestrują się przez WEB (panel). Klienci — tylko z aplikacji mobilnej.
+
+// Publiczny „Załóż sklep": tworzy sklep + konto właściciela (StoreEmployee) i loguje.
+app.MapPost("/api/register/store",
+    async (RegisterStoreRequest req, ICaptchaVerifier captcha, CatalogService catalog, IdentityService identity, CancellationToken ct) =>
+{
+    IResult Problem(Error e) => Results.Problem(detail: e.Message, statusCode: e.ToStatusCode(), title: e.Code);
+
+    if (!await captcha.VerifyAsync(req.CaptchaToken, ct))
+        return Results.Problem(detail: "Weryfikacja captcha nie powiodła się.", statusCode: 400, title: "captcha");
+    // Sprawdź e-mail PRZED utworzeniem sklepu, by nie zostawić osieroconego sklepu.
+    if (!await identity.IsEmailAvailableAsync(req.Email, ct))
+        return Results.Problem(detail: "Użytkownik z tym adresem e-mail już istnieje.", statusCode: 409, title: "conflict");
+
+    var store = await catalog.CreateStoreAsync(req.StoreName, null, null, req.City, null, req.Phone,
+        0.10m, 0m, ct, null, null, null);
+    if (store.IsFailure) return Problem(store.Error);
+
+    var auth = await identity.RegisterStoreOwnerAsync(req.Email, req.Password, req.FullName, req.Phone, store.Value.Id, ct);
+    if (auth.IsFailure) return Problem(auth.Error);
+    return Results.Ok(auth.Value);
+}).WithTags("Registration");
+
+// Publiczny „Zostań dostawcą": konto Driver, nieaktywne (do weryfikacji przez administratora).
+app.MapPost("/api/register/driver",
+    async (RegisterDriverRequest req, ICaptchaVerifier captcha, IdentityService identity, CancellationToken ct) =>
+{
+    if (!await captcha.VerifyAsync(req.CaptchaToken, ct))
+        return Results.Problem(detail: "Weryfikacja captcha nie powiodła się.", statusCode: 400, title: "captcha");
+
+    var res = await identity.RegisterDriverAsync(req.Email, req.Password, req.FullName, req.Phone, ct);
+    if (res.IsFailure) return Results.Problem(detail: res.Error.Message, statusCode: res.Error.ToStatusCode(), title: res.Error.Code);
+    return Results.Ok(new { status = "pending", message = "Dziękujemy! Zgłoszenie czeka na weryfikację — damy znać po aktywacji konta." });
+}).WithTags("Registration");
+
+// Administrator serwisu: oczekujący dostawcy + zatwierdzenie (aktywacja + przypisanie do sklepu).
+app.MapGet("/api/admin/drivers/pending", async (IdentityService identity, CancellationToken ct) =>
+    Results.Ok(await identity.ListPendingDriversAsync(ct))).RequireAuthorization("Admin").WithTags("Registration");
+
+app.MapPost("/api/admin/drivers/{userId:guid}/approve",
+    async (Guid userId, ApproveDriverRequest req, IdentityService identity, CancellationToken ct) =>
+{
+    var res = await identity.ApproveDriverAsync(userId, req.StoreId, ct);
+    return res.IsFailure
+        ? Results.Problem(detail: res.Error.Message, statusCode: res.Error.ToStatusCode(), title: res.Error.Code)
+        : Results.Ok();
+}).RequireAuthorization("Admin").WithTags("Registration");
 
 // Onboarding: status gotowości sklepu do sprzedaży (checklista). Agreguje Catalog + Ordering + dokumenty/integracje.
 app.MapGet("/api/stores/{storeId:guid}/readiness",

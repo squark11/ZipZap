@@ -39,20 +39,55 @@ import { FeedbackComponent } from './feedback';
       </div>
 
       <div class="auth-form">
-        <form class="auth-card" (ngSubmit)="login()">
-          <h2>Zaloguj się do panelu</h2>
-          <div class="field">
-            <label>Login (e-mail)</label>
-            <input name="email" [(ngModel)]="email" type="email" required />
-          </div>
-          <div class="field">
-            <label>Hasło</label>
-            <input name="password" [(ngModel)]="password" type="password" required />
-          </div>
-          <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
-          @if (error) { <p class="error">{{ error }}</p> }
-          <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
-        </form>
+        @switch (authMode) {
+          @case ('login') {
+            <form class="auth-card" (ngSubmit)="login()">
+              <h2>Zaloguj się do panelu</h2>
+              <div class="field"><label>Login (e-mail)</label><input name="email" [(ngModel)]="email" type="email" required /></div>
+              <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+              <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
+              @if (error) { <p class="error">{{ error }}</p> }
+              <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
+              <p class="hint">Prowadzisz sklep? <a [style]="linkStyle" (click)="setMode('store')">Załóż sklep</a> · Chcesz dostarczać? <a [style]="linkStyle" (click)="setMode('driver')">Zostań dostawcą</a></p>
+            </form>
+          }
+          @case ('store') {
+            <form class="auth-card" (ngSubmit)="registerStore()">
+              <h2>Załóż sklep</h2>
+              <p class="hint">Konto administratora sklepu — od razu przejdziesz do konfiguracji oferty i dostaw.</p>
+              <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
+              <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
+              <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
+              <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+              <div class="field"><label>Nazwa sklepu</label><input name="storeName" [(ngModel)]="storeName" required /></div>
+              <div class="field"><label>Miasto</label><input name="city" [(ngModel)]="city" required /></div>
+              <button class="btn-lg" type="submit" [disabled]="loading">Załóż sklep i zacznij</button>
+              @if (error) { <p class="error">{{ error }}</p> }
+              <p class="hint">Masz już konto? <a [style]="linkStyle" (click)="setMode('login')">Zaloguj się</a></p>
+            </form>
+          }
+          @case ('driver') {
+            @if (driverDone) {
+              <div class="auth-card">
+                <h2>Dziękujemy! 🎉</h2>
+                <p>{{ driverMsg }}</p>
+                <button class="btn-lg" (click)="setMode('login')">Wróć do logowania</button>
+              </div>
+            } @else {
+              <form class="auth-card" (ngSubmit)="registerDriver()">
+                <h2>Zostań dostawcą</h2>
+                <p class="hint">Konto zostanie aktywowane po weryfikacji przez administratora serwisu.</p>
+                <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
+                <div class="field"><label>E-mail</label><input name="email" [(ngModel)]="email" type="email" required /></div>
+                <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
+                <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                <button class="btn-lg" type="submit" [disabled]="loading">Wyślij zgłoszenie</button>
+                @if (error) { <p class="error">{{ error }}</p> }
+                <p class="hint">Masz już konto? <a [style]="linkStyle" (click)="setMode('login')">Zaloguj się</a></p>
+              </form>
+            }
+          }
+        }
       </div>
     </div>
   } @else {
@@ -148,6 +183,16 @@ export class App {
   loading = false;
   search = '';
 
+  // Rejestracja per-kanał (web): logowanie / „Załóż sklep" / „Zostań dostawcą".
+  authMode: 'login' | 'store' | 'driver' = 'login';
+  fullName = '';
+  phone = '';
+  storeName = '';
+  city = '';
+  driverDone = false;
+  driverMsg = '';
+  readonly linkStyle = 'color:#14b9ba;cursor:pointer;font-weight:600';
+
   stores: StoreDto[] = [];
   selectedStoreId = '';
   addingLocation = false;
@@ -172,6 +217,45 @@ export class App {
     this.api.login(this.email, this.password).subscribe({
       next: () => { this.loading = false; this.loadStores(); },
       error: () => { this.error = 'Nieprawidłowy e-mail lub hasło.'; this.loading = false; },
+    });
+  }
+
+  setMode(m: 'login' | 'store' | 'driver') {
+    this.authMode = m;
+    this.error = '';
+    this.driverDone = false;
+    this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = '';
+    if (m === 'login') { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
+    else { this.email = ''; this.password = ''; }
+  }
+
+  registerStore() {
+    if (!this.email || !this.password || !this.fullName || !this.storeName || !this.city) {
+      this.error = 'Uzupełnij wszystkie wymagane pola.';
+      return;
+    }
+    this.loading = true; this.error = '';
+    this.api.registerStore({
+      email: this.email.trim(), password: this.password, fullName: this.fullName.trim(),
+      phone: this.phone.trim() || undefined, storeName: this.storeName.trim(), city: this.city.trim(),
+    }).subscribe({
+      next: () => { this.loading = false; this.loadStores(); },
+      error: e => { this.loading = false; this.error = e?.error?.detail ?? 'Nie udało się założyć sklepu.'; },
+    });
+  }
+
+  registerDriver() {
+    if (!this.email || !this.password || !this.fullName) {
+      this.error = 'Uzupełnij imię i nazwisko, e-mail i hasło.';
+      return;
+    }
+    this.loading = true; this.error = '';
+    this.api.registerDriver({
+      email: this.email.trim(), password: this.password, fullName: this.fullName.trim(),
+      phone: this.phone.trim() || undefined,
+    }).subscribe({
+      next: r => { this.loading = false; this.driverDone = true; this.driverMsg = r.message; },
+      error: e => { this.loading = false; this.error = e?.error?.detail ?? 'Nie udało się wysłać zgłoszenia.'; },
     });
   }
 
