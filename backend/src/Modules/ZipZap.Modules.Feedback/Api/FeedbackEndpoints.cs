@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ZipZap.BuildingBlocks.Domain;
+using ZipZap.BuildingBlocks.Security;
 using ZipZap.Modules.Feedback.Application;
 
 namespace ZipZap.Modules.Feedback.Api;
 
 public sealed record SubmitFeedbackRequest(
     string Type, string Message, string? ContactEmail, Guid? StoreId,
-    string? Screen, string? AppVersion, string? Platform);
+    string? Screen, string? AppVersion, string? Platform, string? CaptchaToken);
 
 public sealed record UpdateFeedbackStatusRequest(string Status);
 
@@ -18,9 +19,11 @@ public static class FeedbackEndpoints
     {
         var group = app.MapGroup("/api/feedback").WithTags("Feedback");
 
-        // Zgłoszenie uwagi — PUBLICZNE (id użytkownika dołączane, jeśli zalogowany). Ochrona captchą → P6.
-        group.MapPost("/", async (SubmitFeedbackRequest req, FeedbackService svc, CancellationToken ct) =>
+        // Zgłoszenie uwagi — PUBLICZNE (id użytkownika dołączane, jeśli zalogowany), chronione captchą (gdy włączona).
+        group.MapPost("/", async (SubmitFeedbackRequest req, FeedbackService svc, ICaptchaVerifier captcha, CancellationToken ct) =>
         {
+            if (!await captcha.VerifyAsync(req.CaptchaToken, ct))
+                return Problem(Error.Validation("Weryfikacja captcha nie powiodła się."));
             var result = await svc.SubmitAsync(req.Type, req.Message, req.ContactEmail, req.StoreId,
                 req.Screen, req.AppVersion, req.Platform, ct);
             return result.IsSuccess ? Results.Ok(new { id = result.Value }) : Problem(result.Error);

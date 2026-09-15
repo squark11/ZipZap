@@ -1,6 +1,6 @@
 namespace ZipZap.Modules.Identity.Api;
 
-public sealed record RegisterRequest(string Email, string Password, string FullName, string? Phone);
+public sealed record RegisterRequest(string Email, string Password, string FullName, string? Phone, string? CaptchaToken = null);
 
 public sealed record LoginRequest(string Email, string Password);
 

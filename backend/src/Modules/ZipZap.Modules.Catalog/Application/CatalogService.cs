@@ -49,17 +49,17 @@ public sealed class CatalogService
         var query = _db.Stores.AsNoTracking().IgnoreQueryFilters();
         if (onlyActive) query = query.Where(s => s.IsActive);
 
-        var hasCoords = lat is >= -90 and <= 90 && lng is >= -180 and <= 180;
-        if (!hasCoords)
+        if (lat is not (>= -90 and <= 90) || lng is not (>= -180 and <= 180))
         {
             // Brak/nieprawidłowe współrzędne → sortowanie alfabetyczne (zachowanie domyślne).
             return await query.OrderBy(s => s.Name).Select(s => StoreDto.From(s, null)).ToListAsync(ct);
         }
+        double refLat = lat.Value, refLng = lng.Value;
 
         var stores = await query.ToListAsync(ct);
         return stores
             .Select(s => (store: s, dist: s.Latitude.HasValue && s.Longitude.HasValue
-                ? Math.Round(Haversine(lat.Value, lng.Value, s.Latitude.Value, s.Longitude.Value), 1)
+                ? Math.Round(Haversine(refLat, refLng, s.Latitude.Value, s.Longitude.Value), 1)
                 : (double?)null))
             .OrderBy(x => x.dist ?? double.MaxValue).ThenBy(x => x.store.Name)
             .Select(x => StoreDto.From(x.store, x.dist))

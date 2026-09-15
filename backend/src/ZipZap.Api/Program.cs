@@ -128,6 +128,8 @@ builder.Services.AddSingleton<ZipZap.Modules.Ordering.Application.IStoreLegalPol
 builder.Services.AddSingleton<PlatformIntegrationsStore>();
 // Integracje platformy edytowalne w panelu — nadpisz domyślne (env) źródło Google Client ID.
 builder.Services.AddSingleton<ZipZap.Modules.Identity.Application.IGoogleClientIdProvider, PlatformGoogleClientIdProvider>();
+// Captcha (Cloudflare Turnstile) — weryfikacja po stronie serwera; wyłączona, dopóki niekonfigurowana w panelu.
+builder.Services.AddHttpClient<ZipZap.BuildingBlocks.Security.ICaptchaVerifier, TurnstileCaptchaVerifier>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -244,6 +246,9 @@ if (app.Environment.IsDevelopment())
 if (app.Environment.IsDevelopment())
     app.UseCors(DevCorsPolicy);
 
+// Serwuje statyczne zasoby (m.in. /mock/* — grafiki demo dla seeda pilotażu).
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
@@ -288,24 +293,37 @@ app.MapGet("/api/admin/config/status",
     });
 }).RequireAuthorization("Admin").WithTags("System");
 
-// Integracje platformy edytowalne w panelu (Admin) — zamiast env. Wartości jawne (Google Client ID).
+// Integracje platformy edytowalne w panelu (Admin) — zamiast env. Sekret captchy write-only.
 app.MapGet("/api/admin/config/integrations", async (PlatformIntegrationsStore store, CancellationToken ct) =>
-    Results.Ok(await store.GetAsync(ct))).RequireAuthorization("Admin").WithTags("System");
+    Results.Ok(await store.GetStatusAsync(ct))).RequireAuthorization("Admin").WithTags("System");
 
 app.MapPut("/api/admin/config/integrations",
-    async (PlatformIntegrations body, PlatformIntegrationsStore store, CancellationToken ct) =>
+    async (PlatformIntegrationsUpdate body, PlatformIntegrationsStore store, CancellationToken ct) =>
 {
     var err = PlatformIntegrationsStore.Validate(body);
     if (err is not null) return Results.Problem(detail: err, statusCode: 400, title: "validation");
+    // Włączenie captchy wymaga sekretu (podanego teraz lub już zapisanego).
+    if (!string.IsNullOrWhiteSpace(body.CaptchaProvider) && string.IsNullOrWhiteSpace(body.CaptchaSecret)
+        && !(await store.GetStatusAsync(ct)).HasCaptchaSecret)
+        return Results.Problem(detail: "Włączenie captchy wymaga sekretu (secret key).", statusCode: 400, title: "validation");
     return Results.Ok(await store.SaveAsync(body, ct));
 }).RequireAuthorization("Admin").WithTags("System");
 
-// Publiczna konfiguracja dla aplikacji klienta — Google Client ID (jawny) do serverClientId.
+// Publiczna konfiguracja dla aplikacji klienta — Google Client ID + captcha (provider + site key, jawne).
 app.MapGet("/api/config/public",
-    async (IGoogleClientIdProvider google, CancellationToken ct) =>
+    async (IGoogleClientIdProvider google, PlatformIntegrationsStore store, CancellationToken ct) =>
 {
     var googleId = await google.GetClientIdAsync(ct);
-    return Results.Ok(new { googleClientId = googleId, googleSignInEnabled = !string.IsNullOrWhiteSpace(googleId) });
+    var status = await store.GetStatusAsync(ct);
+    var captchaEnabled = !string.IsNullOrWhiteSpace(status.CaptchaProvider)
+        && !string.IsNullOrWhiteSpace(status.CaptchaSiteKey) && status.HasCaptchaSecret;
+    return Results.Ok(new
+    {
+        googleClientId = googleId,
+        googleSignInEnabled = !string.IsNullOrWhiteSpace(googleId),
+        captchaProvider = captchaEnabled ? status.CaptchaProvider : null,
+        captchaSiteKey = captchaEnabled ? status.CaptchaSiteKey : null,
+    });
 }).WithTags("System");
 
 // Multi-lokalizacja: właściciel sklepu (StoreEmployee) lub Admin dodaje kolejną LOKALIZACJĘ
@@ -365,6 +383,57 @@ app.MapGet("/api/stores/{storeId:guid}/readiness",
     };
     return Results.Ok(new { storeId, readyToSell = steps.Where(s => s.required).All(s => s.done), steps });
 }).RequireAuthorization("StoreEmployee").WithTags("Catalog");
+
+// Seed pilotażu (Admin): tworzy sklepy demo (Rapacz/Lewiatan) z logo, produktami (zdjęcia),
+// strefą i terminem dostawy — gotowe do sprzedaży i widoczne wg odległości. Idempotentne (po slug).
+app.MapPost("/api/admin/seed/pilot",
+    async (HttpContext http, CatalogService catalog, OrderingService ordering, CancellationToken ct) =>
+{
+    var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(1));
+    var demoDesc = "Sklep demonstracyjny — dane przykładowe do podmiany przez sklep.";
+
+    var stores = new[]
+    {
+        new { slug = "demo-rapacz-rynek", name = "Rapacz — Rynek", city = "Kraków", address = "Rynek Główny 5",
+              phone = "12 555 10 10", lat = 50.0616, lng = 19.9366, logo = "stores/rapacz.png", min = 20m },
+        new { slug = "demo-lewiatan-podwawelskie", name = "Lewiatan — Podwawelskie", city = "Kraków", address = "ul. Komandosów 12",
+              phone = "12 555 20 20", lat = 50.0455, lng = 19.9295, logo = "stores/lewiatan.png", min = 15m },
+    };
+    var products = new[]
+    {
+        new { name = "Jabłka", price = 4.99m, unit = "kg",   img = "food/jablka.jpg" },
+        new { name = "Mleko 2%", price = 3.49m, unit = "szt", img = "food/mleko.jpg" },
+        new { name = "Parmezan", price = 12.90m, unit = "100g", img = "food/parmezan.jpg" },
+        new { name = "Szynka", price = 8.99m, unit = "100g", img = "food/szynka.jpg" },
+    };
+
+    var created = new List<string>();
+    var skipped = new List<string>();
+
+    foreach (var s in stores)
+    {
+        if ((await catalog.GetStoreAsync(s.slug, ct)).IsSuccess) { skipped.Add(s.slug); continue; }
+
+        var storeRes = await catalog.CreateStoreAsync(s.name, s.slug, demoDesc, s.city, s.address, s.phone,
+            0.10m, s.min, ct, $"{baseUrl}/mock/{s.logo}", s.lat, s.lng);
+        if (storeRes.IsFailure) return Results.Problem(detail: storeRes.Error.Message, statusCode: storeRes.Error.ToStatusCode(), title: storeRes.Error.Code);
+        var storeId = storeRes.Value.Id;
+
+        var cat = await catalog.CreateCategoryAsync(storeId, "Spożywcze", 0, null, ct);
+        var catId = cat.IsSuccess ? cat.Value.Id : (Guid?)null;
+        foreach (var p in products)
+            await catalog.CreateProductAsync(storeId, catId, p.name, null, p.price, "PLN", p.unit, null, $"{baseUrl}/mock/{p.img}", ct);
+
+        var zone = await ordering.CreateZoneAsync(storeId, "Centrum", 8.00m, null, ct);
+        if (zone.IsSuccess)
+            await ordering.CreateSlotAsync(storeId, zone.Value.Id, tomorrow, new TimeOnly(10, 0), new TimeOnly(12, 0), 20, ct);
+
+        created.Add(s.slug);
+    }
+
+    return Results.Ok(new { created, skipped, note = "Sklepy demo gotowe. Zaloguj się jako sklep, by je edytować lub usunąć." });
+}).RequireAuthorization("Admin").WithTags("System");
 
 // Ustawienia platformy (edytowalne, nie‑sekretne) — odczyt i zapis (admin).
 app.MapGet("/api/admin/config/platform", async (PlatformSettingsStore store, CancellationToken ct) =>

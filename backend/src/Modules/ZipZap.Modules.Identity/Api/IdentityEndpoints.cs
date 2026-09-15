@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ZipZap.BuildingBlocks.Auditing;
 using ZipZap.BuildingBlocks.Domain;
+using ZipZap.BuildingBlocks.Security;
 using ZipZap.Modules.Identity.Application;
 using ZipZap.Modules.Identity.Domain;
 
@@ -15,8 +16,10 @@ public static class IdentityEndpoints
     {
         var group = app.MapGroup("/api/identity").WithTags("Identity");
 
-        group.MapPost("/register", async (RegisterRequest req, IdentityService svc, CancellationToken ct) =>
+        group.MapPost("/register", async (RegisterRequest req, IdentityService svc, ICaptchaVerifier captcha, CancellationToken ct) =>
         {
+            if (!await captcha.VerifyAsync(req.CaptchaToken, ct))
+                return Problem(Error.Validation("Weryfikacja captcha nie powiodła się."));
             var result = await svc.RegisterCustomerAsync(req.Email, req.Password, req.FullName, req.Phone, ct);
             return result.IsSuccess ? Results.Ok(ToResponse(result.Value)) : Problem(result.Error);
         });
