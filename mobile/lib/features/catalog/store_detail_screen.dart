@@ -28,14 +28,9 @@ class StoreDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(cartControllerProvider.notifier).ensureCartForStore(widget.storeId);
-    });
-  }
-
+  // Koszyk NIE jest tworzony przy wejściu do sklepu — dopiero przy pierwszym dodaniu
+  // produktu (patrz `_ProductRow._add`). Dzięki temu wejście na stronę innego sklepu
+  // nie kasuje po cichu koszyka z poprzedniego sklepu.
   @override
   Widget build(BuildContext context) {
     final store = ref.watch(storeDetailProvider(widget.storeId));
@@ -82,7 +77,11 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
                 }
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: _ProductRow(product: list[i - 1]),
+                  child: _ProductRow(
+                    product: list[i - 1],
+                    storeId: widget.storeId,
+                    storeName: storeVal?.name ?? 'tym sklepie',
+                  ),
                 );
               },
             ),
@@ -109,7 +108,9 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
 
 class _ProductRow extends ConsumerWidget {
   final Product product;
-  const _ProductRow({required this.product});
+  final String storeId;
+  final String storeName;
+  const _ProductRow({required this.product, required this.storeId, required this.storeName});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -168,7 +169,7 @@ class _ProductRow extends ConsumerWidget {
             if (available)
               qty == 0
                   ? OutlinedButton(
-                      onPressed: () => controller.add(product.id),
+                      onPressed: () => _add(context, ref),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(40, 40),
                         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -184,6 +185,29 @@ class _ProductRow extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Dodaje produkt do koszyka. Jeśli koszyk zawiera produkty z innego sklepu,
+  /// prosi o potwierdzenie opróżnienia (koszyk jest jednosklepowy).
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final controller = ref.read(cartControllerProvider.notifier);
+    if (controller.hasItemsFromOtherStore(storeId)) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Zacząć nowy koszyk?'),
+          content: Text(
+              'Twój koszyk zawiera produkty z innego sklepu. Dodanie „${product.name}" '
+              'opróżni obecny koszyk i zacznie zakupy w „$storeName".'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
+            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Opróżnij i dodaj')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    await controller.addFromStore(storeId, product.id);
   }
 }
 
