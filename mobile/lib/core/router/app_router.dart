@@ -8,6 +8,7 @@ import 'main_scaffold.dart';
 import '../../features/account/login_screen.dart';
 import '../../features/account/forgot_password_screen.dart';
 import '../../features/account/change_password_screen.dart';
+import '../../features/account/addresses_screen.dart';
 import '../../features/account/account_screen.dart';
 import '../../features/cart/cart_screen.dart';
 import '../../features/catalog/store_detail_screen.dart';
@@ -103,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordScreen()),
       GoRoute(path: '/change-password', builder: (_, _) => const ChangePasswordScreen()),
+      GoRoute(path: '/addresses', builder: (_, _) => const AddressesScreen()),
     ],
   );
 });

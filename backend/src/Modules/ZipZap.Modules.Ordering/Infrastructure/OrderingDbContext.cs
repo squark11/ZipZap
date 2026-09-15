@@ -21,6 +21,7 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<DeliveryZone> DeliveryZones => Set<DeliveryZone>();
     public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
+    public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -144,6 +145,21 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
 #pragma warning disable CS0618
             e.UseXminAsConcurrencyToken();
 #pragma warning restore CS0618
+        });
+
+        // ---- Adresy klienta ----
+        b.Entity<CustomerAddress>(e =>
+        {
+            e.ToTable("customer_addresses");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Label).IsRequired().HasMaxLength(60);
+            e.Property(a => a.Street).IsRequired().HasMaxLength(200);
+            e.Property(a => a.BuildingNo).IsRequired().HasMaxLength(20);
+            e.Property(a => a.ApartmentNo).HasMaxLength(20);
+            e.Property(a => a.PostalCode).IsRequired().HasMaxLength(12);
+            e.Property(a => a.City).IsRequired().HasMaxLength(120);
+            e.Property(a => a.Notes).HasMaxLength(300);
+            e.HasIndex(a => a.CustomerId);
         });
 
         // ---- Outbox ----

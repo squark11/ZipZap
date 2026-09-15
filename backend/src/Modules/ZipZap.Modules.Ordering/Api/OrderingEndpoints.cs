@@ -91,6 +91,31 @@ public static class OrderingEndpoints
             return Results.File(bytes, "text/csv; charset=utf-8", fileName);
         }).RequireAuthorization("StoreEmployee");
 
+        // ---------- Adresy dostaw klienta (uwierzytelnione) ----------
+
+        group.MapGet("/addresses", async (OrderingService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListMyAddressesAsync(ct))).RequireAuthorization();
+
+        group.MapPost("/addresses", async (AddressInput input, OrderingService svc, CancellationToken ct) =>
+            Respond(await svc.AddAddressAsync(input, ct))).RequireAuthorization();
+
+        group.MapPut("/addresses/{id:guid}", async (Guid id, AddressInput input, OrderingService svc, CancellationToken ct) =>
+            Respond(await svc.UpdateAddressAsync(id, input, ct))).RequireAuthorization();
+
+        group.MapDelete("/addresses/{id:guid}", async (Guid id, OrderingService svc, CancellationToken ct) =>
+        {
+            var r = await svc.DeleteAddressAsync(id, ct);
+            return r.IsSuccess ? Results.NoContent()
+                : Results.Problem(detail: r.Error.Message, statusCode: r.Error.ToStatusCode(), title: r.Error.Code);
+        }).RequireAuthorization();
+
+        group.MapPost("/addresses/{id:guid}/default", async (Guid id, OrderingService svc, CancellationToken ct) =>
+        {
+            var r = await svc.SetDefaultAddressAsync(id, ct);
+            return r.IsSuccess ? Results.Ok()
+                : Results.Problem(detail: r.Error.Message, statusCode: r.Error.ToStatusCode(), title: r.Error.Code);
+        }).RequireAuthorization();
+
         // Przejścia statusów (autoryzacja per-akcja w serwisie)
         // Akcje sklepu/administracji. Odbiór i dostarczenie prowadzi kierowca
         // przez moduł Delivery (POST /api/delivery/{id}/pick-up | /delivered).

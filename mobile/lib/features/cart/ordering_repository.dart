@@ -1,4 +1,5 @@
 import '../../core/api/api_client.dart';
+import '../../models/address.dart';
 import '../../models/cart.dart';
 import '../../models/delivery.dart';
 import '../../models/order.dart';
@@ -86,4 +87,23 @@ class OrderingRepository {
     final data = await _api.get('/ordering/orders/mine');
     return (data as List).map((e) => Order.fromJson(e as Map<String, dynamic>)).toList();
   }
+
+  // ---- Adresy dostaw klienta ----
+
+  Future<List<Address>> listAddresses() async {
+    final data = await _api.get('/ordering/addresses');
+    return (data as List).map((e) => Address.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Address> saveAddress(Map<String, dynamic> body, {String? id}) async {
+    final data = id == null
+        ? await _api.post('/ordering/addresses', body: body)
+        : await _api.put('/ordering/addresses/$id', body: body);
+    return Address.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteAddress(String id) => _api.delete('/ordering/addresses/$id');
+
+  Future<void> setDefaultAddress(String id) =>
+      _api.post('/ordering/addresses/$id/default', body: const {});
 }

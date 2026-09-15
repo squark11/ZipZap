@@ -75,6 +75,13 @@ class AccountScreen extends ConsumerWidget {
                 if (auth.isAuthenticated) ...[
                   const Divider(height: 1),
                   ListTile(
+                    leading: Icon(Icons.home_outlined, size: 22, color: context.zz.heading),
+                    title: const Text('Moje adresy'),
+                    trailing: ZzIcon('chevron_right', size: 20, color: context.zz.textMuted),
+                    onTap: () => context.push('/addresses'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: Icon(Icons.lock_outline, size: 22, color: context.zz.heading),
                     title: const Text('Zmień hasło'),
                     trailing: ZzIcon('chevron_right', size: 20, color: context.zz.textMuted),

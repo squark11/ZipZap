@@ -255,6 +255,72 @@ public sealed class OrderingService
         return orders.Select(o => OrderDto.From(o)).ToList();
     }
 
+    // ---------------- Adresy klienta ----------------
+
+    public async Task<IReadOnlyList<AddressDto>> ListMyAddressesAsync(CancellationToken ct)
+    {
+        if (_user.UserId is not Guid uid) return Array.Empty<AddressDto>();
+        var list = await _db.CustomerAddresses.AsNoTracking().Where(a => a.CustomerId == uid)
+            .OrderByDescending(a => a.IsDefault).ThenByDescending(a => a.CreatedAtUtc).ToListAsync(ct);
+        return list.Select(AddressDto.From).ToList();
+    }
+
+    public async Task<Result<AddressDto>> AddAddressAsync(AddressInput input, CancellationToken ct)
+    {
+        if (_user.UserId is not Guid uid) return Error.Unauthorized("Wymagane logowanie.");
+        CustomerAddress addr;
+        try
+        {
+            var makeDefault = input.IsDefault || !await _db.CustomerAddresses.AnyAsync(a => a.CustomerId == uid, ct);
+            addr = new CustomerAddress(uid, input.Label, input.Street, input.BuildingNo, input.ApartmentNo,
+                input.PostalCode, input.City, input.Notes, input.Latitude, input.Longitude, makeDefault);
+            if (makeDefault) await ClearOtherDefaultsAsync(uid, addr.Id, ct);
+        }
+        catch (OrderingDomainException ex) { return Error.Validation(ex.Message); }
+        _db.CustomerAddresses.Add(addr);
+        await _db.SaveChangesAsync(ct);
+        return AddressDto.From(addr);
+    }
+
+    public async Task<Result<AddressDto>> UpdateAddressAsync(Guid id, AddressInput input, CancellationToken ct)
+    {
+        if (_user.UserId is not Guid uid) return Error.Unauthorized("Wymagane logowanie.");
+        var addr = await _db.CustomerAddresses.FirstOrDefaultAsync(a => a.Id == id && a.CustomerId == uid, ct);
+        if (addr is null) return Error.NotFound("Adres nie istnieje.");
+        try { addr.Update(input.Label, input.Street, input.BuildingNo, input.ApartmentNo, input.PostalCode, input.City, input.Notes, input.Latitude, input.Longitude); }
+        catch (OrderingDomainException ex) { return Error.Validation(ex.Message); }
+        if (input.IsDefault && !addr.IsDefault) { addr.MakeDefault(); await ClearOtherDefaultsAsync(uid, addr.Id, ct); }
+        await _db.SaveChangesAsync(ct);
+        return AddressDto.From(addr);
+    }
+
+    public async Task<Result> DeleteAddressAsync(Guid id, CancellationToken ct)
+    {
+        if (_user.UserId is not Guid uid) return Result.Failure(Error.Unauthorized("Wymagane logowanie."));
+        var addr = await _db.CustomerAddresses.FirstOrDefaultAsync(a => a.Id == id && a.CustomerId == uid, ct);
+        if (addr is null) return Result.Failure(Error.NotFound("Adres nie istnieje."));
+        _db.CustomerAddresses.Remove(addr);
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result> SetDefaultAddressAsync(Guid id, CancellationToken ct)
+    {
+        if (_user.UserId is not Guid uid) return Result.Failure(Error.Unauthorized("Wymagane logowanie."));
+        var addr = await _db.CustomerAddresses.FirstOrDefaultAsync(a => a.Id == id && a.CustomerId == uid, ct);
+        if (addr is null) return Result.Failure(Error.NotFound("Adres nie istnieje."));
+        addr.MakeDefault();
+        await ClearOtherDefaultsAsync(uid, addr.Id, ct);
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    private async Task ClearOtherDefaultsAsync(Guid uid, Guid keepId, CancellationToken ct)
+    {
+        var others = await _db.CustomerAddresses.Where(a => a.CustomerId == uid && a.Id != keepId && a.IsDefault).ToListAsync(ct);
+        foreach (var o in others) o.ClearDefault();
+    }
+
     public async Task<Result<IReadOnlyList<OrderDto>>> ListStoreOrdersAsync(Guid storeId, string? status, CancellationToken ct)
     {
         // Izolacja najemcy: tylko admin lub pracownik TEGO sklepu.
