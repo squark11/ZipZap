@@ -36,5 +36,20 @@ Sekcje: Start, Pulpit, Zamówienia, Dostawy, Oferta, Integracje, Rozliczenia. Wy
 - 🟠 **Realne płatności Przelewy24 (sandbox)** przed wizytą (mock teraz — R5).
 - 🟡 Render free tier usypia (cold start) — rozgrzać przed pokazem lub upgrade.
 
+## 7. Wiele jednostek produktu — ✅ ZROBIONE (2026-09-16)
+- ✅ Produkt może mieć **kilka jednostek sprzedaży** (np. jabłka: kg 4,99 / szt 1,20); **klient wybiera** przy dodawaniu (bottom sheet). Backend (Catalog `UnitOptionsJson` + event/read-model, Ordering `AddItemAsync(unit)` autorytatywnie rozwiązuje cenę, `CartItem.Unit`/`OrderItem.Unit`), panel (dodatkowe jednostki w formularzu oferty), aplikacja (wybór + spójna jednostka w koszyku). Naprawia niespójność kg/szt. Wdrożone: backend Render, APK, panel; seed jabłek zaktualizowany.
+- ✅ **Ilość w koszyku z klawiatury** (dotknięcie liczby → pole numeryczne) obok +/−.
+- ✅ **Skeletony** (placeholdery ładowania) — wyraźny odcień + „pigułki", nie mylą się z tekstem.
+
+## 8. Panel administratora serwisu (właściciel) — 🔴 NOWY EPIK (2026-09-16)
+Wymagania właściciela (admin serwisu = Kacper, kacpermackowiak256@gmail.com):
+- 🔴 **E-mail z danymi logowania do panelu admina** na jego adres. Wymaga realnego SMTP (niżej).
+- 🔴 **Zmiana hasła admina w panelu** (dziś zmiana hasła jest tylko w app kliencie — `POST /identity/password/change`; dodać ekran w panelu).
+- 🔴 **2FA / uwierzytelnianie przez authenticator (TOTP)** dla konta admina — nowość (generowanie sekretu + QR + weryfikacja kodu przy logowaniu).
+- 🔴 **Zapisane dane logowania testowych kont** (klient / dostawca / sklep) widoczne w koncie admina — podgląd danych demo do testów.
+- 🔴 **Aktywacja/dezaktywacja kont** z panelu admina (jest już `Deactivate` dla dostawcy — rozszerzyć na wszystkie role + UI listy kont).
+- 🔴 **Brak wglądu admina w dane sklepu** (statystyki/produkty) — CHYBA że sklep udostępni **„kod klienta" (kod wsparcia)**. Każdy sklep ma unikalny kod, który podaje przy zgłoszeniu pomocy; admin wpisuje kod → dostaje czasowy wgląd. Model: `Store.SupportCode` + endpoint „wejdź z kodem".
+- **SMTP (lh.pl):** host `mail-serwer325339.lh.pl`, port **465 (SSL)**; **login/hasło wpisywane w panelu admina** (config w panelu, nie env — [[config-in-panel-not-env]]). Realny sender (MailKit) za `IEmailSender` — wspólny dla: e-mail z danymi logowania, weryfikacji e-mail (sekcja 1), resetu hasła, powiadomień.
+
 ---
-Kolejność sugerowana: **1 (hasło 2× + zmiana hasła — szybkie)** → **2+3 (adresy + zasięg — rdzeń UX zamawiania)** → **4 (audyt panelu sklepu)** → **5 (panel dostawcy)**. Punkty „BE gotowe" (zmiana hasła, weryfikacja e-mail) to najszybsze wygrane.
+Kolejność sugerowana: **1 (hasło 2× + zmiana hasła — szybkie)** → **2+3 (adresy + zasięg — rdzeń UX zamawiania)** → **7 ✅** → **8 (epik admina: SMTP → e-mail danych → zmiana hasła w panelu → 2FA → kody wsparcia → aktywacja kont)** → **4 (audyt panelu sklepu)** → **5 (panel dostawcy)**. Punkty „BE gotowe" (zmiana hasła, weryfikacja e-mail) to najszybsze wygrane.
