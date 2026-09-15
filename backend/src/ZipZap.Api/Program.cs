@@ -372,12 +372,14 @@ app.MapPost("/api/register/store",
 
     if (!await captcha.VerifyAsync(req.CaptchaToken, ct))
         return Results.Problem(detail: "Weryfikacja captcha nie powiodła się.", statusCode: 400, title: "captcha");
+    if (!NipValidator.IsValid(req.Nip))
+        return Results.Problem(detail: "Podaj poprawny NIP (10 cyfr).", statusCode: 400, title: "validation");
     // Sprawdź e-mail PRZED utworzeniem sklepu, by nie zostawić osieroconego sklepu.
     if (!await identity.IsEmailAvailableAsync(req.Email, ct))
         return Results.Problem(detail: "Użytkownik z tym adresem e-mail już istnieje.", statusCode: 409, title: "conflict");
 
     var store = await catalog.CreateStoreAsync(req.StoreName, null, null, req.City, null, req.Phone,
-        0.10m, 0m, ct, null, null, null);
+        0.10m, 0m, ct, null, null, null, req.Nip);
     if (store.IsFailure) return Problem(store.Error);
 
     var auth = await identity.RegisterStoreOwnerAsync(req.Email, req.Password, req.FullName, req.Phone, store.Value.Id, ct);

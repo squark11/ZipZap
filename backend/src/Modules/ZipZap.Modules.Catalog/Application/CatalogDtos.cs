@@ -3,12 +3,12 @@ using ZipZap.Modules.Catalog.Domain;
 namespace ZipZap.Modules.Catalog.Application;
 
 public sealed record StoreDto(
-    Guid Id, string Name, string Slug, string? Description, string City, string? Address, string? Phone,
+    Guid Id, string Name, string Slug, string? Description, string City, string? Address, string? Phone, string? Nip,
     decimal CommissionRate, decimal MinimumOrderValue, bool IsActive, string Status, bool IsAcceptingOrders,
     string? LogoUrl, double? Latitude, double? Longitude, double? DistanceKm = null)
 {
     public static StoreDto From(Store s, double? distanceKm = null) =>
-        new(s.Id, s.Name, s.Slug, s.Description, s.City, s.Address, s.Phone,
+        new(s.Id, s.Name, s.Slug, s.Description, s.City, s.Address, s.Phone, s.Nip,
             s.CommissionRate, s.MinimumOrderValue, s.IsActive, s.Status.ToString(), s.IsAcceptingOrders,
             s.LogoUrl, s.Latitude, s.Longitude, distanceKm);
 }

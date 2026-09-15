@@ -113,7 +113,7 @@ public sealed class CatalogService
     public async Task<Result<StoreDto>> CreateStoreAsync(
         string name, string? slug, string? description, string city, string? address, string? phone,
         decimal commissionRate, decimal minimumOrderValue, CancellationToken ct,
-        string? logoUrl = null, double? latitude = null, double? longitude = null)
+        string? logoUrl = null, double? latitude = null, double? longitude = null, string? nip = null)
     {
         if (string.IsNullOrWhiteSpace(name)) return Error.Validation("Nazwa sklepu jest wymagana.");
         if (commissionRate is < 0 or > 1) return Error.Validation("Prowizja musi być w zakresie 0–1 (np. 0.10).");
@@ -123,7 +123,7 @@ public sealed class CatalogService
         if (await _db.Stores.IgnoreQueryFilters().AnyAsync(s => s.Slug == finalSlug, ct))
             return Error.Conflict($"Sklep o slug '{finalSlug}' już istnieje.");
 
-        var store = Store.Create(name, finalSlug, description, city, address, phone, commissionRate, minimumOrderValue);
+        var store = Store.Create(name, finalSlug, description, city, address, phone, commissionRate, minimumOrderValue, nip);
         store.SetLogoUrl(logoUrl);
         if (latitude.HasValue && longitude.HasValue)
         {

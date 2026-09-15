@@ -1,3 +1,4 @@
+using System.Linq;
 using ZipZap.BuildingBlocks.Domain;
 
 namespace ZipZap.Modules.Catalog.Domain;
@@ -14,6 +15,9 @@ public sealed class Store : AggregateRoot
     public string City { get; private set; } = default!;
     public string? Address { get; private set; }
     public string? Phone { get; private set; }
+
+    /// <summary>NIP sprzedawcy (10 cyfr) — wymagany do faktur/rozliczeń. Przechowywany bez separatorów.</summary>
+    public string? Nip { get; private set; }
 
     /// <summary>Logo sklepu (URL) — branding widoczny dla klienta. Puste = brak.</summary>
     public string? LogoUrl { get; private set; }
@@ -42,7 +46,7 @@ public sealed class Store : AggregateRoot
     private Store() { } // EF
 
     private Store(Guid id, string name, string slug, string? description,
-        string city, string? address, string? phone, decimal commissionRate, decimal minimumOrderValue)
+        string city, string? address, string? phone, decimal commissionRate, decimal minimumOrderValue, string? nip)
     {
         Id = id;
         Name = name;
@@ -51,6 +55,7 @@ public sealed class Store : AggregateRoot
         City = city;
         Address = address;
         Phone = phone;
+        Nip = nip;
         CommissionRate = commissionRate;
         MinimumOrderValue = minimumOrderValue;
         IsActive = true;
@@ -59,8 +64,18 @@ public sealed class Store : AggregateRoot
     }
 
     public static Store Create(string name, string slug, string? description,
-        string city, string? address, string? phone, decimal commissionRate, decimal minimumOrderValue)
-        => new(Guid.NewGuid(), name.Trim(), slug, description, city.Trim(), address, phone, commissionRate, minimumOrderValue);
+        string city, string? address, string? phone, decimal commissionRate, decimal minimumOrderValue, string? nip = null)
+        => new(Guid.NewGuid(), name.Trim(), slug, description, city.Trim(), address, phone, commissionRate, minimumOrderValue, NormalizeNip(nip));
+
+    /// <summary>NIP bez separatorów (spacje/myślniki usuwane); puste → null.</summary>
+    public static string? NormalizeNip(string? nip)
+    {
+        if (string.IsNullOrWhiteSpace(nip)) return null;
+        var digits = new string(nip.Where(char.IsDigit).ToArray());
+        return digits.Length == 0 ? null : digits;
+    }
+
+    public void SetNip(string? nip) => Nip = NormalizeNip(nip);
 
     public void UpdateCommissionRate(decimal rate) => CommissionRate = rate;
     public void UpdateMinimumOrderValue(decimal value) => MinimumOrderValue = value;

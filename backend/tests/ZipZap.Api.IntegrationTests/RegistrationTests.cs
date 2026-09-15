@@ -24,7 +24,7 @@ public sealed class RegistrationTests
         var storeName = $"Sklep {Guid.NewGuid():N}"[..16];
         var resp = await _f.Anon().PostAsJsonAsync("/api/register/store", new
         {
-            email, password = "Passw0rd!", fullName = "Właściciel Sklepu", storeName, city = "Kraków",
+            email, password = "Passw0rd!", fullName = "Właściciel Sklepu", storeName, city = "Kraków", nip = "1234563218",
         });
         resp.EnsureSuccessStatusCode();
         var auth = (await resp.Content.ReadFromJsonAsync<AuthDto>())!;
@@ -47,9 +47,20 @@ public sealed class RegistrationTests
     public async Task Store_registration_rejects_duplicate_email()
     {
         var email = $"dup-{Guid.NewGuid():N}@test.pl";
-        object Body() => new { email, password = "Passw0rd!", fullName = "X", storeName = "S" + Guid.NewGuid().ToString("N")[..6], city = "Y" };
+        object Body() => new { email, password = "Passw0rd!", fullName = "X", storeName = "S" + Guid.NewGuid().ToString("N")[..6], city = "Y", nip = "1234563218" };
         (await _f.Anon().PostAsJsonAsync("/api/register/store", Body())).EnsureSuccessStatusCode();
         (await _f.Anon().PostAsJsonAsync("/api/register/store", Body())).StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Store_registration_rejects_invalid_nip()
+    {
+        var resp = await _f.Anon().PostAsJsonAsync("/api/register/store", new
+        {
+            email = $"badnip-{Guid.NewGuid():N}@test.pl", password = "Passw0rd!", fullName = "X",
+            storeName = "S" + Guid.NewGuid().ToString("N")[..6], city = "Y", nip = "1112223334", // zła suma kontrolna
+        });
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

@@ -93,7 +93,7 @@ export class Api {
   /// Self-service „Załóż sklep" — tworzy sklep + konto administratora sklepu i loguje.
   registerStore(body: {
     email: string; password: string; fullName: string; phone?: string;
-    storeName: string; city: string;
+    storeName: string; city: string; nip: string;
   }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/register/store`, body)
       .pipe(tap(r => this.apply(r, body.email)));

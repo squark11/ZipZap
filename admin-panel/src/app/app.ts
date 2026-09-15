@@ -64,8 +64,12 @@ import { FeedbackComponent } from './feedback';
               <form class="auth-card" (ngSubmit)="registerStore()">
                 <h2>Załóż konto</h2>
                 <div class="seg">
-                  <button type="button" [class.active]="true" (click)="switchRegType('store')">🏪 Sklep</button>
-                  <button type="button" (click)="switchRegType('driver')">🚗 Dostawca</button>
+                  <button type="button" [class.active]="true" (click)="switchRegType('store')">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:7px"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>Sklep
+                  </button>
+                  <button type="button" (click)="switchRegType('driver')">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:7px"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Dostawca
+                  </button>
                 </div>
                 <p class="hint" style="margin:0 0 18px;text-align:left">Konto administratora sklepu — od razu przejdziesz do konfiguracji oferty i dostaw.</p>
                 <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
@@ -73,6 +77,7 @@ import { FeedbackComponent } from './feedback';
                 <div class="field"><label>Telefon (opcjonalnie)</label><input name="phone" [(ngModel)]="phone" /></div>
                 <div class="field"><label>Hasło (min. 6 znaków)</label><input name="password" [(ngModel)]="password" type="password" required /></div>
                 <div class="field"><label>Nazwa sklepu</label><input name="storeName" [(ngModel)]="storeName" required /></div>
+                <div class="field"><label>NIP (10 cyfr)</label><input name="nip" [(ngModel)]="nip" inputmode="numeric" maxlength="13" required /></div>
                 <div class="field"><label>Miasto</label><input name="city" [(ngModel)]="city" required /></div>
                 <button class="btn-lg" type="submit" [disabled]="loading">Załóż sklep i zacznij</button>
                 @if (error) { <p class="error">{{ error }}</p> }
@@ -81,7 +86,7 @@ import { FeedbackComponent } from './feedback';
             @case ('driver') {
               @if (driverDone) {
                 <div class="auth-card">
-                  <h2>Dziękujemy! 🎉</h2>
+                  <h2><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#14b9ba" stroke-width="2.5" style="vertical-align:-4px;margin-right:8px"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>Dziękujemy!</h2>
                   <p>{{ driverMsg }}</p>
                   <button class="btn-lg" (click)="setMode('login')">Wróć do logowania</button>
                 </div>
@@ -89,8 +94,12 @@ import { FeedbackComponent } from './feedback';
                 <form class="auth-card" (ngSubmit)="registerDriver()">
                   <h2>Załóż konto</h2>
                   <div class="seg">
-                    <button type="button" (click)="switchRegType('store')">🏪 Sklep</button>
-                    <button type="button" [class.active]="true" (click)="switchRegType('driver')">🚗 Dostawca</button>
+                    <button type="button" (click)="switchRegType('store')">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:7px"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>Sklep
+                    </button>
+                    <button type="button" [class.active]="true" (click)="switchRegType('driver')">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:7px"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Dostawca
+                    </button>
                   </div>
                   <p class="hint" style="margin:0 0 18px;text-align:left">Konto zostanie aktywowane po weryfikacji przez administratora serwisu.</p>
                   <div class="field"><label>Imię i nazwisko</label><input name="fullName" [(ngModel)]="fullName" required /></div>
@@ -205,6 +214,7 @@ export class App {
   phone = '';
   storeName = '';
   city = '';
+  nip = '';
   driverDone = false;
   driverMsg = '';
 
@@ -239,7 +249,7 @@ export class App {
     this.authMode = m;
     this.error = '';
     this.driverDone = false;
-    this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = '';
+    this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = ''; this.nip = '';
     if (m === 'login') { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
     else { this.email = ''; this.password = ''; }
   }
@@ -249,18 +259,23 @@ export class App {
     this.authMode = m;
     this.error = '';
     this.driverDone = false;
-    if (m === 'driver') { this.storeName = ''; this.city = ''; }
+    if (m === 'driver') { this.storeName = ''; this.city = ''; this.nip = ''; }
   }
 
   registerStore() {
+    const nipDigits = (this.nip || '').replace(/\D/g, '');
     if (!this.email || !this.password || !this.fullName || !this.storeName || !this.city) {
       this.error = 'Uzupełnij wszystkie wymagane pola.';
+      return;
+    }
+    if (nipDigits.length !== 10) {
+      this.error = 'Podaj poprawny NIP (10 cyfr).';
       return;
     }
     this.loading = true; this.error = '';
     this.api.registerStore({
       email: this.email.trim(), password: this.password, fullName: this.fullName.trim(),
-      phone: this.phone.trim() || undefined, storeName: this.storeName.trim(), city: this.city.trim(),
+      phone: this.phone.trim() || undefined, storeName: this.storeName.trim(), city: this.city.trim(), nip: nipDigits,
     }).subscribe({
       next: () => { this.loading = false; this.loadStores(); },
       error: e => { this.loading = false; this.error = e?.error?.detail ?? 'Nie udało się założyć sklepu.'; },
