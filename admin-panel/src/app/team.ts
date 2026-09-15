@@ -62,7 +62,7 @@ import { Api, TeamMemberDto } from './api';
 })
 export class TeamComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   team: TeamMemberDto[] = [];
   loading = false;

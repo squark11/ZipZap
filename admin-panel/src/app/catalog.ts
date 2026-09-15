@@ -121,7 +121,7 @@ interface ImportReport { committed: boolean; total: number; created: number; upd
 })
 export class CatalogComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   categories: CategoryDto[] = [];
   products: ProductDto[] = [];

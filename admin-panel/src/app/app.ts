@@ -1,24 +1,13 @@
 import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Api, StoreDto } from './api';
-import { PANEL_MODULES, PanelTab } from './modules';
-import { OrdersComponent } from './orders';
-import { CatalogComponent } from './catalog';
-import { DashboardComponent } from './dashboard';
-import { StoresComponent } from './stores';
-import { TeamComponent } from './team';
-import { FinanceComponent } from './finance';
-import { DeliveriesComponent } from './deliveries';
-import { SettingsComponent } from './settings';
-import { IntegrationsComponent } from './integrations';
-import { OnboardingComponent } from './onboarding';
-import { FeedbackComponent } from './feedback';
-import { DriversComponent } from './drivers';
+import { PANEL_MODULES } from './modules';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, OrdersComponent, CatalogComponent, DashboardComponent, StoresComponent, TeamComponent, FinanceComponent, DeliveriesComponent, SettingsComponent, IntegrationsComponent, OnboardingComponent, FeedbackComponent, DriversComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
   @if (!api.isLoggedIn()) {
     <div class="auth">
@@ -127,7 +116,7 @@ import { DriversComponent } from './drivers';
           </svg>
         </div>
         @for (m of visibleModules(); track m.id) {
-          <button class="rail-btn" [class.active]="tab===m.id" (click)="tab=m.id">
+          <a class="rail-btn" [routerLink]="['/' + m.id]" routerLinkActive="active" queryParamsHandling="preserve">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               @switch (m.icon) {
                 @case ('start') { <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/> }
@@ -145,7 +134,7 @@ import { DriversComponent } from './drivers';
               }
             </svg>
             <span class="tip">{{ m.label }}</span>
-          </button>
+          </a>
         }
         <div class="spacer"></div>
         <button class="rail-btn" (click)="logout()">
@@ -158,10 +147,10 @@ import { DriversComponent } from './drivers';
         <div class="topbar">
           <div class="search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-            <input placeholder="Szukaj zamówień (numer, klient)…" [(ngModel)]="search" />
+            <input placeholder="Szukaj zamówień (numer, klient)…" [ngModel]="search" (ngModelChange)="onSearchChange($event)" />
           </div>
           <div class="store-select">
-            <select [(ngModel)]="selectedStoreId">
+            <select [ngModel]="selectedStoreId" (ngModelChange)="onStoreChange($event)">
               @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
             </select>
             @if (api.isAdmin() || api.storeIds().length > 0) {
@@ -176,26 +165,7 @@ import { DriversComponent } from './drivers';
         </div>
 
         <div class="content">
-          @if (isDriverOnly) {
-            <div class="card pad"><p class="muted">Panel <strong>dostawcy</strong> jest w przygotowaniu — wkrótce zobaczysz tu swoje dostawy, dostępność (online/offline) i zarobki.</p></div>
-          } @else if (stores.length === 0 && (currentModule?.storeScoped ?? false)) {
-            <div class="card pad"><p class="muted">Brak sklepów. Przejdź do zakładki <strong>Sklepy</strong>, aby utworzyć pierwszy.</p></div>
-          } @else {
-            @switch (tab) {
-              @case ('onboarding') { <app-onboarding [storeId]="selectedStoreId" /> }
-              @case ('dashboard') { <app-dashboard [storeId]="selectedStoreId" /> }
-              @case ('orders') { <app-orders [storeId]="selectedStoreId" [query]="search" /> }
-              @case ('deliveries') { <app-deliveries [storeId]="selectedStoreId" /> }
-              @case ('catalog') { <app-catalog [storeId]="selectedStoreId" /> }
-              @case ('integrations') { <app-integrations [storeId]="selectedStoreId" /> }
-              @case ('team') { <app-team [storeId]="selectedStoreId" /> }
-              @case ('drivers') { <app-drivers /> }
-              @case ('finance') { <app-finance [storeId]="selectedStoreId" /> }
-              @case ('stores') { <app-stores (changed)="loadStores()" /> }
-              @case ('feedback') { <app-feedback /> }
-              @case ('settings') { <app-settings /> }
-            }
-          }
+          <router-outlet></router-outlet>
         </div>
       </div>
     </div>
@@ -204,6 +174,7 @@ import { DriversComponent } from './drivers';
 })
 export class App {
   protected api = inject(Api);
+  private router = inject(Router);
 
   email = 'admin@zipzap.local';
   password = 'Admin123!';
@@ -224,26 +195,22 @@ export class App {
   stores: StoreDto[] = [];
   selectedStoreId = '';
   addingLocation = false;
-  tab: PanelTab = 'onboarding';
 
   /// Moduły widoczne dla ról zalogowanego usera (nawigacja generowana z rejestru).
   readonly visibleModules = computed(() => PANEL_MODULES.filter(m => this.api.hasAnyRole(m.roles)));
-
-  get currentModule() { return PANEL_MODULES.find(m => m.id === this.tab); }
-
-  /// Dostawca bez roli admina/sklepu — pełny interfejs kierowcy dopiero w R8 (placeholder).
-  get isDriverOnly() { return this.api.isDriver() && !this.api.isAdmin() && !this.api.isStoreAdmin(); }
 
   get initials(): string {
     const e = this.api.userEmail();
     return e ? e.substring(0, 2).toUpperCase() : 'ZZ';
   }
 
+  private defaultRoute(): string { return '/' + (this.visibleModules()[0]?.id ?? 'dashboard'); }
+
   login() {
     this.loading = true;
     this.error = '';
     this.api.login(this.email, this.password).subscribe({
-      next: () => { this.loading = false; this.loadStores(); },
+      next: async () => { this.loading = false; await this.router.navigateByUrl(this.defaultRoute()); this.loadStores(); },
       error: () => { this.error = 'Nieprawidłowy e-mail lub hasło.'; this.loading = false; },
     });
   }
@@ -280,7 +247,7 @@ export class App {
       email: this.email.trim(), password: this.password, fullName: this.fullName.trim(),
       phone: this.phone.trim() || undefined, storeName: this.storeName.trim(), city: this.city.trim(), nip: nipDigits,
     }).subscribe({
-      next: () => { this.loading = false; this.loadStores(); },
+      next: async () => { this.loading = false; await this.router.navigateByUrl(this.defaultRoute()); this.loadStores(); },
       error: e => { this.loading = false; this.error = e?.error?.detail ?? 'Nie udało się założyć sklepu.'; },
     });
   }
@@ -302,21 +269,24 @@ export class App {
 
   loadStores() {
     // Dostawca nie zarządza katalogiem sklepów — nie pobiera listy do przełącznika.
-    if (this.api.isDriver() && !this.api.isAdmin() && !this.api.isStoreAdmin()) { this.ensureVisibleTab(); return; }
+    if (this.api.isDriver() && !this.api.isAdmin() && !this.api.isStoreAdmin()) return;
     this.api.getPublic<StoreDto[]>('/catalog/stores?onlyActive=false').subscribe(all => {
       // Administrator sklepu widzi tylko swoje sklepy; administrator serwisu — wszystkie.
       const s = this.api.isAdmin() ? all : all.filter(x => this.api.storeIds().includes(x.id));
       this.stores = s;
       const stillThere = s.some(x => x.id === this.selectedStoreId);
-      if (!stillThere && s.length) { this.selectedStoreId = s[0].id; }
-      this.ensureVisibleTab();
+      if (!stillThere && s.length) this.selectedStoreId = s[0].id;
+      if (this.selectedStoreId) this.setParams({ storeId: this.selectedStoreId });
     });
   }
 
-  /// Jeśli bieżąca zakładka nie jest dostępna dla roli — przełącz na pierwszy widoczny moduł.
-  private ensureVisibleTab() {
-    const visible = this.visibleModules();
-    if (!visible.some(m => m.id === this.tab)) this.tab = visible[0]?.id ?? 'dashboard';
+  onStoreChange(id: string) { this.selectedStoreId = id; this.setParams({ storeId: id }); }
+  onSearchChange(q: string) { this.search = q; this.setParams({ query: q }); }
+
+  // Aktualizuje query-paramy bieżącej trasy (storeId/query wiązane do @Input sekcji).
+  private setParams(params: Record<string, string>) {
+    const path = this.router.url.split('?')[0] || this.defaultRoute();
+    this.router.navigate([path], { queryParams: params, queryParamsHandling: 'merge' });
   }
 
   // Multi-lokalizacja: właściciel dodaje kolejną lokalizację (nowy sklep przypisany do siebie).
@@ -332,7 +302,7 @@ export class App {
       next: created => {
         // Token nie zawiera jeszcze nowego store_id — odśwież, potem pokaż i wybierz lokalizację.
         this.api.refresh().subscribe({
-          next: () => { this.addingLocation = false; this.loadStores(); this.selectedStoreId = created.id; },
+          next: () => { this.addingLocation = false; this.selectedStoreId = created.id; this.loadStores(); },
           error: () => { this.addingLocation = false; this.loadStores(); },
         });
       },
@@ -344,6 +314,6 @@ export class App {
     this.api.logout();
     this.stores = [];
     this.selectedStoreId = '';
-    this.tab = 'onboarding';
+    this.router.navigateByUrl('/');
   }
 }

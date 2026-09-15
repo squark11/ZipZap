@@ -51,7 +51,7 @@ interface Group { key: string; label: string; statuses: string[]; }
 })
 export class DeliveriesComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   deliveries: DeliveryDto[] = [];
   loading = false;

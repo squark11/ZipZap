@@ -111,7 +111,7 @@ export interface StoreLegal {
 })
 export class IntegrationsComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   status: StoreIntegrationStatus | null = null;
   form = { provider: '', merchantId: '', posId: '', sandbox: true, apiKey: '', crcKey: '' };

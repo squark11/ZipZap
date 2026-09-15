@@ -57,7 +57,7 @@ import { Api, CommissionDto, DeliveryDto, OrderDto } from './api';
 })
 export class DashboardComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   commission: CommissionDto | null = null;
   orders: OrderDto[] = [];

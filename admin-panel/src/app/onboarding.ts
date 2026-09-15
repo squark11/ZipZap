@@ -126,7 +126,7 @@ interface Slot {
 })
 export class OnboardingComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   ready: Readiness | null = null;
   zones: Zone[] = [];

@@ -139,7 +139,7 @@ interface Group { key: string; label: string; statuses: string[]; }
 })
 export class OrdersComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
   query = input<string>('');
 
   orders: OrderDto[] = [];

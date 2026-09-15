@@ -94,7 +94,7 @@ interface BillingDto { plan: string; }
 })
 export class FinanceComponent {
   private api = inject(Api);
-  storeId = input.required<string>();
+  storeId = input<string>('');
 
   summary: PaymentsSummaryDto | null = null;
   ledger: LedgerEntryDto[] = [];
