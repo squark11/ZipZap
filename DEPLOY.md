@@ -1,6 +1,15 @@
 # Deploy Dowózka.pl
 
-## ✅ Frontendy na Azure Static Web Apps (Free) — 2026-09-15 (stan bieżący)
+## ✅ Strona `dowózka.pl` na hostingu lh.pl + aplikacja jako APK — 2026-09-15 (stan bieżący)
+> Właściciel ma domenę **dowózka.pl** (IDN, punycode `xn--dowzka-dxa.pl`) i hosting **lh.pl** — domena już wskazuje na lh.pl (A `185.135.90.143`), serwuje HTTP/HTTPS (SSL Let's Encrypt lh.pl). Architektura:
+- **`dowózka.pl` = strona marketingowo-biznesowa** (`web-landing/index.html`), statyczna, hostowana na lh.pl w `public_html/dowozka.pl/`. Główne CTA B2B „Dołącz jako sklep" + sekcja pobrania aplikacji. **Aplikacja Flutter NIE jest serwowana na desktopie** — jest tylko mobilna (dystrybucja przez APK).
+- **Aplikacja klienta = Android APK** do pobrania: `https://dowózka.pl/pobierz/dowozka.apk` (na stronie przycisk + kod QR; iOS „wkrótce"). APK celuje w API na Render (`--dart-define=API_BASE_URL=…onrender.com/api`). Podpisany kluczem debug (sideload/pilot; do Google Play trzeba własnego keystore).
+- **Panel admina** nadal na Azure SWA (`thankful-river-…azurestaticapps.net`); docelowo subdomena `panel.dowózka.pl` na lh.pl. Landing linkuje na razie do panelu na Azure.
+- **Backend** → Render, **baza** → Neon (bez zmian).
+- **Deploy strony (FTP na lh.pl):** dane FTP w gitignorowanym `.env` (blok `FTP:` — Serwer `serwer325339.lh.pl`, user, hasło). Upload przez `curl -T` lub `.NET FtpWebRequest`; katalog `public_html/dowozka.pl/`. APK → `public_html/dowozka.pl/pobierz/`.
+- **Build APK (środowisko):** JDK 17 (Microsoft OpenJDK, winget), Android SDK w `C:\Users\kacpe\AppData\Local\Android\Sdk` (cmdline-tools + platform-tools + platforms 34/35/36 + build-tools 35/36 + NDK r28c), licencje zaakceptowane plikami w `Sdk\licenses\`. `flutter config --android-sdk … --jdk-dir …`. ⚠ **Workaround:** AGP 9.1.0 nie akceptuje `getDefaultProguardFile('proguard-android.txt')` w pluginie `flutter_inappwebview_android` 1.1.3 (ciągnie go `cloudflare_turnstile`) — trzeba podmienić na `proguard-android-optimize.txt` w cache pub (`%LOCALAPPDATA%\Pub\Cache\hosted\pub.dev\flutter_inappwebview_android-1.1.3\android\build.gradle`), **bez BOM**. Docelowo: aktualizacja pluginu/turnstile albo pin AGP.
+
+## ⏸️ Frontendy na Azure Static Web Apps (Free) — 2026-09-15 (zapas)
 > Frontendy przeniesione z Netlify na **Azure SWA Free** (darmowy na stałe, darmowy SSL, globalny CDN). Backend nadal **Render**, baza **Neon** — bez zmian. CORS backendu = `AllowAnyOrigin`, więc nowe originy działają bez zmian.
 - **PWA (klient):** https://yellow-sea-04acc220f.6.azurestaticapps.net — SWA `dowozka-pwa`, RG `dowozka-rg`, region `eastus2`, sku `Free`.
 - **Panel admina:** https://thankful-river-02050190f.5.azurestaticapps.net — SWA `dowozka-admin`.
