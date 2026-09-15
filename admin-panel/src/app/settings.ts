@@ -27,6 +27,13 @@ export interface PlatformIntegrations {
   captchaProvider?: string;
   captchaSiteKey?: string;
   hasCaptchaSecret?: boolean;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUseSsl?: boolean;
+  smtpUsername?: string;
+  smtpFromEmail?: string;
+  smtpFromName?: string;
+  hasSmtpPassword?: boolean;
 }
 
 @Component({
@@ -142,6 +149,38 @@ export interface PlatformIntegrations {
   </div>
 
   <div class="card pad">
+    <div class="page-head" style="margin-bottom:6px">
+      <h1 style="font-size:16px;margin:0">Poczta e-mail (SMTP)</h1>
+      <div class="controls">
+        @if (savedI) { <span class="ok-msg">✓ Zapisano</span> }
+        <button class="btn ghost sm" (click)="saveIntegrations()" [disabled]="savingI">Zapisz</button>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:0">Serwer poczty wychodzącej — do e-maili (dane logowania, weryfikacja e-mail, reset hasła). Hasło szyfrowane, write-only.</p>
+    <div class="grid2">
+      <div><label class="lbl">Serwer SMTP</label><input name="smtphost" [(ngModel)]="integrations.smtpHost" placeholder="mail-serwer325339.lh.pl" /></div>
+      <div><label class="lbl">Port</label><input type="number" name="smtpport" [(ngModel)]="integrations.smtpPort" placeholder="465" /></div>
+    </div>
+    <label class="lbl"><input type="checkbox" name="smtpssl" [(ngModel)]="integrations.smtpUseSsl" style="width:auto;margin-right:6px" /> SSL bezpośredni (port 465)</label>
+    <div class="grid2">
+      <div><label class="lbl">Login (użytkownik)</label><input name="smtpuser" [(ngModel)]="integrations.smtpUsername" placeholder="konto@twojadomena.pl" /></div>
+      <div><label class="lbl">Hasło @if (integrations.hasSmtpPassword) { <span style="color:#128040;font-weight:600">• ustawione</span> }</label>
+        <input type="password" name="smtppass" [(ngModel)]="smtpPassword" [placeholder]="integrations.hasSmtpPassword ? '•••••••• (bez zmian)' : 'hasło konta pocztowego'" /></div>
+    </div>
+    <div class="grid2">
+      <div><label class="lbl">Nadawca — e-mail</label><input name="smtpfrom" [(ngModel)]="integrations.smtpFromEmail" placeholder="no-reply@dowozka.pl" /></div>
+      <div><label class="lbl">Nadawca — nazwa</label><input name="smtpfromname" [(ngModel)]="integrations.smtpFromName" placeholder="Dowózka.pl" /></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <input name="smtptestto" [(ngModel)]="smtpTestTo" placeholder="wyślij test na adres… (domyślnie nadawca)" style="max-width:300px" />
+      <button class="btn ghost sm" (click)="sendTest()" [disabled]="testing">Wyślij testowy e-mail</button>
+      @if (testMsg) { <span class="ok-msg">{{ testMsg }}</span> }
+    </div>
+    @if (smtpError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ smtpError }}</p> }
+    <p class="note" style="margin-top:12px">🔒 Hasło szyfrowane i nigdy nie pokazywane z powrotem. Zapisz konfigurację przed wysłaniem testu.</p>
+  </div>
+
+  <div class="card pad">
     <h1 style="font-size:16px;margin:0 0 8px">Twoje konta / sekrety</h1>
     <p class="muted">Tu zostają tylko <b>sekrety infrastruktury</b> — w zmiennych środowiskowych, nie w bazie.
       Uzupełnij <code>.env</code> wg <code>.env.example</code> — szczegóły w <code>DEPLOY.md</code>.
@@ -198,8 +237,13 @@ export class SettingsComponent implements OnInit {
   savingP = false;
   savedP = false;
 
-  integrations: PlatformIntegrations = { googleClientId: '', captchaProvider: '', captchaSiteKey: '', hasCaptchaSecret: false };
+  integrations: PlatformIntegrations = { googleClientId: '', captchaProvider: '', captchaSiteKey: '', hasCaptchaSecret: false, smtpUseSsl: true };
   captchaSecret = '';
+  smtpPassword = '';
+  smtpTestTo = '';
+  testing = false;
+  testMsg = '';
+  smtpError = '';
   savingI = false;
   savedI = false;
   integError = '';
@@ -230,6 +274,13 @@ export class SettingsComponent implements OnInit {
       captchaProvider: i.captchaProvider || '',
       captchaSiteKey: i.captchaSiteKey || '',
       hasCaptchaSecret: !!i.hasCaptchaSecret,
+      smtpHost: i.smtpHost || '',
+      smtpPort: i.smtpPort ?? undefined,
+      smtpUseSsl: i.smtpUseSsl ?? true,
+      smtpUsername: i.smtpUsername || '',
+      smtpFromEmail: i.smtpFromEmail || '',
+      smtpFromName: i.smtpFromName || '',
+      hasSmtpPassword: !!i.hasSmtpPassword,
     };
   }
 
@@ -241,15 +292,32 @@ export class SettingsComponent implements OnInit {
       googleClientId: (this.integrations.googleClientId || '').trim() || undefined,
       captchaProvider: (this.integrations.captchaProvider || '').trim(),
       captchaSiteKey: (this.integrations.captchaSiteKey || '').trim() || undefined,
+      smtpHost: (this.integrations.smtpHost || '').trim() || undefined,
+      smtpPort: this.integrations.smtpPort ? Number(this.integrations.smtpPort) : undefined,
+      smtpUseSsl: !!this.integrations.smtpUseSsl,
+      smtpUsername: (this.integrations.smtpUsername || '').trim() || undefined,
+      smtpFromEmail: (this.integrations.smtpFromEmail || '').trim() || undefined,
+      smtpFromName: (this.integrations.smtpFromName || '').trim() || undefined,
     };
     if (this.captchaSecret.trim()) body.captchaSecret = this.captchaSecret.trim();
+    if (this.smtpPassword.trim()) body.smtpPassword = this.smtpPassword.trim();
     this.api.put<PlatformIntegrations>('/admin/config/integrations', body).subscribe({
       next: i => {
-        this.integrations = this.mapIntegrations(i); this.captchaSecret = '';
+        this.integrations = this.mapIntegrations(i); this.captchaSecret = ''; this.smtpPassword = '';
         this.savingI = false; this.savedI = true; setTimeout(() => this.savedI = false, 2500);
-        this.load(); // odśwież status „Logowanie Google"
+        this.load(); // odśwież status „Logowanie Google" / „E-mail (SMTP)"
       },
       error: e => { this.savingI = false; this.integError = e?.error?.detail ?? 'Nie udało się zapisać integracji.'; },
+    });
+  }
+
+  sendTest() {
+    this.testing = true; this.testMsg = ''; this.smtpError = '';
+    const to = (this.smtpTestTo || '').trim();
+    const qs = to ? ('?to=' + encodeURIComponent(to)) : '';
+    this.api.post<{ sent: boolean; to: string }>('/admin/config/smtp/test' + qs, {}).subscribe({
+      next: r => { this.testing = false; this.testMsg = '✓ wysłano do ' + r.to; setTimeout(() => this.testMsg = '', 5000); },
+      error: e => { this.testing = false; this.smtpError = 'Test nieudany: ' + (e?.error?.detail ?? 'błąd'); },
     });
   }
 

@@ -128,6 +128,8 @@ builder.Services.AddSingleton<StoreLegalStore>();
 // Nadpisz domyślny (null) provider polityki prawnej sklepu adapterem nad magazynem dokumentów.
 builder.Services.AddSingleton<ZipZap.Modules.Ordering.Application.IStoreLegalPolicyProvider, StoreLegalPolicyAdapter>();
 builder.Services.AddSingleton<PlatformIntegrationsStore>();
+// Realny sender e-mail (SMTP/MailKit) — konfiguracja z panelu; nadpisuje mock LoggingEmailSender.
+builder.Services.AddScoped<ZipZap.Modules.Identity.Application.IEmailSender, SmtpEmailSender>();
 // Integracje platformy edytowalne w panelu — nadpisz domyślne (env) źródło Google Client ID.
 builder.Services.AddSingleton<ZipZap.Modules.Identity.Application.IGoogleClientIdProvider, PlatformGoogleClientIdProvider>();
 // Captcha (Cloudflare Turnstile) — weryfikacja po stronie serwera; wyłączona, dopóki niekonfigurowana w panelu.
@@ -320,6 +322,26 @@ app.MapPut("/api/admin/config/integrations",
         && !(await store.GetStatusAsync(ct)).HasCaptchaSecret)
         return Results.Problem(detail: "Włączenie captchy wymaga sekretu (secret key).", statusCode: 400, title: "validation");
     return Results.Ok(await store.SaveAsync(body, ct));
+}).RequireAuthorization("Admin").WithTags("System");
+
+// Test wysyłki SMTP — z panelu admina. `to` domyślnie = adres nadawcy.
+app.MapPost("/api/admin/config/smtp/test",
+    async (string? to, ZipZap.Modules.Identity.Application.IEmailSender email, PlatformIntegrationsStore store, CancellationToken ct) =>
+{
+    var cfg = await store.GetSmtpAsync(ct);
+    if (!cfg.Enabled) return Results.Problem(detail: "SMTP nie jest skonfigurowany.", statusCode: 400, title: "validation");
+    var recipient = string.IsNullOrWhiteSpace(to) ? cfg.FromEmail! : to!.Trim();
+    try
+    {
+        await email.SendAsync(new ZipZap.Modules.Identity.Application.EmailMessage(
+            recipient, "Dowózka.pl — test SMTP",
+            "To testowa wiadomość z panelu Dowózka.pl. Jeśli ją widzisz — konfiguracja SMTP działa."), ct);
+        return Results.Ok(new { sent = true, to = recipient });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: "Wysyłka nie powiodła się: " + ex.Message, statusCode: 400, title: "smtp_error");
+    }
 }).RequireAuthorization("Admin").WithTags("System");
 
 // Publiczna konfiguracja dla aplikacji klienta — Google Client ID + captcha (provider + site key, jawne).
