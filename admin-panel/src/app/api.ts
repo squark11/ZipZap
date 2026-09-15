@@ -9,7 +9,8 @@ export interface StoreDto {
   logoUrl?: string; latitude?: number; longitude?: number;
 }
 export interface CategoryDto { id: string; storeId: string; name: string; sortOrder: number; }
-export interface ProductDto { id: string; storeId: string; categoryId?: string; name: string; price: number; currency: string; unit: string; isAvailable: boolean; }
+export interface ProductUnitOption { unit: string; price: number; }
+export interface ProductDto { id: string; storeId: string; categoryId?: string; name: string; price: number; currency: string; unit: string; isAvailable: boolean; unitOptions?: ProductUnitOption[]; }
 export interface OrderItemDto { productId: string; productName: string; unitPrice: number; quantity: number; lineTotal: number; }
 export interface OrderStatusChangeDto { fromStatus?: string; toStatus: string; changedAtUtc: string; }
 export interface OrderDto {

@@ -35,6 +35,17 @@ interface ImportReport { committed: boolean; total: number; created: number; upd
       </label>
       <button class="btn primary" (click)="addProduct()">Dodaj produkt</button>
     </div>
+    <div style="margin-top:10px">
+      <div class="muted" style="font-size:13px;margin-bottom:6px">Więcej jednostek — klient wybiera przy dodawaniu (domyślna = „Jednostka/Cena" powyżej).</div>
+      @for (u of extraUnits; track $index) {
+        <div class="inline-form" style="margin-bottom:6px">
+          <label>Jednostka<input [(ngModel)]="u.unit" placeholder="np. szt" /></label>
+          <label>Cena<input [(ngModel)]="u.price" type="number" step="0.01" /></label>
+          <button class="btn ghost sm" (click)="removeUnit($index)">Usuń</button>
+        </div>
+      }
+      <button class="btn ghost sm" (click)="addUnitRow()">+ dodaj jednostkę</button>
+    </div>
   </div>
 
   <div class="card pad" style="margin-bottom:16px">
@@ -103,7 +114,13 @@ interface ImportReport { committed: boolean; total: number; created: number; upd
           <tr>
             <td><strong>{{ p.name }}</strong></td>
             <td class="muted">{{ categoryName(p.categoryId) }}</td>
-            <td class="right">{{ p.price | number:'1.2-2' }} {{ p.currency }}/{{ p.unit }}</td>
+            <td class="right">
+              @if (p.unitOptions && p.unitOptions.length > 1) {
+                @for (o of p.unitOptions; track o.unit) { <div>{{ o.price | number:'1.2-2' }} {{ p.currency }}/{{ o.unit }}</div> }
+              } @else {
+                {{ p.price | number:'1.2-2' }} {{ p.currency }}/{{ p.unit }}
+              }
+            </td>
             <td><span class="pill" [attr.data-status]="p.isAvailable ? 'Completed' : 'Cancelled'">{{ p.isAvailable ? 'dostępny' : 'ukryty' }}</span></td>
             <td>
               <div class="actions">
@@ -127,6 +144,8 @@ export class CatalogComponent {
   products: ProductDto[] = [];
   newCategory = '';
   np: { name: string; price: number; unit: string; categoryId?: string } = { name: '', price: 0, unit: 'szt', categoryId: undefined };
+  /// Dodatkowe jednostki (poza bazową) — gdy niepuste, klient wybiera jednostkę.
+  extraUnits: { unit: string; price: number }[] = [];
 
   importText: string | null = null;
   importFileName = '';
@@ -150,10 +169,21 @@ export class CatalogComponent {
       .subscribe({ next: () => { this.newCategory = ''; this.load(); }, error: e => alert(err(e)) });
   }
 
+  addUnitRow() { this.extraUnits.push({ unit: '', price: 0 }); }
+  removeUnit(i: number) { this.extraUnits.splice(i, 1); }
+
   addProduct() {
     if (!this.np.name.trim()) return;
-    this.api.post(`/catalog/stores/${this.storeId()}/products`, this.np)
-      .subscribe({ next: () => { this.np = { name: '', price: 0, unit: 'szt', categoryId: undefined }; this.load(); }, error: e => alert(err(e)) });
+    const body: any = { ...this.np };
+    const extras = this.extraUnits
+      .filter(u => u.unit.trim() && Number(u.price) >= 0)
+      .map(u => ({ unit: u.unit.trim(), price: Number(u.price) }));
+    if (extras.length) {
+      // Pierwsza opcja = jednostka bazowa; reszta to dodatkowe (klient wybiera).
+      body.unitOptions = [{ unit: (this.np.unit || 'szt').trim(), price: Number(this.np.price) }, ...extras];
+    }
+    this.api.post(`/catalog/stores/${this.storeId()}/products`, body)
+      .subscribe({ next: () => { this.np = { name: '', price: 0, unit: 'szt', categoryId: undefined }; this.extraUnits = []; this.load(); }, error: e => alert(err(e)) });
   }
 
   toggleAvailability(p: ProductDto) {

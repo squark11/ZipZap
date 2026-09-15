@@ -43,10 +43,10 @@ class CartController extends Notifier<CartState> {
     }
   }
 
-  Future<void> add(String productId, {int quantity = 1}) async {
+  Future<void> add(String productId, {int quantity = 1, String? unit}) async {
     final c = state.cart;
     if (c == null) return;
-    await _mutate(() => _repo.addItem(c.id, c.cartToken, productId, quantity));
+    await _mutate(() => _repo.addItem(c.id, c.cartToken, productId, quantity, unit: unit));
   }
 
   /// Koszyk jest zawsze **jednosklepowy** (backend odrzuca produkt z innego sklepu).
@@ -61,13 +61,13 @@ class CartController extends Notifier<CartState> {
   /// sklepu (lub go nie ma / jest zamknięty), tworzy **nowy** koszyk dla [storeId]
   /// i dopiero dodaje. Konflikt (niepusty koszyk z innego sklepu) powinien być już
   /// potwierdzony przez UI — patrz [hasItemsFromOtherStore].
-  Future<void> addFromStore(String storeId, String productId, {int quantity = 1}) async {
+  Future<void> addFromStore(String storeId, String productId, {int quantity = 1, String? unit}) async {
     final c = state.cart;
     if (c == null || c.storeId != storeId || c.status != 'Active') {
       await ensureCartForStore(storeId);
       if (state.cart == null) return; // błąd utworzenia koszyka — komunikat już w stanie
     }
-    await add(productId, quantity: quantity);
+    await add(productId, quantity: quantity, unit: unit);
   }
 
   Future<void> setQuantity(String productId, int quantity) async {

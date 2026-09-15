@@ -2,6 +2,7 @@ class CartItem {
   final String productId;
   final String productName;
   final double unitPrice;
+  final String unit;
   final int quantity;
   final double lineTotal;
 
@@ -9,6 +10,7 @@ class CartItem {
     required this.productId,
     required this.productName,
     required this.unitPrice,
+    required this.unit,
     required this.quantity,
     required this.lineTotal,
   });
@@ -17,6 +19,7 @@ class CartItem {
         productId: j['productId'].toString(),
         productName: j['productName'] ?? '',
         unitPrice: (j['unitPrice'] as num?)?.toDouble() ?? 0,
+        unit: (j['unit'] ?? 'szt').toString(),
         quantity: (j['quantity'] as num?)?.toInt() ?? 0,
         lineTotal: (j['lineTotal'] as num?)?.toDouble() ?? 0,
       );

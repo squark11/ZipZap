@@ -29,8 +29,14 @@ class _ZzSkeletonState extends State<ZzSkeleton>
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final base = context.zz.border;
-    final hi = Color.lerp(base, Colors.white, dark ? 0.12 : 0.7)!;
+    // Wyraźnie „placeholderowy" odcień (chłodny neutralny), inny niż kolor tekstu.
+    final base = dark ? const Color(0xFF2A3536) : const Color(0xFFDCE7E6);
+    final hi = Color.lerp(base, Colors.white, dark ? 0.22 : 0.85)!;
+    // Cienkie paski → pełne zaokrąglenie („pigułka”), żeby nie wyglądały jak linijka tekstu.
+    final radius = widget.borderRadius ??
+        (widget.height <= 20
+            ? BorderRadius.circular(widget.height / 2)
+            : BorderRadius.circular(ZzRadius.md));
     return AnimatedBuilder(
       animation: _c,
       builder: (_, _) {
@@ -39,15 +45,15 @@ class _ZzSkeletonState extends State<ZzSkeleton>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(ZzRadius.sm),
+            borderRadius: radius,
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [base, hi, base],
               stops: [
-                (v - 0.3).clamp(0.0, 1.0),
+                (v - 0.25).clamp(0.0, 1.0),
                 v.clamp(0.0, 1.0),
-                (v + 0.3).clamp(0.0, 1.0),
+                (v + 0.25).clamp(0.0, 1.0),
               ],
             ),
           ),

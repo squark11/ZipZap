@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -53,7 +54,7 @@ class CartScreen extends ConsumerWidget {
                                 Text(it.productName,
                                     style: const TextStyle(fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 2),
-                                Text('${zl(it.unitPrice)} / szt.',
+                                Text('${zl(it.unitPrice)} / ${it.unit}',
                                     style: TextStyle(
                                         color: context.zz.textMuted, fontSize: 13)),
                                 const SizedBox(height: 8),
@@ -63,6 +64,8 @@ class CartScreen extends ConsumerWidget {
                                       it.productId, it.quantity - 1),
                                   onPlus: () => controller.setQuantity(
                                       it.productId, it.quantity + 1),
+                                  onSet: (q) =>
+                                      controller.setQuantity(it.productId, q),
                                 ),
                               ],
                             ),
@@ -97,13 +100,46 @@ class CartScreen extends ConsumerWidget {
   }
 }
 
-/// Stepper ilości: [−] liczba [+] (marka: ikony ZzIcon, obrys).
+/// Stepper ilości: [−] liczba [+]. Dotknięcie liczby otwiera wpisywanie z klawiatury.
 class _QtyStepper extends StatelessWidget {
   final int quantity;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
+  final ValueChanged<int> onSet;
   const _QtyStepper(
-      {required this.quantity, required this.onMinus, required this.onPlus});
+      {required this.quantity,
+      required this.onMinus,
+      required this.onPlus,
+      required this.onSet});
+
+  Future<void> _editQuantity(BuildContext context) async {
+    final ctrl = TextEditingController(text: '$quantity');
+    ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Podaj ilość'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(hintText: 'np. 3', counterText: ''),
+          maxLength: 4,
+          onSubmitted: (v) => Navigator.pop(ctx, int.tryParse(v)),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Anuluj')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: ZzColors.orange),
+            onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text)),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result > 0) onSet(result);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,11 +152,16 @@ class _QtyStepper extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _btn('minus', onMinus),
-          SizedBox(
-            width: 34,
-            child: Center(
-              child: Text('$quantity',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          InkWell(
+            onTap: () => _editQuantity(context),
+            borderRadius: BorderRadius.circular(ZzRadius.sm),
+            child: SizedBox(
+              width: 40,
+              height: 32,
+              child: Center(
+                child: Text('$quantity',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              ),
             ),
           ),
           _btn('plus', onPlus),

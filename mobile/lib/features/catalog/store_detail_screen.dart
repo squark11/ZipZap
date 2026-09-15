@@ -158,7 +158,10 @@ class _ProductRow extends ConsumerWidget {
                   Text(product.name,
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                   const SizedBox(height: 2),
-                  Text('${zl(product.price)} / ${product.unit}',
+                  Text(
+                      product.hasMultipleUnits
+                          ? product.unitOptions.map((o) => '${zl(o.price)}/${o.unit}').join('  ·  ')
+                          : '${zl(product.price)} / ${product.unit}',
                       style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
                   if (!available)
                     const Text('Niedostępny',
@@ -207,8 +210,41 @@ class _ProductRow extends ConsumerWidget {
       );
       if (ok != true) return;
     }
-    await controller.addFromStore(storeId, product.id);
+
+    // Produkt z kilkoma jednostkami — klient wybiera którą kupuje.
+    String? unit;
+    if (product.hasMultipleUnits) {
+      if (!context.mounted) return;
+      unit = await _pickUnit(context);
+      if (unit == null) return; // anulowano
+    }
+    await controller.addFromStore(storeId, product.id, unit: unit);
   }
+
+  /// Bottom sheet z wyborem jednostki (np. „1 kg — 4,99 zł" / „1 szt — 1,20 zł").
+  Future<String?> _pickUnit(BuildContext context) => showModalBottomSheet<String>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+                child: Text('Wybierz jednostkę — ${product.name}',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              ),
+              ...product.unitOptions.map((o) => ListTile(
+                    title: Text('1 ${o.unit}'),
+                    trailing: Text(zl(o.price),
+                        style: const TextStyle(fontWeight: FontWeight.w700, color: ZzColors.orange600)),
+                    onTap: () => Navigator.pop(ctx, o.unit),
+                  )),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
 }
 
 class _Stepper extends StatelessWidget {

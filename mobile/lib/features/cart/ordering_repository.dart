@@ -19,9 +19,11 @@ class OrderingRepository {
     return Cart.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<Cart> addItem(String cartId, String token, String productId, int quantity) async {
+  Future<Cart> addItem(String cartId, String token, String productId, int quantity, {String? unit}) async {
+    final body = <String, dynamic>{'productId': productId, 'quantity': quantity};
+    if (unit != null) body['unit'] = unit;
     final data = await _api.post('/ordering/carts/$cartId/items',
-        query: {'token': token}, body: {'productId': productId, 'quantity': quantity});
+        query: {'token': token}, body: body);
     return Cart.fromJson(data as Map<String, dynamic>);
   }
 
