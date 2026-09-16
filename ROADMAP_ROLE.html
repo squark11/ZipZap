@@ -1,0 +1,426 @@
+<title>Roadmap Dowózka.pl</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#f4faf9; --surface:#ffffff; --surface-2:#f0f7f6;
+    --ink:#0f2a2a; --body:#3d4f4f; --muted:#6b7c7c; --line:#e0edec; --line-strong:#cfe2e0;
+    --teal:#14b9ba; --teal-deep:#0c7d7e; --amber:#ef8f16;
+    --done:#12844a; --done-bg:#e6f5ec; --done-line:#bfe6cd;
+    --prog:#b9720a; --prog-bg:#fbf1df; --prog-line:#f0dcb4;
+    --plan:#5a6b7a; --plan-bg:#eef2f4; --plan-line:#dbe3e8;
+    --shadow:0 1px 2px rgba(12,125,126,.05), 0 12px 30px -20px rgba(12,125,126,.28);
+    --radius:16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#08201f; --surface:#0e2827; --surface-2:#123230;
+      --ink:#e9f6f4; --body:#b6cbc9; --muted:#7d9694; --line:#1c3a38; --line-strong:#295350;
+      --teal:#2fd0cf; --teal-deep:#5fded3; --amber:#f7a940;
+      --done:#5cd08a; --done-bg:#0f2e22; --done-line:#1d5138;
+      --prog:#e6ad57; --prog-bg:#31260f; --prog-line:#5a4820;
+      --plan:#93a7b4; --plan-bg:#182c30; --plan-line:#294044;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 14px 34px -22px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#08201f; --surface:#0e2827; --surface-2:#123230;
+    --ink:#e9f6f4; --body:#b6cbc9; --muted:#7d9694; --line:#1c3a38; --line-strong:#295350;
+    --teal:#2fd0cf; --teal-deep:#5fded3; --amber:#f7a940;
+    --done:#5cd08a; --done-bg:#0f2e22; --done-line:#1d5138;
+    --prog:#e6ad57; --prog-bg:#31260f; --prog-line:#5a4820;
+    --plan:#93a7b4; --plan-bg:#182c30; --plan-line:#294044;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 14px 34px -22px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--body);
+    font-family:'Figtree',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding-inline:22px; padding-block:0}
+  h1,h2,h3{font-family:'Poppins',sans-serif; color:var(--ink); margin:0; text-wrap:balance}
+  a{color:var(--teal-deep)}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+  /* ---- Header ---- */
+  header{padding-block:44px 30px}
+  .brand{display:flex; align-items:center; gap:.6rem; font-family:'Poppins'; font-weight:800; color:var(--ink); font-size:1.15rem; letter-spacing:-.01em}
+  .brand svg{width:34px; height:34px; flex:none}
+  h1.title{font-size:clamp(2rem,5vw,3.1rem); font-weight:800; letter-spacing:-.03em; margin:.5em 0 .15em}
+  .sub{font-size:1.08rem; color:var(--muted); max-width:60ch}
+  .updated{font-size:.82rem; color:var(--muted); margin-top:.5rem}
+  .updated b{color:var(--teal-deep); font-weight:600}
+
+  /* ---- Legend + summary ---- */
+  .legend{display:flex; flex-wrap:wrap; gap:10px 20px; margin-top:22px; align-items:center}
+  .lg{display:inline-flex; align-items:center; gap:.5rem; font-size:.85rem; color:var(--body); font-weight:500}
+  .swatch{width:11px; height:11px; border-radius:3px; flex:none}
+  .s-done{background:var(--done)} .s-prog{background:var(--prog)} .s-plan{background:var(--plan)}
+
+  section{margin-block:34px}
+  .eyebrow{font-family:'Poppins'; font-weight:600; font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; color:var(--teal-deep)}
+  h2.sec{font-size:1.5rem; font-weight:700; letter-spacing:-.02em; margin:.25rem 0 0}
+  .sec-note{color:var(--muted); font-size:.98rem; margin:.35rem 0 0; max-width:66ch}
+
+  /* ---- Decision callout ---- */
+  .callout{background:var(--surface); border:1px solid var(--line-strong); border-left:4px solid var(--amber);
+    border-radius:12px; padding:18px 20px; box-shadow:var(--shadow)}
+  .callout .k{font-family:'Poppins'; font-weight:700; color:var(--ink); font-size:1.02rem; display:flex; align-items:center; gap:.5rem}
+  .callout p{margin:.5rem 0 0; font-size:.96rem}
+  .callout .badge{background:var(--amber); color:#fff; font-size:.66rem; font-weight:700; padding:.15rem .5rem; border-radius:999px; letter-spacing:.04em; font-family:'Poppins'}
+
+  /* ---- Channels matrix ---- */
+  .matrix{width:100%; border-collapse:separate; border-spacing:0; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
+  .matrix th,.matrix td{padding:13px 16px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle}
+  .matrix thead th{font-family:'Poppins'; font-weight:600; font-size:.78rem; letter-spacing:.03em; text-transform:uppercase; color:var(--muted); background:var(--surface-2)}
+  .matrix tbody tr:last-child td{border-bottom:0}
+  .matrix .role-c{font-family:'Poppins'; font-weight:600; color:var(--ink)}
+  .matrix .role-c small{display:block; font-weight:500; color:var(--muted); font-size:.76rem; font-family:'JetBrains Mono'}
+  .chan{display:inline-flex; align-items:center; gap:.4rem; font-size:.8rem; font-weight:600; padding:.28rem .6rem; border-radius:8px; font-family:'Poppins',sans-serif}
+  .chan.web{background:var(--surface-2); color:var(--teal-deep); border:1px solid var(--line-strong)}
+  .chan.app{background:#e7f7f7; color:#0c7d7e; border:1px solid #bfe9e8}
+  :root[data-theme="dark"] .chan.app, :root:not([data-theme="light"]) .chan.app{background:#0f302e; color:#5fded3; border-color:#245450}
+  .chan.none{background:transparent; color:var(--muted); border:1px dashed var(--line-strong)}
+  .chan svg{width:13px; height:13px}
+  .chan.new::after{content:'NOWE'; font-size:.58rem; background:var(--amber); color:#fff; padding:.05rem .32rem; border-radius:5px; margin-left:.15rem; font-family:'JetBrains Mono'}
+
+  /* ---- Role blocks ---- */
+  .role{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-top:16px}
+  .role-head{display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,var(--surface-2),transparent)}
+  .role-ic{width:42px; height:42px; border-radius:11px; flex:none; display:flex; align-items:center; justify-content:center; background:#e7f7f7; color:var(--teal-deep)}
+  :root[data-theme="dark"] .role-ic, :root:not([data-theme="light"]) .role-ic{background:#0f302e}
+  .role-ic svg{width:23px; height:23px}
+  .role-name{font-family:'Poppins'; font-weight:700; font-size:1.16rem; color:var(--ink); line-height:1.1}
+  .role-code{font-family:'JetBrains Mono'; font-size:.74rem; color:var(--muted); font-weight:500}
+  .role-chans{margin-left:auto; display:flex; gap:7px; flex-wrap:wrap}
+  .need{padding:12px 20px 4px; font-size:.92rem; color:var(--body)}
+  .need b{color:var(--ink); font-family:'Poppins'; font-weight:600}
+  .cols{display:grid; grid-template-columns:repeat(3,1fr); gap:0; padding:8px 8px 16px}
+  .col{padding:12px}
+  .col h4{font-family:'Poppins'; font-size:.76rem; letter-spacing:.06em; text-transform:uppercase; display:flex; align-items:center; gap:.45rem; margin:0 0 .7rem}
+  .col.done h4{color:var(--done)} .col.prog h4{color:var(--prog)} .col.plan h4{color:var(--plan)}
+  .col h4 .n{margin-left:auto; font-family:'JetBrains Mono'; font-size:.78rem; font-weight:600; opacity:.85}
+  .items{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.42rem}
+  .items li{position:relative; padding-left:1.1rem; font-size:.88rem; color:var(--body); line-height:1.4}
+  .items li::before{content:''; position:absolute; left:0; top:.46em; width:7px; height:7px; border-radius:2px}
+  .col.done .items li::before{background:var(--done)}
+  .col.prog .items li::before{background:var(--prog)}
+  .col.plan .items li::before{background:var(--plan); border-radius:50%}
+  .items li em{font-style:normal; background:var(--amber); color:#fff; font-size:.6rem; font-weight:700; padding:.05rem .3rem; border-radius:5px; margin-left:.25rem; font-family:'JetBrains Mono'; vertical-align:1px}
+
+  /* ---- Phase strip ---- */
+  .phases{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:16px}
+  .phase{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:16px 17px; box-shadow:var(--shadow)}
+  .phase .p-k{font-family:'JetBrains Mono'; font-size:.72rem; font-weight:600; color:var(--teal-deep); letter-spacing:.03em}
+  .phase h3{font-size:1.02rem; margin:.3rem 0 .4rem; font-weight:600}
+  .phase p{margin:0; font-size:.85rem; color:var(--muted)}
+
+  footer{border-top:1px solid var(--line); margin-top:44px; padding-block:26px 40px; color:var(--muted); font-size:.85rem}
+  footer .wrap{display:flex; flex-wrap:wrap; gap:10px 20px; justify-content:space-between; align-items:center}
+
+  @media (max-width:720px){
+    .cols{grid-template-columns:1fr}
+    .col{border-bottom:1px solid var(--line)}
+    .col:last-child{border-bottom:0}
+    .role-chans{margin-left:0; width:100%}
+    .matrix{display:block; overflow-x:auto}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="1200 7600 18100 17100" fill="var(--teal)" aria-hidden="true"><path d="M15709.38 15173.47l-1112.08 18.61c-378.5,1698.63 -789.95,1361.03 -2540.18,1361.1 -1313.76,0.06 -2629.61,-8.02 -3943.09,1.68 -1399.89,10.37 -1110.28,-159.38 -1791.75,-2103.18 -167.17,-476.81 -322.08,-943.36 -482.33,-1452.05 -145.4,-461.62 -402.66,-1088.94 -475.75,-1599.21l10158.53 22.79c502.44,134.06 -20.01,796.75 -145.21,1499.76l1086.9 -10.87c528.65,-972.44 519.1,-2159.09 -462.54,-2509.17 -482.42,-172.03 -2922.29,-80.86 -3635.51,-80.95 -2363.61,-0.33 -5073.25,122.86 -7394.1,-12.21 -316.21,-687.56 -400.39,-1985.7 -1957.69,-2036.17 -402.41,-13.02 -1636.71,-87 -1904.88,88.36 -215.1,140.65 -307.58,474.29 -130.72,756.97 158.16,252.77 512.02,238.02 871.34,236.42 2051.01,-9.14 1667.76,17.8 2255.69,1821.47 341.04,1046.27 684.34,2036.72 1015.06,3079.37 1105.22,3484.3 774.79,3369.49 4771.33,3365.5 1027.81,-1.03 3174.33,119.33 4071.27,-35.2 1096.54,-188.9 1551.39,-1284.5 1745.71,-2413.02z"/><path d="M18552.74 15524.55c2144.7,-1716.34 1989.21,-1345.15 -30.74,-2991.69 -400.61,-326.53 -840.16,-422.02 -1020.96,15.73 -230.13,557.15 229.45,675.76 423.49,925.56 -1857.3,104.58 -5895.61,65.82 -7622.87,1097.6l7614.15 32.59c-209.27,227.89 -692.19,498.7 -377.84,997.66 285.33,452.89 784.23,107.05 1014.77,-77.45z"/><path d="M7921.53 18264.9c880.66,0 1594.56,713.9 1594.56,1594.56 0,880.65 -713.9,1594.56 -1594.56,1594.56 -880.65,0 -1594.56,-713.91 -1594.56,-1594.56 0,-880.66 713.91,-1594.56 1594.56,-1594.56zm0 1050.95c300.22,0 543.61,243.39 543.61,543.61 0,300.21 -243.39,543.6 -543.61,543.6 -300.21,0 -543.6,-243.39 -543.6,-543.6 0,-300.22 243.39,-543.61 543.6,-543.61z"/><path d="M13255.55 18264.9c880.65,0 1594.56,713.9 1594.56,1594.56 0,880.65 -713.91,1594.56 -1594.56,1594.56 -880.66,0 -1594.56,-713.91 -1594.56,-1594.56 0,-880.66 713.9,-1594.56 1594.56,-1594.56zm0 1050.95c300.21,0 543.6,243.39 543.6,543.61 0,300.21 -243.39,543.6 -543.6,543.6 -300.22,0 -543.61,-243.39 -543.61,-543.6 0,-300.22 243.39,-543.61 543.61,-543.61z"/></svg>
+      Dowózka.pl
+    </div>
+    <h1 class="title">Roadmap wg ról</h1>
+    <p class="sub">Pełny plan funkcji dla czterech ról platformy — klient, zarządca sklepu, dostawca, administrator serwisu — z analizą potrzeb, statusem i kanałem (web / aplikacja).</p>
+    <p class="updated">Stan na <b>16.09.2026</b> · lokalny marketplace dowozu zakupów i jedzenia · pilotaż: Rapacz &amp; Lewiatan (Kraków)</p>
+    <div class="legend">
+      <span class="lg"><span class="swatch s-done"></span> Gotowe</span>
+      <span class="lg"><span class="swatch s-prog"></span> W toku</span>
+      <span class="lg"><span class="swatch s-plan"></span> Planowane</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="callout">
+      <div class="k"><span class="badge">DECYZJA · 16.09</span> Admin serwisu i zarządca sklepu pracują też z aplikacji mobilnej</div>
+      <p>Aplikacja przestaje być wyłącznie kanałem klienta — logowanie i praca w apce dla ról <b>Administrator serwisu</b> i <b>Zarządca sklepu</b>. <b>Rejestracja</b> sklepu i dostawcy zostaje jak dotąd — wyłącznie przez stronę internetową. Klient nadal tylko przez aplikację.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Kanały</div>
+    <h2 class="sec">Kto gdzie się rejestruje i gdzie pracuje</h2>
+    <p class="sec-note">Rejestracja rozdzielona per kanał; praca dostępna tam, gdzie rola faktycznie działa.</p>
+    <table class="matrix" style="margin-top:16px">
+      <thead><tr><th>Rola</th><th>Rejestracja</th><th>Praca</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="role-c">Klient<small>Role.Customer</small></td>
+          <td><span class="chan app">Aplikacja</span></td>
+          <td><span class="chan app">Aplikacja / PWA</span></td>
+        </tr>
+        <tr>
+          <td class="role-c">Zarządca sklepu<small>Role.StoreEmployee</small></td>
+          <td><span class="chan web">Web · self-service + NIP</span></td>
+          <td><span class="chan web">Web</span> <span class="chan app new">Aplikacja</span></td>
+        </tr>
+        <tr>
+          <td class="role-c">Dostawca<small>Role.Driver</small></td>
+          <td><span class="chan web">Web · zatwierdza admin</span></td>
+          <td><span class="chan app">Aplikacja</span> <span class="chan web">web podgląd</span></td>
+        </tr>
+        <tr>
+          <td class="role-c">Administrator serwisu<small>Role.Admin</small></td>
+          <td><span class="chan none">seed / zaproszenie</span></td>
+          <td><span class="chan web">Web</span> <span class="chan app new">Aplikacja</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="eyebrow">Role &amp; funkcje</div>
+    <h2 class="sec">Zapotrzebowanie i plan per rola</h2>
+
+    <!-- KLIENT -->
+    <div class="role">
+      <div class="role-head">
+        <span class="role-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></span>
+        <span><span class="role-name">Klient</span><br><span class="role-code">Role.Customer</span></span>
+        <span class="role-chans"><span class="chan app">Aplikacja / PWA</span></span>
+      </div>
+      <p class="need"><b>Potrzeba:</b> zamówić zakupy i jedzenie z lokalnych sklepów, prosto z telefonu — i wiedzieć, kiedy przyjedzie.</p>
+      <div class="cols">
+        <div class="col done">
+          <h4>Gotowe <span class="n">14</span></h4>
+          <ul class="items">
+            <li>Rejestracja (hasło 2×) + login + Google</li>
+            <li>Weryfikacja e-mail (realny SMTP) · zmiana hasła</li>
+            <li>Sklepy wg lokalizacji GPS + <span class="mono">kodu pocztowego</span> (zasięg)</li>
+            <li>Koszyk jednosklepowy · wybór jednostki (kg/szt)</li>
+            <li>Ilość z klawiatury + / −</li>
+            <li>Checkout z wymaganą zgodą prawną</li>
+            <li>Śledzenie zamówienia + okno dostawy</li>
+            <li>Powiadomienia (skrzynka in-app)</li>
+            <li>Adresy dostaw (CRUD + domyślny + kod pocztowy)</li>
+            <li>Zgłaszanie uwag · tryb ciemny · tryb offline</li>
+          </ul>
+        </div>
+        <div class="col prog">
+          <h4>W toku <span class="n">2</span></h4>
+          <ul class="items">
+            <li>Twarde potwierdzenie e-mail (baner/blokada)</li>
+            <li>Dopieszczenie UX (skeletony, mikro-animacje)</li>
+          </ul>
+        </div>
+        <div class="col plan">
+          <h4>Planowane <span class="n">7</span></h4>
+          <ul class="items">
+            <li>Autouzupełnianie adresu (Google Places)</li>
+            <li>Wybór zapisanego adresu w checkoucie</li>
+            <li>Kategorie + wyszukiwarka + filtry</li>
+            <li>Onboarding (3 ekrany)</li>
+            <li>Realne płatności (Przelewy24 / BLIK)</li>
+            <li>Oceny zamówienia / sklepu / dostawy</li>
+            <li>Sekcje promocji „w pobliżu"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZARZĄDCA SKLEPU -->
+    <div class="role">
+      <div class="role-head">
+        <span class="role-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg></span>
+        <span><span class="role-name">Zarządca sklepu</span><br><span class="role-code">Role.StoreEmployee · scope: StoreId[]</span></span>
+        <span class="role-chans"><span class="chan web">Web</span> <span class="chan app new">Aplikacja</span></span>
+      </div>
+      <p class="need"><b>Potrzeba:</b> prowadzić sprzedaż z dowozem na własnych zasadach — oferta, zamówienia, dostawy, płatności, rozliczenia.</p>
+      <div class="cols">
+        <div class="col done">
+          <h4>Gotowe <span class="n">12</span></h4>
+          <ul class="items">
+            <li>Rejestracja web (self-service, <span class="mono">NIP</span>)</li>
+            <li>Start — checklista gotowości (onboarding)</li>
+            <li>Profil sklepu (logo / GPS / status)</li>
+            <li>Strefy + kody pocztowe · terminy (sloty)</li>
+            <li>Oferta: dodawanie, ukryj/pokaż, zmiana ceny</li>
+            <li>Import / eksport CSV asortymentu</li>
+            <li>Wiele jednostek produktu (klient wybiera)</li>
+            <li>Zamówienia · Dostawy</li>
+            <li>Bramka płatności (tokeny szyfrowane)</li>
+            <li>Dokumenty prawne + wymóg zgody</li>
+            <li>Rozliczenia — faktura plan A / B</li>
+            <li>Zespół sklepu · konfiguracja (kafelki + modal)</li>
+          </ul>
+        </div>
+        <div class="col prog">
+          <h4>W toku <span class="n">3</span></h4>
+          <ul class="items">
+            <li>Pełna edycja profilu (nazwa/adres/telefon/NIP/godziny)</li>
+            <li>Zdjęcie produktu — pole + upload</li>
+            <li>Edycja/usuwanie produktu + stan magazynowy</li>
+          </ul>
+        </div>
+        <div class="col plan">
+          <h4>Planowane <span class="n">6</span></h4>
+          <ul class="items">
+            <li>Praca z aplikacji mobilnej <em>NOWE</em></li>
+            <li>Realny adapter płatności (Przelewy24)</li>
+            <li>Menu restauracji (warianty / dodatki)</li>
+            <li>POS + fiskalizacja (GOPOS)</li>
+            <li>Godziny otwarcia · geokoder adres→GPS</li>
+            <li>Odpowiedzi na oceny</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOSTAWCA -->
+    <div class="role">
+      <div class="role-head">
+        <span class="role-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+        <span><span class="role-name">Dostawca</span><br><span class="role-code">Role.Driver · scope: StoreId[]</span></span>
+        <span class="role-chans"><span class="chan app">Aplikacja</span> <span class="chan web">web podgląd</span></span>
+      </div>
+      <p class="need"><b>Potrzeba:</b> dowozić zamówienia w swojej okolicy z telefonu, przyjmować zlecenia i widzieć zarobki.</p>
+      <div class="cols">
+        <div class="col done">
+          <h4>Gotowe <span class="n">2</span></h4>
+          <ul class="items">
+            <li>Rejestracja web → status „oczekuje" → zatwierdzenie admina</li>
+            <li>Placeholder „Moje dostawy" (trasa roli)</li>
+          </ul>
+        </div>
+        <div class="col prog">
+          <h4>W toku <span class="n">1</span></h4>
+          <ul class="items">
+            <li>Ścieżka: rejestracja → zatwierdzenie → logowanie</li>
+          </ul>
+        </div>
+        <div class="col plan">
+          <h4>Planowane <span class="n">7</span></h4>
+          <ul class="items">
+            <li>Dostępne / moje dostawy + akceptacja <em>APP</em></li>
+            <li>Status online / offline</li>
+            <li>Mapa + nawigacja + ETA</li>
+            <li>Live-tracking kuriera u klienta</li>
+            <li>Zarobki (podsumowanie)</li>
+            <li>Oznaczenie „dostarczono"</li>
+            <li>Oceny dostaw</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMINISTRATOR -->
+    <div class="role">
+      <div class="role-head">
+        <span class="role-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 8-8 11-4.5-3-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <span><span class="role-name">Administrator serwisu</span><br><span class="role-code">Role.Admin</span></span>
+        <span class="role-chans"><span class="chan web">Web</span> <span class="chan app new">Aplikacja</span></span>
+      </div>
+      <p class="need"><b>Potrzeba:</b> nadzorować platformę (nie prowadzić sklepu) — statystyki, użytkownicy, płatności faktur, wsparcie sklepów, przestrzeganie regulaminu.</p>
+      <div class="cols">
+        <div class="col done">
+          <h4>Gotowe <span class="n">7</span></h4>
+          <ul class="items">
+            <li>Statystyki platformy (GMV, zamówienia, sklepy)</li>
+            <li>Użytkownicy wg roli + nieaktywne konta</li>
+            <li>Tabela użytkowników + aktywacja/dezaktywacja</li>
+            <li>Sklepy · zatwierdzanie dostawców · uwagi</li>
+            <li>Konfiguracja: SMTP / Google / captcha / platforma</li>
+            <li>Kafelki + modal z zakładkami (prosty panel)</li>
+            <li>Zasiew danych demo (Rapacz / Lewiatan)</li>
+          </ul>
+        </div>
+        <div class="col prog">
+          <h4>W toku <span class="n">3</span></h4>
+          <ul class="items">
+            <li>E-mail z danymi logowania do admina</li>
+            <li>Zmiana hasła admina w panelu</li>
+            <li>2FA — authenticator (<span class="mono">TOTP</span>)</li>
+          </ul>
+        </div>
+        <div class="col plan">
+          <h4>Planowane <span class="n">5</span></h4>
+          <ul class="items">
+            <li>Nadzór faktur / płatności sklepów</li>
+            <li>Kody wsparcia sklepu — wgląd tylko z kodem</li>
+            <li>Pilnowanie regulaminu (flagowanie braków)</li>
+            <li>Praca z aplikacji mobilnej <em>NOWE</em></li>
+            <li>Ukrycie selektora sklepu dla roli Admin</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Przekrojowe</div>
+    <h2 class="sec">Infrastruktura i zgodność (wszystkie role)</h2>
+    <div class="role" style="margin-top:16px">
+      <div class="cols" style="padding-top:16px">
+        <div class="col done">
+          <h4>Gotowe <span class="n">6</span></h4>
+          <ul class="items">
+            <li>Live: <span class="mono">dowózka.pl</span> (landing + APK, lh.pl)</li>
+            <li>Panel: <span class="mono">panel.dowózka.pl</span> · API na Render · baza Neon</li>
+            <li>Realny SMTP (MailKit, konfiguracja w panelu)</li>
+            <li>Rebranding Dowózka.pl (logo, teal, Poppins)</li>
+            <li>4 role + JWT + rejestracja per-kanał</li>
+            <li>Modularny panel (Angular Router + guardy ról)</li>
+          </ul>
+        </div>
+        <div class="col prog">
+          <h4>W toku <span class="n">2</span></h4>
+          <ul class="items">
+            <li>CI/CD — krok deploy na <span class="mono">main</span></li>
+            <li>Hardening produkcyjny (wyjście z trybu Development)</li>
+          </ul>
+        </div>
+        <div class="col plan">
+          <h4>Planowane <span class="n">6</span></h4>
+          <ul class="items">
+            <li>Monitoring / Sentry + uptime</li>
+            <li>Kopie zapasowe bazy</li>
+            <li>Dokumenty platformy (RODO / regulamin serwisu)</li>
+            <li>Cookies / consent (web)</li>
+            <li>Realne płatności P24 (sandbox przed wizytą)</li>
+            <li>iOS (App Store / TestFlight) · wielojęzyczność</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Kolejność</div>
+    <h2 class="sec">Najbliższe fazy</h2>
+    <div class="phases">
+      <div class="phase"><div class="p-k">FAZA · TERAZ</div><h3>Epik administratora</h3><p>SMTP ✓ → e-mail z danymi logowania → zmiana hasła → 2FA → faktury → kody wsparcia.</p></div>
+      <div class="phase"><div class="p-k">FAZA · NASTĘPNA</div><h3>Rdzeń zamawiania</h3><p>Adres w checkoucie + Google Places, kategorie i wyszukiwarka, twarda weryfikacja e-mail.</p></div>
+      <div class="phase"><div class="p-k">FAZA · MOBILE</div><h3>Wielorolowa aplikacja</h3><p>Logowanie dowolną rolą w apce; mobilny widok admina i zarządcy sklepu. Rejestracja dalej tylko web.</p></div>
+      <div class="phase"><div class="p-k">FAZA · KIEROWCA</div><h3>Panel dostawcy (R8)</h3><p>Dostawy, online/offline, mapa + ETA, zarobki, oceny — głównie w aplikacji.</p></div>
+      <div class="phase"><div class="p-k">FAZA · PŁATNOŚCI</div><h3>Realne płatności</h3><p>Adapter Przelewy24 (sandbox → prod), metody w UI, zwroty, zgodność prawna.</p></div>
+      <div class="phase"><div class="p-k">FAZA · SKALA</div><h3>Restauracje + dystans</h3><p>Menu z wariantami, plany rozliczeń A/B, fale dostaw, cennik base + per-km.</p></div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Roadmap Dowózka.pl · żywy dokument — źródło actionable w <span class="mono">ROADMAP.md</span> / <span class="mono">WYMAGANIA.md</span></span>
+    <span>Made in Poland 🇵🇱</span>
+  </div>
+</footer>

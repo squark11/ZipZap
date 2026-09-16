@@ -14,6 +14,8 @@
 - 🎯 **Pilot Rapacz** — sekcja niżej; analiza/kryteria w [PILOT_RAPACZ.md](PILOT_RAPACZ.md). ✅ **żywy deploy (2026-09-15)**: API `dowozka-api.fly.dev` + PWA `dowozka.fly.dev` (Fly.io + Neon).
 - ✅ **Role, rejestracja per‑kanał i modularny panel (web)** — sekcja „🔐" niżej: P‑Role1/2/3 ukończone (nawigacja rolowa, rejestracja sklep/dostawca + zatwierdzanie, Angular Router + guardy).
 - 🎯 **PRIORYTET BIEŻĄCY (2026-09-15): braki UX zamawiania** — przegląd luk w **[WYMAGANIA.md](WYMAGANIA.md)** (hasło 2×, potwierdzenie e-mail, zmiana hasła, adresy klienta + kod pocztowy + Google Places, dobór sklepów wg zasięgu, audyt panelu sklepu/dostawcy).
+- 🗺️ **Roadmap wg ról (pełny, 2026-09-16)** — analiza potrzeb + funkcje + status + kanały (web/app) dla 4 ról: strona [claude.ai/artifact/EGfscwE6c63xqJzcWukfY5](https://claude.ai/artifact/EGfscwE6c63xqJzcWukfY5) (źródło w repo: `ROADMAP_ROLE.html`).
+- ➕ **DECYZJA (właściciel, 2026-09-16): wielorolowa aplikacja mobilna** — admin serwisu i zarządca sklepu **pracują też z aplikacji** (nie tylko klient). **Rejestracja** sklepu/dostawcy **zostaje wyłącznie w web**. Wpięcie: logowanie dowolną rolą w apce + mobilne widoki roli Admin/StoreEmployee + guardy ról (go_router). Nowa faza „Mobile — wielorolowa".
 
 ---
 
@@ -45,7 +47,7 @@ Cel (właściciel, 2026-09-15): **czytelny podział ról w wersji przeglądarkow
 
 - 🔧 **P‑Role1 — Uprawnienia i nawigacja per rola (web).** ✅ (2026-09-15) `Api`: `isStoreAdmin()`/`isDriver()`/`isCustomer()`/`roleLabel()`/`hasAnyRole()`; **nawigacja generowana z rejestru i filtrowana po roli** (Admin=wszystko, administrator sklepu=Start/Pulpit/Zamówienia/Dostawy/Oferta/Integracje/Rozliczenia, dostawca=Pulpit/Dostawy); userchip pokazuje właściwą rolę; **placeholder panelu dostawcy** (pełny UI = R8); `ensureVisibleTab()` pilnuje dostępu do zakładek. ⬜ twarde guardy tras w Angular Router (P‑Role3) + realny widok dostawcy (R8).
 - 🔧 **P‑Role2 — Rejestracja per‑kanał.** ✅ (2026-09-15): backend `POST /api/register/store` (sklep + właściciel `StoreEmployee`, zwraca auth; **NIP wymagany** — walidacja sumy kontrolnej, `Store.Nip`, migracja `Catalog_StoreNip`), `POST /api/register/driver` (`Driver` **pending/nieaktywny**), `GET /api/admin/drivers/pending` + `POST /api/admin/drivers/{id}/approve` (Admin: przypisz sklep + aktywuj) — captcha-gated. Panel: ekran logowania przełącza **Logowanie / „Załóż sklep" / „Zostań dostawcą"** (rejestracja sklepu loguje i wchodzi w onboarding; dostawca → komunikat „oczekuje na weryfikację"). Testy `RegistrationTests` (3, live-smoke OK). ✅ **panel wdrożony** (dowozka-admin.fly.dev — rejestracja sklepu/dostawcy dostępna w web). ⬜ **UI zatwierdzania dostawców** w panelu (lista „oczekujący" + przypisanie sklepu) + widget captcha w panelu. Kanały:
-  - **Apka mobilna = tylko klient** (`POST /identity/register` → `Role.Customer`; utrzymać, że apka nie tworzy innych ról).
+  - **Apka mobilna — rejestracja tylko klient** (`POST /identity/register` → `Role.Customer`; apka nie **rejestruje** innych ról). ⚠ **Aktualizacja 2026-09-16:** apka **loguje i obsługuje pracę** także ról **Admin** i **StoreEmployee** (mobilne widoki roli) — rejestracja tych ról dalej wyłącznie w web.
   - **Web „Załóż sklep"** — self‑service: konto właściciela (`StoreEmployee` = administrator sklepu) + sklep (realizuje odłożone **P3b**).
   - **Web „Zostań dostawcą"** — self‑service `Driver` (status „do weryfikacji"; aktywacja/przypisanie do sklepu/obszaru przez admina).
   - **Administrator serwisu** — nie self‑service (seed/zaproszenie).
