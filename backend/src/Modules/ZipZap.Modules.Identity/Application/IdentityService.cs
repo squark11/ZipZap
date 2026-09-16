@@ -337,6 +337,30 @@ public sealed class IdentityService
             .ToList();
     }
 
+    /// <summary>Administrator serwisu: wszyscy użytkownicy (z rolami) — do tabeli i aktywacji.</summary>
+    public async Task<IReadOnlyList<AdminUserDto>> ListUsersAsync(CancellationToken ct)
+    {
+        var users = await _db.Users.AsNoTracking().Include(u => u.Roles)
+            .OrderByDescending(u => u.CreatedAtUtc)
+            .ToListAsync(ct);
+        return users.Select(u => new AdminUserDto(
+            u.Id, u.Email, u.FullName, u.Phone, u.IsActive, u.IsEmailVerified,
+            string.Join(", ", u.Roles.Select(r => r.Role.ToString()).Distinct()),
+            u.CreatedAtUtc)).ToList();
+    }
+
+    /// <summary>Liczby użytkowników wg roli — do statystyk platformy.</summary>
+    public async Task<UserCounts> UserCountsAsync(CancellationToken ct)
+    {
+        var users = await _db.Users.AsNoTracking().Include(u => u.Roles).ToListAsync(ct);
+        return new UserCounts(
+            users.Count,
+            users.Count(u => u.HasRole(Role.Customer)),
+            users.Count(u => u.HasRole(Role.StoreEmployee)),
+            users.Count(u => u.HasRole(Role.Driver)),
+            users.Count(u => !u.IsActive));
+    }
+
     /// <summary>Wylogowanie: unieważnia podany refresh token.</summary>
     public async Task<Result> LogoutAsync(string? refreshToken, CancellationToken ct)
     {

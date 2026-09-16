@@ -434,6 +434,36 @@ app.MapPost("/api/admin/drivers/{userId:guid}/approve",
         : Results.Ok();
 }).RequireAuthorization("Admin").WithTags("Registration");
 
+// Administrator serwisu: tabela użytkowników + aktywacja/dezaktywacja konta.
+app.MapGet("/api/admin/users", async (IdentityService identity, CancellationToken ct) =>
+    Results.Ok(await identity.ListUsersAsync(ct))).RequireAuthorization("Admin").WithTags("Admin");
+
+app.MapPost("/api/admin/users/{userId:guid}/active",
+    async (Guid userId, bool value, IdentityService identity, CancellationToken ct) =>
+{
+    var res = await identity.SetUserActiveAsync(userId, value, ct);
+    return res.IsFailure
+        ? Results.Problem(detail: res.Error.Message, statusCode: res.Error.ToStatusCode(), title: res.Error.Code)
+        : Results.Ok();
+}).RequireAuthorization("Admin").WithTags("Admin");
+
+// Administrator serwisu: statystyki platformy (przegląd na pulpicie admina).
+app.MapGet("/api/admin/stats",
+    async (IdentityService identity, CatalogService catalog, OrderingService ordering, CancellationToken ct) =>
+{
+    var stores = await catalog.ListStoresAsync(false, null, null, ct);
+    var users = await identity.UserCountsAsync(ct);
+    var pending = await identity.ListPendingDriversAsync(ct);
+    var (orderCount, gmv) = await ordering.PlatformOrderStatsAsync(ct);
+    return Results.Ok(new
+    {
+        stores = new { total = stores.Count, active = stores.Count(s => s.IsActive) },
+        users = new { total = users.Total, customers = users.Customers, stores = users.Stores, drivers = users.Drivers, inactive = users.Inactive },
+        pendingDrivers = pending.Count,
+        orders = new { count = orderCount, gmv },
+    });
+}).RequireAuthorization("Admin").WithTags("Admin");
+
 // Sklepy dowożące pod kod pocztowy klienta. Bez kodu → wszystkie (posortowane wg odległości gdy lat/lng).
 // Zasięg = aktywna strefa sklepu, która obejmuje kod (pusta lista kodów strefy = obsługuje wszędzie).
 app.MapGet("/api/stores/serving",

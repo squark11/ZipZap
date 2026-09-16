@@ -23,3 +23,11 @@ public sealed record AuthResult(
 public sealed record TeamMemberDto(
     Guid Id, string Email, string FullName, string? Phone,
     bool IsActive, bool IsEmailVerified, string Role, Guid StoreId);
+
+/// <summary>Użytkownik platformy — tabela w panelu administratora serwisu.</summary>
+public sealed record AdminUserDto(
+    Guid Id, string Email, string FullName, string? Phone,
+    bool IsActive, bool IsEmailVerified, string Roles, DateTime CreatedAtUtc);
+
+/// <summary>Liczby użytkowników wg roli — do statystyk platformy.</summary>
+public sealed record UserCounts(int Total, int Customers, int Stores, int Drivers, int Inactive);

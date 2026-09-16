@@ -343,6 +343,15 @@ public sealed class OrderingService
         foreach (var o in others) o.ClearDefault();
     }
 
+    /// <summary>Statystyki platformy: liczba zamówień i GMV (suma wartości, bez anulowanych).</summary>
+    public async Task<(int count, decimal gmv)> PlatformOrderStatsAsync(CancellationToken ct)
+    {
+        var count = await _db.Orders.CountAsync(ct);
+        var gmv = await _db.Orders.Where(o => o.Status != OrderStatus.Cancelled)
+            .SumAsync(o => (decimal?)o.Total, ct) ?? 0m;
+        return (count, gmv);
+    }
+
     /// <summary>Zbiór StoreId, które dowożą pod dany kod pocztowy (aktywna strefa: pusta lista kodów = wszędzie).</summary>
     public async Task<HashSet<Guid>> StoresServingPostalCodeAsync(string postalCode, CancellationToken ct)
     {

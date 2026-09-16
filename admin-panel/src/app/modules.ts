@@ -12,7 +12,8 @@ export type PanelRole = 'Admin' | 'StoreEmployee' | 'Driver' | 'Customer';
 
 export type PanelTab =
   | 'onboarding' | 'dashboard' | 'orders' | 'deliveries' | 'catalog'
-  | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings';
+  | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings'
+  | 'admin-home' | 'users';
 
 export interface PanelModule {
   id: PanelTab;
@@ -23,17 +24,24 @@ export interface PanelModule {
 }
 
 export const PANEL_MODULES: readonly PanelModule[] = [
-  { id: 'driver-home',  label: 'Moje dostawy', icon: 'deliveries',   roles: ['Driver'],                           storeScoped: false },
-  { id: 'onboarding',   label: 'Start',        icon: 'start',        roles: ['StoreEmployee', 'Admin'],           storeScoped: true },
-  { id: 'dashboard',    label: 'Pulpit',       icon: 'dashboard',    roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'orders',       label: 'Zamówienia',   icon: 'orders',       roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'catalog',      label: 'Oferta',       icon: 'catalog',      roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'integrations', label: 'Integracje',   icon: 'integrations', roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'finance',      label: 'Rozliczenia',  icon: 'finance',      roles: ['Admin', 'StoreEmployee'],           storeScoped: true },
-  { id: 'team',         label: 'Zespół',       icon: 'team',         roles: ['Admin'],                            storeScoped: true },
-  { id: 'drivers',      label: 'Dostawcy',     icon: 'drivers',      roles: ['Admin'],                            storeScoped: false },
-  { id: 'stores',       label: 'Sklepy',       icon: 'stores',       roles: ['Admin'],                            storeScoped: false },
-  { id: 'feedback',     label: 'Uwagi',        icon: 'feedback',     roles: ['Admin'],                            storeScoped: false },
-  { id: 'settings',     label: 'Konfiguracja', icon: 'settings',     roles: ['Admin'],                            storeScoped: false },
+  // Dostawca (kierowca)
+  { id: 'driver-home',  label: 'Moje dostawy', icon: 'deliveries',   roles: ['Driver'],           storeScoped: false },
+
+  // Administrator serwisu (platforma) — nadzór, nie prowadzenie sklepu
+  { id: 'admin-home',   label: 'Statystyki',   icon: 'stats',        roles: ['Admin'],            storeScoped: false },
+  { id: 'stores',       label: 'Sklepy',       icon: 'stores',       roles: ['Admin'],            storeScoped: false },
+  { id: 'users',        label: 'Użytkownicy',  icon: 'users',        roles: ['Admin'],            storeScoped: false },
+  { id: 'drivers',      label: 'Dostawcy',     icon: 'drivers',      roles: ['Admin'],            storeScoped: false },
+  { id: 'feedback',     label: 'Uwagi',        icon: 'feedback',     roles: ['Admin'],            storeScoped: false },
+  { id: 'settings',     label: 'Konfiguracja', icon: 'settings',     roles: ['Admin'],            storeScoped: false },
+
+  // Administrator sklepu (właściciel) — narzędzia do prowadzenia sklepu
+  { id: 'onboarding',   label: 'Start',        icon: 'start',        roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'dashboard',    label: 'Pulpit',       icon: 'dashboard',    roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'orders',       label: 'Zamówienia',   icon: 'orders',       roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'catalog',      label: 'Oferta',       icon: 'catalog',      roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'integrations', label: 'Integracje',   icon: 'integrations', roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'finance',      label: 'Rozliczenia',  icon: 'finance',      roles: ['StoreEmployee'],    storeScoped: true },
+  { id: 'team',         label: 'Zespół',       icon: 'team',         roles: ['StoreEmployee'],    storeScoped: true },
 ];
