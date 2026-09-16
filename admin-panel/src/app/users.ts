@@ -60,10 +60,11 @@ interface AdminUser {
         <div><span>Utworzono</span><b>{{ u.createdAtUtc | date:'yyyy-MM-dd HH:mm' }}</b></div>
       </div>
 
-      <div class="act">
+      <div class="act" style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn" [class.primary]="!u.isActive" (click)="toggle(u)" [disabled]="busy">
           {{ u.isActive ? 'Dezaktywuj konto' : 'Aktywuj konto' }}
         </button>
+        <button class="btn ghost sm" style="color:#B4232A" (click)="flag(u)">⚑ Zgłoś naruszenie</button>
       </div>
 
       <div class="rolebox">
@@ -161,6 +162,20 @@ export class UsersComponent implements OnInit {
     this.api.post(`/identity/admin/users/${u.id}/role`, { role: this.newRole }).subscribe({
       next: () => { this.busy = false; this.load(); },
       error: e => { this.busy = false; this.modalError = 'Nie udało się nadać roli: ' + (e?.error?.detail ?? 'błąd'); },
+    });
+  }
+
+  flag(u: AdminUser) {
+    const label = u.fullName || u.email;
+    const note = prompt(`Zgłoś naruszenie regulaminu — użytkownik „${label}".\nOpisz naruszenie:`, '');
+    if (note === null || !note.trim()) return;
+    const sev = (prompt('Waga naruszenia: low / medium / high', 'medium') ?? 'medium').trim().toLowerCase();
+    const cat = (prompt('Kategoria: regulamin / platnosci / tresci / dostawa / inne', 'regulamin') ?? 'regulamin').trim().toLowerCase();
+    this.api.post('/identity/admin/compliance', {
+      subjectType: 'user', subjectId: u.id, subjectLabel: label, category: cat, severity: sev, note: note.trim(),
+    }).subscribe({
+      next: () => alert('Zgłoszono. Zobacz w module „Nadzór".'),
+      error: e => { this.modalError = 'Nie udało się zgłosić: ' + (e?.error?.detail ?? 'błąd'); },
     });
   }
 }

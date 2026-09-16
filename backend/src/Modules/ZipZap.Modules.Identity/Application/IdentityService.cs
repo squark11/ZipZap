@@ -507,6 +507,62 @@ public sealed class IdentityService
         return Result.Success();
     }
 
+    // ---- Nadzór: zgłoszenia naruszeń regulaminu (ADMIN-ONLY) ----
+
+    public async Task<IReadOnlyList<ComplianceFlagDto>> ListComplianceFlagsAsync(string? status, CancellationToken ct)
+    {
+        var q = _db.ComplianceFlags.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(f => f.Status == status);
+        var items = await q
+            .OrderByDescending(f => f.Status == "Open")
+            .ThenByDescending(f => f.CreatedAtUtc)
+            .ToListAsync(ct);
+        return items.Select(ComplianceFlagDto.From).ToList();
+    }
+
+    public async Task<ComplianceCounts> ComplianceCountsAsync(CancellationToken ct)
+    {
+        var flags = await _db.ComplianceFlags.AsNoTracking().ToListAsync(ct);
+        return new ComplianceCounts(
+            flags.Count(f => f.Status == "Open"),
+            flags.Count(f => f.Status == "Resolved"),
+            flags.Count(f => f.Status == "Open" && f.Severity == "high"));
+    }
+
+    public async Task<Result<ComplianceFlagDto>> CreateComplianceFlagAsync(
+        string subjectType, Guid subjectId, string subjectLabel,
+        string category, string severity, string? note, CancellationToken ct)
+    {
+        var st = (subjectType ?? "").Trim().ToLowerInvariant();
+        if (st is not ("store" or "user")) return Error.Validation("Typ podmiotu musi być 'store' lub 'user'.");
+        if (subjectId == Guid.Empty) return Error.Validation("Brak identyfikatora podmiotu.");
+        if (string.IsNullOrWhiteSpace(subjectLabel)) return Error.Validation("Brak nazwy podmiotu.");
+
+        var flag = new ComplianceFlag(st, subjectId, subjectLabel, category, severity, note);
+        _db.ComplianceFlags.Add(flag);
+        await _db.SaveChangesAsync(ct);
+        return ComplianceFlagDto.From(flag);
+    }
+
+    public async Task<Result> ResolveComplianceFlagAsync(Guid id, string? resolution, bool reopen, CancellationToken ct)
+    {
+        var flag = await _db.ComplianceFlags.FirstOrDefaultAsync(f => f.Id == id, ct);
+        if (flag is null) return Result.Failure(Error.NotFound("Zgłoszenie nie istnieje."));
+        if (reopen) flag.Reopen(); else flag.Resolve(resolution);
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteComplianceFlagAsync(Guid id, CancellationToken ct)
+    {
+        var flag = await _db.ComplianceFlags.FirstOrDefaultAsync(f => f.Id == id, ct);
+        if (flag is null) return Result.Success();
+        _db.ComplianceFlags.Remove(flag);
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     /// <summary>Wylogowanie: unieważnia podany refresh token.</summary>
     public async Task<Result> LogoutAsync(string? refreshToken, CancellationToken ct)
     {

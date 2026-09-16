@@ -28,6 +28,12 @@ public sealed record AssignRoleRequest(string Role, Guid? StoreId = null);
 public sealed record TestCredentialRequest(
     Guid? Id, string Label, string Role, string Email, string Password, string? Note = null);
 
+public sealed record ComplianceFlagRequest(
+    string SubjectType, Guid SubjectId, string SubjectLabel,
+    string Category, string Severity, string? Note = null);
+
+public sealed record ResolveFlagRequest(string? Resolution = null, bool Reopen = false);
+
 public sealed record TwoFactorLoginRequest(string TwoFactorToken, string Code);
 
 public sealed record TwoFactorCodeRequest(string Code);

@@ -53,3 +53,17 @@ public sealed record TestCredentialDto(
     public static TestCredentialDto From(Domain.TestCredential c) =>
         new(c.Id, c.Label, c.Role, c.Email, c.Password, c.Note, c.UpdatedAtUtc);
 }
+
+/// <summary>Zgłoszenie naruszenia regulaminu (nadzór administratora).</summary>
+public sealed record ComplianceFlagDto(
+    Guid Id, string SubjectType, Guid SubjectId, string SubjectLabel,
+    string Category, string Severity, string? Note, string Status,
+    DateTime CreatedAtUtc, DateTime? ResolvedAtUtc, string? Resolution)
+{
+    public static ComplianceFlagDto From(Domain.ComplianceFlag f) => new(
+        f.Id, f.SubjectType, f.SubjectId, f.SubjectLabel, f.Category, f.Severity,
+        f.Note, f.Status, f.CreatedAtUtc, f.ResolvedAtUtc, f.Resolution);
+}
+
+/// <summary>Liczniki zgłoszeń do nagłówka nadzoru.</summary>
+public sealed record ComplianceCounts(int Open, int Resolved, int HighOpen);

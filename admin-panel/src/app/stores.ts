@@ -109,6 +109,9 @@ import { ConfigModalComponent } from './config-modal';
           <button class="btn ghost sm" (click)="editBranding(s)">Logo / GPS</button>
           <button class="btn" [class.primary]="!s.isActive" (click)="toggleActive(s)">{{ s.isActive ? 'Dezaktywuj' : 'Aktywuj' }}</button>
         </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ghost sm" style="color:#B4232A" (click)="flag(s)">⚑ Zgłoś naruszenie regulaminu</button>
+        </div>
       </div>
     }
   </app-config-modal>
@@ -194,6 +197,19 @@ export class StoresComponent {
     const pct = Number(val.replace(',', '.'));
     if (Number.isNaN(pct) || pct < 0 || pct > 100) { alert('Podaj wartość 0–100'); return; }
     this.api.patch(`/catalog/stores/${s.id}`, { commissionRate: this.pct(pct) }).subscribe({ next: () => this.reload(), error: e => alert(err(e)) });
+  }
+
+  flag(s: StoreDto) {
+    const note = prompt(`Zgłoś naruszenie regulaminu — sklep „${s.name}".\nOpisz naruszenie:`, '');
+    if (note === null || !note.trim()) return;
+    const sev = (prompt('Waga naruszenia: low / medium / high', 'medium') ?? 'medium').trim().toLowerCase();
+    const cat = (prompt('Kategoria: regulamin / platnosci / tresci / dostawa / inne', 'regulamin') ?? 'regulamin').trim().toLowerCase();
+    this.api.post('/identity/admin/compliance', {
+      subjectType: 'store', subjectId: s.id, subjectLabel: s.name, category: cat, severity: sev, note: note.trim(),
+    }).subscribe({
+      next: () => alert('Zgłoszono. Zobacz w module „Nadzór".'),
+      error: e => alert(err(e)),
+    });
   }
 
   private pct(p: number): number { return (Number(p) || 0) / 100; }

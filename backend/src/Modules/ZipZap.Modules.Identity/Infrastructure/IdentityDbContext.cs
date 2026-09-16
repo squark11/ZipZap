@@ -17,6 +17,7 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserToken> UserTokens => Set<UserToken>();
     public DbSet<TestCredential> TestCredentials => Set<TestCredential>();
+    public DbSet<ComplianceFlag> ComplianceFlags => Set<ComplianceFlag>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -81,6 +82,20 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
             e.Property(t => t.Email).IsRequired().HasMaxLength(256);
             e.Property(t => t.Password).IsRequired().HasMaxLength(256);
             e.Property(t => t.Note).HasMaxLength(500);
+        });
+
+        b.Entity<ComplianceFlag>(e =>
+        {
+            e.ToTable("compliance_flags");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.SubjectType).IsRequired().HasMaxLength(16);
+            e.Property(c => c.SubjectLabel).IsRequired().HasMaxLength(200);
+            e.Property(c => c.Category).IsRequired().HasMaxLength(32);
+            e.Property(c => c.Severity).IsRequired().HasMaxLength(16);
+            e.Property(c => c.Status).IsRequired().HasMaxLength(16);
+            e.Property(c => c.Note).HasMaxLength(1000);
+            e.Property(c => c.Resolution).HasMaxLength(1000);
+            e.HasIndex(c => c.Status);
         });
 
         b.Entity<OutboxMessage>(e =>

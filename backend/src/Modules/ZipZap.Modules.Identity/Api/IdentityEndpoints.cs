@@ -121,6 +121,48 @@ public static class IdentityEndpoints
         .RequireAuthorization("Admin")
         .WithSummary("Usunięcie danych konta testowego (tylko ADMIN).");
 
+        // Nadzór regulaminu — zgłoszenia naruszeń (tylko ADMIN).
+        group.MapGet("/admin/compliance", async (string? status, IdentityService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListComplianceFlagsAsync(status, ct)))
+        .RequireAuthorization("Admin")
+        .WithSummary("Lista zgłoszeń naruszeń regulaminu (opcjonalnie ?status=Open|Resolved).");
+
+        group.MapGet("/admin/compliance/counts", async (IdentityService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ComplianceCountsAsync(ct)))
+        .RequireAuthorization("Admin")
+        .WithSummary("Liczniki zgłoszeń naruszeń (otwarte / rozwiązane / krytyczne).");
+
+        group.MapPost("/admin/compliance", async (ComplianceFlagRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var res = await svc.CreateComplianceFlagAsync(
+                req.SubjectType, req.SubjectId, req.SubjectLabel, req.Category, req.Severity, req.Note, ct);
+            if (res.IsSuccess)
+                await audit.LogAsync("compliance.flagged", req.SubjectType, req.SubjectId.ToString(),
+                    details: new { req.Category, req.Severity }, ct: ct);
+            return res.IsSuccess ? Results.Ok(res.Value) : Problem(res.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Zgłoszenie naruszenia regulaminu (tylko ADMIN).");
+
+        group.MapPost("/admin/compliance/{id:guid}/resolve", async (Guid id, ResolveFlagRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var res = await svc.ResolveComplianceFlagAsync(id, req.Resolution, req.Reopen, ct);
+            if (res.IsSuccess)
+                await audit.LogAsync(req.Reopen ? "compliance.reopened" : "compliance.resolved", "compliance", id.ToString(), ct: ct);
+            return res.IsSuccess ? Ok() : Problem(res.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Rozwiązanie lub ponowne otwarcie zgłoszenia (tylko ADMIN).");
+
+        group.MapDelete("/admin/compliance/{id:guid}", async (Guid id, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var res = await svc.DeleteComplianceFlagAsync(id, ct);
+            if (res.IsSuccess) await audit.LogAsync("compliance.deleted", "compliance", id.ToString(), ct: ct);
+            return res.IsSuccess ? Ok() : Problem(res.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Usunięcie zgłoszenia (tylko ADMIN).");
+
         group.MapPost("/logout", async (LogoutRequest req, IdentityService svc, CancellationToken ct) =>
         {
             var result = await svc.LogoutAsync(req.RefreshToken, ct);
