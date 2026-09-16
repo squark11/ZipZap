@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Api } from './api';
 import { ConfigModalComponent } from './config-modal';
 import { AccountSecurityComponent } from './account-security';
+import { TestAccountsComponent } from './test-accounts';
 
 export interface ConfigStatus {
   environment: string;
@@ -41,7 +42,7 @@ export interface PlatformIntegrations {
 
 @Component({
   selector: 'app-settings',
-  imports: [CommonModule, FormsModule, ConfigModalComponent, AccountSecurityComponent],
+  imports: [CommonModule, FormsModule, ConfigModalComponent, AccountSecurityComponent, TestAccountsComponent],
   template: `
   <div class="page-head">
     <h1>Konfiguracja</h1>
@@ -52,6 +53,12 @@ export interface PlatformIntegrations {
     <button class="tile" (click)="open('account')">
       <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.4"/></svg></span>
       <span class="tbody"><span class="ttl">Konto i bezpieczeństwo</span><span class="tst">hasło i weryfikacja 2FA</span></span>
+      <span class="tcta">Zarządzaj →</span>
+    </button>
+
+    <button class="tile" (click)="open('testaccounts')">
+      <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-1.5-1.5"/></svg></span>
+      <span class="tbody"><span class="ttl">Konta testowe</span><span class="tst">zapisane loginy (klient/dostawca/sklep)</span></span>
       <span class="tcta">Zarządzaj →</span>
     </button>
 
@@ -88,6 +95,9 @@ export interface PlatformIntegrations {
 
   <!-- ===== Konto i bezpieczeństwo ===== -->
   <app-account-security [open]="panel === 'account'" (close)="close()" (passwordChanged)="onPasswordChanged()"></app-account-security>
+
+  <!-- ===== Konta testowe ===== -->
+  <app-test-accounts [open]="panel === 'testaccounts'" (close)="close()"></app-test-accounts>
 
   <!-- ===== SMTP ===== -->
   <app-config-modal [open]="panel === 'smtp'" title="Poczta e-mail (SMTP)"

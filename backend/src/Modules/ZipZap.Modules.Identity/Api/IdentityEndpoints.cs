@@ -95,6 +95,32 @@ public static class IdentityEndpoints
         .RequireAuthorization("Admin")
         .WithSummary("Zespół sklepu — pracownicy i kierowcy (tylko ADMIN).");
 
+        // Zapisane dane kont testowych — narzędzie administratora (hasło jawne, konta testowe).
+        group.MapGet("/admin/test-accounts", async (IdentityService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListTestCredentialsAsync(ct)))
+        .RequireAuthorization("Admin")
+        .WithSummary("Lista zapisanych danych kont testowych (tylko ADMIN).");
+
+        group.MapPut("/admin/test-accounts", async (TestCredentialRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var res = await svc.SaveTestCredentialAsync(req.Id, req.Label, req.Role, req.Email, req.Password, req.Note, ct);
+            if (res.IsSuccess)
+                await audit.LogAsync(req.Id is null ? "test_account.created" : "test_account.updated",
+                    "test_account", res.Value.Id.ToString(), details: new { req.Label, req.Role }, ct: ct);
+            return res.IsSuccess ? Results.Ok(res.Value) : Problem(res.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Zapis (utworzenie/edycja) danych konta testowego (tylko ADMIN).");
+
+        group.MapDelete("/admin/test-accounts/{id:guid}", async (Guid id, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var res = await svc.DeleteTestCredentialAsync(id, ct);
+            if (res.IsSuccess) await audit.LogAsync("test_account.deleted", "test_account", id.ToString(), ct: ct);
+            return res.IsSuccess ? Ok() : Problem(res.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Usunięcie danych konta testowego (tylko ADMIN).");
+
         group.MapPost("/logout", async (LogoutRequest req, IdentityService svc, CancellationToken ct) =>
         {
             var result = await svc.LogoutAsync(req.RefreshToken, ct);

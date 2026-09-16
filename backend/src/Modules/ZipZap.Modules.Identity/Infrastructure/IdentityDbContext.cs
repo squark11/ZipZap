@@ -16,6 +16,7 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserToken> UserTokens => Set<UserToken>();
+    public DbSet<TestCredential> TestCredentials => Set<TestCredential>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -69,6 +70,17 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
             e.HasIndex(t => t.TokenHash);
             e.HasIndex(t => new { t.UserId, t.Type });
             e.HasOne<User>().WithMany().HasForeignKey(t => t.UserId);
+        });
+
+        b.Entity<TestCredential>(e =>
+        {
+            e.ToTable("test_credentials");
+            e.HasKey(t => t.Id);
+            e.Property(t => t.Label).IsRequired().HasMaxLength(120);
+            e.Property(t => t.Role).IsRequired().HasMaxLength(48);
+            e.Property(t => t.Email).IsRequired().HasMaxLength(256);
+            e.Property(t => t.Password).IsRequired().HasMaxLength(256);
+            e.Property(t => t.Note).HasMaxLength(500);
         });
 
         b.Entity<OutboxMessage>(e =>

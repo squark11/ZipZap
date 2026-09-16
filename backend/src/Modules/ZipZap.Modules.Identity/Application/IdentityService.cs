@@ -465,6 +465,48 @@ public sealed class IdentityService
             users.Count(u => !u.IsActive));
     }
 
+    // ---- Zapisane dane kont testowych (ADMIN-ONLY, narzędzie administratora) ----
+
+    public async Task<IReadOnlyList<TestCredentialDto>> ListTestCredentialsAsync(CancellationToken ct)
+    {
+        var items = await _db.TestCredentials.AsNoTracking().OrderBy(c => c.Label).ToListAsync(ct);
+        return items.Select(TestCredentialDto.From).ToList();
+    }
+
+    /// <summary>Tworzy lub aktualizuje wpis (gdy podano Id). Zwraca zapisany wpis.</summary>
+    public async Task<Result<TestCredentialDto>> SaveTestCredentialAsync(
+        Guid? id, string label, string role, string email, string password, string? note, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return Error.Validation("Etykieta jest wymagana.");
+        if (string.IsNullOrWhiteSpace(email)) return Error.Validation("E-mail jest wymagany.");
+        if (string.IsNullOrWhiteSpace(password)) return Error.Validation("Hasło jest wymagane.");
+
+        TestCredential entity;
+        if (id is Guid gid)
+        {
+            var existing = await _db.TestCredentials.FirstOrDefaultAsync(c => c.Id == gid, ct);
+            if (existing is null) return Error.NotFound("Wpis nie istnieje.");
+            existing.Update(label, role, email, password, note);
+            entity = existing;
+        }
+        else
+        {
+            entity = new TestCredential(label, role, email, password, note);
+            _db.TestCredentials.Add(entity);
+        }
+        await _db.SaveChangesAsync(ct);
+        return TestCredentialDto.From(entity);
+    }
+
+    public async Task<Result> DeleteTestCredentialAsync(Guid id, CancellationToken ct)
+    {
+        var existing = await _db.TestCredentials.FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (existing is null) return Result.Success(); // idempotentne
+        _db.TestCredentials.Remove(existing);
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     /// <summary>Wylogowanie: unieważnia podany refresh token.</summary>
     public async Task<Result> LogoutAsync(string? refreshToken, CancellationToken ct)
     {

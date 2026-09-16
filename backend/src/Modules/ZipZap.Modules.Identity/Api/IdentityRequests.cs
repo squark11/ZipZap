@@ -25,6 +25,9 @@ public sealed record CreateUserRequest(
 
 public sealed record AssignRoleRequest(string Role, Guid? StoreId = null);
 
+public sealed record TestCredentialRequest(
+    Guid? Id, string Label, string Role, string Email, string Password, string? Note = null);
+
 public sealed record TwoFactorLoginRequest(string TwoFactorToken, string Code);
 
 public sealed record TwoFactorCodeRequest(string Code);

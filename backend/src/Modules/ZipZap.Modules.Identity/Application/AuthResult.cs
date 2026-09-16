@@ -45,3 +45,11 @@ public sealed record AdminUserDto(
 
 /// <summary>Liczby użytkowników wg roli — do statystyk platformy.</summary>
 public sealed record UserCounts(int Total, int Customers, int Stores, int Drivers, int Inactive);
+
+/// <summary>Zapisane dane logowania konta testowego (ADMIN-ONLY; hasło jawne — konto testowe).</summary>
+public sealed record TestCredentialDto(
+    Guid Id, string Label, string Role, string Email, string Password, string? Note, DateTime UpdatedAtUtc)
+{
+    public static TestCredentialDto From(Domain.TestCredential c) =>
+        new(c.Id, c.Label, c.Role, c.Email, c.Password, c.Note, c.UpdatedAtUtc);
+}

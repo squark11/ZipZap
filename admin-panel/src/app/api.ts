@@ -135,4 +135,5 @@ export class Api {
   post<T>(path: string, body: unknown) { return this.http.post<T>(`${this.base}${path}`, body, this.opts()); }
   put<T>(path: string, body: unknown) { return this.http.put<T>(`${this.base}${path}`, body, this.opts()); }
   patch<T>(path: string, body: unknown) { return this.http.patch<T>(`${this.base}${path}`, body, this.opts()); }
+  delete<T>(path: string) { return this.http.delete<T>(`${this.base}${path}`, this.opts()); }
 }
