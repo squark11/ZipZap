@@ -128,8 +128,10 @@ builder.Services.AddSingleton<StoreLegalStore>();
 // Nadpisz domyślny (null) provider polityki prawnej sklepu adapterem nad magazynem dokumentów.
 builder.Services.AddSingleton<ZipZap.Modules.Ordering.Application.IStoreLegalPolicyProvider, StoreLegalPolicyAdapter>();
 builder.Services.AddSingleton<PlatformIntegrationsStore>();
-// Realny sender e-mail (SMTP/MailKit) — konfiguracja z panelu; nadpisuje mock LoggingEmailSender.
-builder.Services.AddScoped<ZipZap.Modules.Identity.Application.IEmailSender, SmtpEmailSender>();
+// Realny sender e-mail. Priorytet: HTTP API dostawcy (Resend/Brevo, port 443 — Render blokuje SMTP),
+// z fallbackiem na SMTP/MailKit (lokalnie / hosting bez blokady portów). Nadpisuje mock LoggingEmailSender.
+builder.Services.AddScoped<SmtpEmailSender>();
+builder.Services.AddHttpClient<ZipZap.Modules.Identity.Application.IEmailSender, HttpEmailSender>();
 // Integracje platformy edytowalne w panelu — nadpisz domyślne (env) źródło Google Client ID.
 builder.Services.AddSingleton<ZipZap.Modules.Identity.Application.IGoogleClientIdProvider, PlatformGoogleClientIdProvider>();
 // Captcha (Cloudflare Turnstile) — weryfikacja po stronie serwera; wyłączona, dopóki niekonfigurowana w panelu.
@@ -300,7 +302,10 @@ app.MapGet("/api/admin/config/status",
             mockPayPage = set("Payments:Mock:PayPageUrl"),
         },
         googleSignIn = !string.IsNullOrWhiteSpace(googleId),
-        email = set("Email:Smtp:Host"),
+        email = set("Email:Http:ApiKey") || set("Email:Smtp:Host"),
+        emailChannel = set("Email:Http:ApiKey")
+            ? "http:" + (cfg["Email:Http:Provider"] ?? "resend")
+            : (set("Email:Smtp:Host") ? "smtp" : "none"),
         rabbitMq = set("RabbitMq:Host"),
         identityPublicUrl = cfg["Identity:PublicUrl"],
         adminSeedEmail = cfg["Seed:AdminEmail"],
@@ -324,23 +329,33 @@ app.MapPut("/api/admin/config/integrations",
     return Results.Ok(await store.SaveAsync(body, ct));
 }).RequireAuthorization("Admin").WithTags("System");
 
-// Test wysyłki SMTP — z panelu admina. `to` domyślnie = adres nadawcy.
+// Test wysyłki e-mail — z panelu admina. Działa dla aktywnego kanału (HTTP API lub SMTP).
+// `to` domyślnie = adres nadawcy.
 app.MapPost("/api/admin/config/smtp/test",
-    async (string? to, ZipZap.Modules.Identity.Application.IEmailSender email, PlatformIntegrationsStore store, CancellationToken ct) =>
+    async (string? to, ZipZap.Modules.Identity.Application.IEmailSender email,
+        PlatformIntegrationsStore store, IConfiguration cfg, CancellationToken ct) =>
 {
-    var cfg = await store.GetSmtpAsync(ct);
-    if (!cfg.Enabled) return Results.Problem(detail: "SMTP nie jest skonfigurowany.", statusCode: 400, title: "validation");
-    var recipient = string.IsNullOrWhiteSpace(to) ? cfg.FromEmail! : to!.Trim();
+    var httpEnabled = !string.IsNullOrWhiteSpace(cfg["Email:Http:ApiKey"]);
+    var smtp = await store.GetSmtpAsync(ct);
+    if (!httpEnabled && !smtp.Enabled)
+        return Results.Problem(detail: "Poczta nie jest skonfigurowana (ani HTTP API, ani SMTP).", statusCode: 400, title: "validation");
+
+    var recipient = !string.IsNullOrWhiteSpace(to) ? to!.Trim()
+        : (smtp.FromEmail ?? cfg["Email:Http:FromEmail"] ?? cfg["Email:Smtp:FromEmail"]);
+    if (string.IsNullOrWhiteSpace(recipient))
+        return Results.Problem(detail: "Podaj adres odbiorcy testu.", statusCode: 400, title: "validation");
+
+    var channel = httpEnabled ? "http:" + (cfg["Email:Http:Provider"] ?? "resend") : "smtp";
     try
     {
         await email.SendAsync(new ZipZap.Modules.Identity.Application.EmailMessage(
-            recipient, "Dowózka.pl — test SMTP",
-            "To testowa wiadomość z panelu Dowózka.pl. Jeśli ją widzisz — konfiguracja SMTP działa."), ct);
-        return Results.Ok(new { sent = true, to = recipient });
+            recipient, "Dowózka.pl — test poczty",
+            "To testowa wiadomość z panelu Dowózka.pl. Jeśli ją widzisz — konfiguracja poczty działa."), ct);
+        return Results.Ok(new { sent = true, to = recipient, channel });
     }
     catch (Exception ex)
     {
-        return Results.Problem(detail: "Wysyłka nie powiodła się: " + ex.Message, statusCode: 400, title: "smtp_error");
+        return Results.Problem(detail: "Wysyłka nie powiodła się: " + ex.Message, statusCode: 400, title: "email_error");
     }
 }).RequireAuthorization("Admin").WithTags("System");
 

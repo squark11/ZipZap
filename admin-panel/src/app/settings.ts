@@ -10,6 +10,7 @@ export interface ConfigStatus {
   payments: { provider: string; publicUrl: string; mockPayPage: boolean };
   googleSignIn: boolean;
   email: boolean;
+  emailChannel?: string;
   rabbitMq: boolean;
   identityPublicUrl: string;
   adminSeedEmail: string;
@@ -113,6 +114,7 @@ export interface PlatformIntegrations {
     </div>
     @if (smtpError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ smtpError }}</p> }
     <p class="note" style="margin-top:12px">🔒 Hasło szyfrowane, nigdy nie pokazywane z powrotem. Zapisz przed wysłaniem testu.</p>
+    <p class="warn" style="margin-top:10px">⚠ Na hostingu Render porty SMTP (25/465/587) są zablokowane — SMTP zadziała lokalnie, ale nie na produkcji. Na produkcji użyj kanału <b>HTTP API</b> (Resend/Brevo) ustawianego w zmiennych środowiskowych usługi: <code>EMAIL__HTTP__PROVIDER</code>, <code>EMAIL__HTTP__APIKEY</code>, <code>EMAIL__HTTP__FROMEMAIL</code>. Aktywny kanał widać w kafelku „Status i sekrety".</p>
   </app-config-modal>
 
   <!-- ===== Logowanie i captcha (zakładki) ===== -->
@@ -183,7 +185,7 @@ export interface PlatformIntegrations {
         <div class="row"><span>Środowisko</span><b>{{ status.environment }}</b></div>
         <div class="row"><span>Płatności</span><b>{{ status.payments.provider }}</b></div>
         <div class="row"><span>Logowanie Google</span><b [style.color]="col(status.googleSignIn)">{{ txt(status.googleSignIn) }}</b></div>
-        <div class="row"><span>E-mail (SMTP)</span><b [style.color]="col(status.email)">{{ txt(status.email) }}</b></div>
+        <div class="row"><span>E-mail</span><b [style.color]="col(status.email)">{{ status.email ? emailChannelLabel(status.emailChannel) : '— brak' }}</b></div>
         <div class="row"><span>RabbitMQ</span><b [style.color]="col(status.rabbitMq)">{{ txt(status.rabbitMq) }}</b></div>
         <div class="row"><span>Admin (seed)</span><b>{{ status.adminSeedEmail }}</b></div>
       </div>
@@ -362,4 +364,11 @@ export class SettingsComponent implements OnInit {
 
   txt(ok: boolean) { return ok ? '✓ skonfigurowane' : '— brak'; }
   col(ok: boolean) { return ok ? '#128040' : '#6B7280'; }
+
+  emailChannelLabel(ch?: string): string {
+    if (!ch || ch === 'none') return '— brak';
+    if (ch === 'smtp') return '✓ SMTP';
+    if (ch.startsWith('http:')) return '✓ HTTP API (' + ch.substring(5) + ')';
+    return '✓ ' + ch;
+  }
 }
