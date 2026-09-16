@@ -44,6 +44,13 @@ export interface AuthResponse {
   user?: { email: string; roles: string[]; storeIds: string[] };
 }
 
+/** Odpowiedź logowania, gdy konto ma włączone 2FA — trzeba dokończyć kodem. */
+export interface TwoFactorChallenge { twoFactorRequired: true; twoFactorToken: string; }
+export type LoginOutcome = AuthResponse | TwoFactorChallenge;
+export function isTwoFactorChallenge(o: LoginOutcome): o is TwoFactorChallenge {
+  return (o as TwoFactorChallenge).twoFactorRequired === true;
+}
+
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);
@@ -86,8 +93,14 @@ export class Api {
     this.storeIds.set(r.user?.storeIds ?? []);
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/identity/login`, { email, password })
+  login(email: string, password: string): Observable<LoginOutcome> {
+    return this.http.post<LoginOutcome>(`${this.base}/identity/login`, { email, password })
+      .pipe(tap(r => { if (!isTwoFactorChallenge(r)) this.apply(r, email); }));
+  }
+
+  /// Dokończenie logowania 2FA — kod z aplikacji authenticator.
+  completeTwoFactor(twoFactorToken: string, code: string, email?: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/identity/login/2fa`, { twoFactorToken, code })
       .pipe(tap(r => this.apply(r, email)));
   }
 

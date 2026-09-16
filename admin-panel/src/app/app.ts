@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { Api, StoreDto } from './api';
+import { Api, StoreDto, isTwoFactorChallenge } from './api';
 import { PANEL_MODULES } from './modules';
 
 @Component({
@@ -41,14 +41,25 @@ import { PANEL_MODULES } from './modules';
         <div class="auth-body">
           @switch (authMode) {
             @case ('login') {
-              <form class="auth-card" (ngSubmit)="login()">
-                <h2>Zaloguj się do panelu</h2>
-                <div class="field"><label>Login (e-mail)</label><input name="email" [(ngModel)]="email" type="email" required /></div>
-                <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
-                <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
-                @if (error) { <p class="error">{{ error }}</p> }
-                <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
-              </form>
+              @if (twoFaToken) {
+                <form class="auth-card" (ngSubmit)="completeTwoFactor()">
+                  <h2>Weryfikacja dwuetapowa</h2>
+                  <p class="hint" style="text-align:left;margin:0 0 16px">Wpisz 6-cyfrowy kod z aplikacji authenticator.</p>
+                  <div class="field"><label>Kod 2FA</label><input name="twofa" [(ngModel)]="twoFaCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required autofocus /></div>
+                  <button class="btn-lg" type="submit" [disabled]="loading || twoFaCode.trim().length < 6">Potwierdź</button>
+                  <button type="button" class="btn-lg ghost" (click)="cancelTwoFactor()">Wróć</button>
+                  @if (error) { <p class="error">{{ error }}</p> }
+                </form>
+              } @else {
+                <form class="auth-card" (ngSubmit)="login()">
+                  <h2>Zaloguj się do panelu</h2>
+                  <div class="field"><label>Login (e-mail)</label><input name="email" [(ngModel)]="email" type="email" required /></div>
+                  <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                  <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
+                  @if (error) { <p class="error">{{ error }}</p> }
+                  <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
+                </form>
+              }
             }
             @case ('store') {
               <form class="auth-card" (ngSubmit)="registerStore()">
@@ -199,6 +210,8 @@ export class App {
   confirmPassword = '';
   driverDone = false;
   driverMsg = '';
+  twoFaToken = '';
+  twoFaCode = '';
 
   stores: StoreDto[] = [];
   selectedStoreId = '';
@@ -218,16 +231,30 @@ export class App {
     this.loading = true;
     this.error = '';
     this.api.login(this.email, this.password).subscribe({
-      next: async () => { this.loading = false; await this.router.navigateByUrl(this.defaultRoute()); this.loadStores(); },
+      next: async (r) => {
+        if (isTwoFactorChallenge(r)) { this.twoFaToken = r.twoFactorToken; this.twoFaCode = ''; this.loading = false; return; }
+        this.loading = false; await this.router.navigateByUrl(this.defaultRoute()); this.loadStores();
+      },
       error: () => { this.error = 'Nieprawidłowy e-mail lub hasło.'; this.loading = false; },
     });
   }
+
+  completeTwoFactor() {
+    this.loading = true; this.error = '';
+    this.api.completeTwoFactor(this.twoFaToken, this.twoFaCode.trim(), this.email).subscribe({
+      next: async () => { this.loading = false; this.twoFaToken = ''; await this.router.navigateByUrl(this.defaultRoute()); this.loadStores(); },
+      error: e => { this.error = e?.error?.detail ?? 'Nieprawidłowy kod — spróbuj ponownie.'; this.loading = false; },
+    });
+  }
+
+  cancelTwoFactor() { this.twoFaToken = ''; this.twoFaCode = ''; this.error = ''; }
 
   setMode(m: 'login' | 'store' | 'driver') {
     this.authMode = m;
     this.error = '';
     this.driverDone = false;
     this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = ''; this.nip = ''; this.confirmPassword = '';
+    this.twoFaToken = ''; this.twoFaCode = '';
     if (m === 'login') { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
     else { this.email = ''; this.password = ''; }
   }

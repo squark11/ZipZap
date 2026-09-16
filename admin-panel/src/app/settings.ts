@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from './api';
 import { ConfigModalComponent } from './config-modal';
+import { AccountSecurityComponent } from './account-security';
 
 export interface ConfigStatus {
   environment: string;
@@ -39,7 +40,7 @@ export interface PlatformIntegrations {
 
 @Component({
   selector: 'app-settings',
-  imports: [CommonModule, FormsModule, ConfigModalComponent],
+  imports: [CommonModule, FormsModule, ConfigModalComponent, AccountSecurityComponent],
   template: `
   <div class="page-head">
     <h1>Konfiguracja</h1>
@@ -47,6 +48,12 @@ export interface PlatformIntegrations {
   </div>
 
   <div class="tiles">
+    <button class="tile" (click)="open('account')">
+      <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.4"/></svg></span>
+      <span class="tbody"><span class="ttl">Konto i bezpieczeństwo</span><span class="tst">hasło i weryfikacja 2FA</span></span>
+      <span class="tcta">Zarządzaj →</span>
+    </button>
+
     <button class="tile" (click)="open('smtp')">
       <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span>
       <span class="tbody"><span class="ttl">Poczta e-mail (SMTP)</span><span class="tst" [class.on]="smtpConfigured">{{ smtpConfigured ? '✓ skonfigurowane' : '— nieustawione' }}</span></span>
@@ -77,6 +84,9 @@ export interface PlatformIntegrations {
       <span class="tcta">Zobacz →</span>
     </button>
   </div>
+
+  <!-- ===== Konto i bezpieczeństwo ===== -->
+  <app-account-security [open]="panel === 'account'" (close)="close()" (passwordChanged)="onPasswordChanged()"></app-account-security>
 
   <!-- ===== SMTP ===== -->
   <app-config-modal [open]="panel === 'smtp'" title="Poczta e-mail (SMTP)"
@@ -245,6 +255,9 @@ export class SettingsComponent implements OnInit {
 
   open(p: string) { if (p === 'integrations') this.tab = 'Google'; this.panel = p; }
   close() { this.panel = null; }
+
+  /// Po zmianie hasła backend unieważnia sesje — wylogowujemy i wracamy do logowania.
+  onPasswordChanged() { this.panel = null; this.api.logout(); }
 
   ngOnInit() { this.load(); }
 
