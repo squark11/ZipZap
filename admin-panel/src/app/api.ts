@@ -5,7 +5,7 @@ import { Observable, tap } from 'rxjs';
 export interface StoreDto {
   id: string; name: string; city: string; slug: string; commissionRate: number; isActive: boolean;
   status: string; minimumOrderValue: number; isAcceptingOrders: boolean;
-  description?: string; address?: string; phone?: string;
+  description?: string; address?: string; phone?: string; nip?: string;
   logoUrl?: string; latitude?: number; longitude?: number;
 }
 export interface CategoryDto { id: string; storeId: string; name: string; sortOrder: number; }
