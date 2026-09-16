@@ -20,7 +20,7 @@ class _FakeOrderingRepo extends OrderingRepository {
       Cart(id: 'c1', storeId: storeId, cartToken: 't', status: 'Active', subtotal: 0, items: const []);
 
   @override
-  Future<Cart> addItem(String cartId, String token, String productId, int quantity) async {
+  Future<Cart> addItem(String cartId, String token, String productId, int quantity, {String? unit}) async {
     _items.add(productId);
     final snapshot = List<String>.from(_items);
     final delayMs = _addCall == 0 ? 60 : 10;
@@ -37,7 +37,7 @@ class _FakeOrderingRepo extends OrderingRepository {
         subtotal: items.length.toDouble(),
         items: items
             .map((p) => CartItem(
-                productId: p, productName: p, unitPrice: 1, quantity: 1, lineTotal: 1))
+                productId: p, productName: p, unitPrice: 1, unit: 'szt', quantity: 1, lineTotal: 1))
             .toList(),
       );
 }
