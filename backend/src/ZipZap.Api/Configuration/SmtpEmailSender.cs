@@ -12,20 +12,24 @@ namespace ZipZap.Api.Configuration;
 public sealed class SmtpEmailSender : IEmailSender
 {
     private readonly PlatformIntegrationsStore _store;
+    private readonly IConfiguration _config;
     private readonly ILogger<SmtpEmailSender> _logger;
 
-    public SmtpEmailSender(PlatformIntegrationsStore store, ILogger<SmtpEmailSender> logger)
+    public SmtpEmailSender(PlatformIntegrationsStore store, IConfiguration config, ILogger<SmtpEmailSender> logger)
     {
         _store = store;
+        _config = config;
         _logger = logger;
     }
 
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
+        // Priorytet: konfiguracja z panelu; gdy pusta — z env (Email:Smtp:*).
         var cfg = await _store.GetSmtpAsync(ct);
+        if (!cfg.Enabled) cfg = SmtpFromEnv();
         if (!cfg.Enabled)
         {
-            _logger.LogInformation("[EMAIL:mock] SMTP nieustawiony w panelu. to={To} subject={Subject}",
+            _logger.LogInformation("[EMAIL:mock] SMTP nieustawiony (panel ani env). to={To} subject={Subject}",
                 message.To, message.Subject);
             return;
         }
@@ -45,5 +49,17 @@ public sealed class SmtpEmailSender : IEmailSender
         await client.SendAsync(msg, ct);
         await client.DisconnectAsync(true, ct);
         _logger.LogInformation("[EMAIL] wysłano to={To} subject={Subject}", message.To, message.Subject);
+    }
+
+    /// <summary>Konfiguracja SMTP z env (Email:Smtp:*), gdy panel nieustawiony. Port domyślny 465, SSL domyślnie on.</summary>
+    private SmtpConfig SmtpFromEnv()
+    {
+        var host = _config["Email:Smtp:Host"];
+        if (string.IsNullOrWhiteSpace(host)) return new SmtpConfig(null, 0, true, null, null, null, null);
+        var port = int.TryParse(_config["Email:Smtp:Port"], out var p) && p > 0 ? p : 465;
+        var useSsl = !bool.TryParse(_config["Email:Smtp:UseSsl"], out var s) || s;
+        var from = _config["Email:Smtp:FromEmail"] ?? _config["Email:Smtp:Username"];
+        return new SmtpConfig(host, port, useSsl,
+            _config["Email:Smtp:Username"], _config["Email:Smtp:Password"], from, _config["Email:Smtp:FromName"]);
     }
 }
