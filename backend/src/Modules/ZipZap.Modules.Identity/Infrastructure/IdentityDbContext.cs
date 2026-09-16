@@ -34,6 +34,8 @@ public sealed class IdentityDbContext : DbContext, IOutboxDbContext
             e.Property(u => u.IsActive);
             e.Property(u => u.IsEmailVerified);
             e.Property(u => u.CreatedAtUtc);
+            e.Property(u => u.TwoFactorSecret).HasMaxLength(64);
+            e.Property(u => u.TwoFactorEnabled);
             e.Ignore(u => u.DomainEvents);
 
             e.HasMany(u => u.Roles).WithOne().HasForeignKey(r => r.UserId);

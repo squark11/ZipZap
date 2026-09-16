@@ -25,7 +25,19 @@ public sealed record CreateUserRequest(
 
 public sealed record AssignRoleRequest(string Role, Guid? StoreId = null);
 
+public sealed record TwoFactorLoginRequest(string TwoFactorToken, string Code);
+
+public sealed record TwoFactorCodeRequest(string Code);
+
 public sealed record UserResponse(Guid Id, string Email, string FullName, string[] Roles, Guid[] StoreIds);
 
 public sealed record AuthResponse(
     string AccessToken, DateTime ExpiresAtUtc, string RefreshToken, UserResponse User);
+
+/// <summary>Odpowiedź logowania, gdy konto ma włączone 2FA — klient dokańcza przez /login/2fa.</summary>
+public sealed record TwoFactorRequiredResponse(string TwoFactorToken)
+{
+    public bool TwoFactorRequired => true;
+}
+
+public sealed record TwoFactorSetupResponse(string Secret, string OtpauthUri);

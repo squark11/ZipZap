@@ -15,6 +15,11 @@ public sealed class User : AggregateRoot
     public bool IsEmailVerified { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    /// <summary>Sekret TOTP (Base32) uwierzytelniania dwuskładnikowego. Null = 2FA nieskonfigurowane.</summary>
+    public string? TwoFactorSecret { get; private set; }
+    /// <summary>Czy 2FA jest aktywne (sekret potwierdzony kodem z aplikacji authenticator).</summary>
+    public bool TwoFactorEnabled { get; private set; }
+
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
 
     private User() { } // EF
@@ -52,6 +57,28 @@ public sealed class User : AggregateRoot
     public bool HasRole(Role role) => _roles.Any(r => r.Role == role);
 
     public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
+
+    /// <summary>Zapisuje (nowy) sekret TOTP — do czasu potwierdzenia kodem 2FA pozostaje wyłączone.</summary>
+    public void SetTwoFactorSecret(string secret)
+    {
+        TwoFactorSecret = secret;
+        TwoFactorEnabled = false;
+    }
+
+    /// <summary>Aktywuje 2FA po pomyślnej weryfikacji kodu (wymaga wcześniej ustawionego sekretu).</summary>
+    public void EnableTwoFactor()
+    {
+        if (string.IsNullOrEmpty(TwoFactorSecret))
+            throw new InvalidOperationException("Brak sekretu TOTP — najpierw rozpocznij konfigurację 2FA.");
+        TwoFactorEnabled = true;
+    }
+
+    /// <summary>Wyłącza 2FA i usuwa sekret.</summary>
+    public void DisableTwoFactor()
+    {
+        TwoFactorEnabled = false;
+        TwoFactorSecret = null;
+    }
 
     public void MarkEmailVerified() => IsEmailVerified = true;
 

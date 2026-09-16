@@ -23,6 +23,10 @@ public sealed class IdentityService
     private readonly IEmailSender _email;
     private readonly IdentityOptions _options;
     private readonly IGoogleTokenValidator _google;
+    private readonly ITotpService _totp;
+
+    private const string TotpIssuer = "Dowozka.pl";
+    private const int TwoFactorChallengeMinutes = 10;
 
     public IdentityService(
         IdentityDbContext db,
@@ -31,7 +35,8 @@ public sealed class IdentityService
         IIntegrationEventTypeRegistry eventRegistry,
         IEmailSender email,
         IOptions<IdentityOptions> options,
-        IGoogleTokenValidator google)
+        IGoogleTokenValidator google,
+        ITotpService totp)
     {
         _db = db;
         _hasher = hasher;
@@ -40,6 +45,7 @@ public sealed class IdentityService
         _email = email;
         _options = options.Value;
         _google = google;
+        _totp = totp;
     }
 
     public async Task<Result<AuthResult>> RegisterCustomerAsync(
@@ -128,9 +134,12 @@ public sealed class IdentityService
     }
 
     private string CreateToken(Guid userId, UserTokenType type, int hours)
+        => CreateToken(userId, type, TimeSpan.FromHours(hours));
+
+    private string CreateToken(Guid userId, UserTokenType type, TimeSpan lifetime)
     {
         var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        _db.UserTokens.Add(new UserToken(userId, type, _tokens.HashRefreshToken(raw), DateTime.UtcNow.AddHours(hours)));
+        _db.UserTokens.Add(new UserToken(userId, type, _tokens.HashRefreshToken(raw), DateTime.UtcNow.Add(lifetime)));
         return raw;
     }
 
@@ -149,7 +158,7 @@ public sealed class IdentityService
             $"Witaj w ZipZap! Potwierdź adres e-mail: {link}\nLink wygasa za {_options.EmailVerificationHours} h."), ct);
     }
 
-    public async Task<Result<AuthResult>> LoginAsync(string email, string password, CancellationToken ct)
+    public async Task<Result<LoginResult>> LoginAsync(string email, string password, CancellationToken ct)
     {
         var normalized = User.Normalize(email);
         var user = await _db.Users
@@ -159,9 +168,91 @@ public sealed class IdentityService
         if (user is null || !user.IsActive || !_hasher.Verify(password, user.PasswordHash))
             return Error.Unauthorized("Nieprawidłowy e-mail lub hasło.");
 
+        // 2FA włączone → nie wydajemy tokenów; zwracamy krótkotrwałe wyzwanie do dokończenia kodem.
+        if (user.TwoFactorEnabled)
+        {
+            var raw = CreateToken(user.Id, UserTokenType.TwoFactorChallenge,
+                TimeSpan.FromMinutes(TwoFactorChallengeMinutes));
+            await _db.SaveChangesAsync(ct);
+            return LoginResult.Challenge(raw);
+        }
+
+        var auth = IssueTokens(user);
+        await _db.SaveChangesAsync(ct);
+        return LoginResult.Authenticated(auth);
+    }
+
+    /// <summary>Dokończenie logowania 2FA: weryfikuje wyzwanie + kod TOTP, wydaje tokeny.</summary>
+    public async Task<Result<AuthResult>> CompleteTwoFactorLoginAsync(
+        string challengeToken, string code, CancellationToken ct)
+    {
+        var token = await FindValidTokenAsync(challengeToken, UserTokenType.TwoFactorChallenge, ct);
+        if (token is null) return Error.Unauthorized("Nieprawidłowe lub wygasłe wyzwanie 2FA — zaloguj się ponownie.");
+
+        var user = await _db.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == token.UserId, ct);
+        if (user is null || !user.IsActive) return Error.Unauthorized("Konto nieaktywne.");
+        if (!user.TwoFactorEnabled || user.TwoFactorSecret is null)
+            return Error.Unauthorized("2FA nie jest włączone dla tego konta.");
+
+        if (!_totp.Verify(user.TwoFactorSecret, code))
+            return Error.Unauthorized("Nieprawidłowy kod z aplikacji authenticator.");
+
+        token.Use();
         var auth = IssueTokens(user);
         await _db.SaveChangesAsync(ct);
         return auth;
+    }
+
+    /// <summary>Rozpoczyna konfigurację 2FA: generuje sekret (jeszcze nieaktywny) i zwraca dane do QR.</summary>
+    public async Task<Result<TwoFactorSetupDto>> BeginTwoFactorSetupAsync(Guid userId, CancellationToken ct)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Error.NotFound("Użytkownik nie istnieje.");
+        if (user.TwoFactorEnabled) return Error.Conflict("2FA jest już włączone. Najpierw je wyłącz, aby zmienić.");
+
+        var secret = _totp.GenerateSecret();
+        user.SetTwoFactorSecret(secret);
+        await _db.SaveChangesAsync(ct);
+
+        return new TwoFactorSetupDto(secret, _totp.BuildOtpAuthUri(secret, user.Email, TotpIssuer));
+    }
+
+    /// <summary>Aktywuje 2FA po potwierdzeniu kodem z aplikacji authenticator.</summary>
+    public async Task<Result> EnableTwoFactorAsync(Guid userId, string code, CancellationToken ct)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        if (user.TwoFactorEnabled) return Result.Success();
+        if (user.TwoFactorSecret is null)
+            return Result.Failure(Error.Validation("Najpierw rozpocznij konfigurację 2FA."));
+        if (!_totp.Verify(user.TwoFactorSecret, code))
+            return Result.Failure(Error.Validation("Nieprawidłowy kod — sprawdź aplikację authenticator i spróbuj ponownie."));
+
+        user.EnableTwoFactor();
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    /// <summary>Wyłącza 2FA po potwierdzeniu kodem (potwierdzenie posiadania urządzenia).</summary>
+    public async Task<Result> DisableTwoFactorAsync(Guid userId, string code, CancellationToken ct)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        if (!user.TwoFactorEnabled) return Result.Success();
+        if (user.TwoFactorSecret is null || !_totp.Verify(user.TwoFactorSecret, code))
+            return Result.Failure(Error.Unauthorized("Nieprawidłowy kod — nie można wyłączyć 2FA."));
+
+        user.DisableTwoFactor();
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    /// <summary>Status 2FA konta (do panelu).</summary>
+    public async Task<Result<bool>> TwoFactorStatusAsync(Guid userId, CancellationToken ct)
+    {
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Error.NotFound("Użytkownik nie istnieje.");
+        return user.TwoFactorEnabled;
     }
 
     /// <summary>Logowanie Google: weryfikuje token ID, tworzy/łączy konto (e-mail potwierdzony), wydaje JWT.</summary>

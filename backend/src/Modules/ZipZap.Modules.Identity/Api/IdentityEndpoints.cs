@@ -27,8 +27,19 @@ public static class IdentityEndpoints
         group.MapPost("/login", async (LoginRequest req, IdentityService svc, CancellationToken ct) =>
         {
             var result = await svc.LoginAsync(req.Email, req.Password, ct);
-            return result.IsSuccess ? Results.Ok(ToResponse(result.Value)) : Problem(result.Error);
+            if (!result.IsSuccess) return Problem(result.Error);
+            var login = result.Value;
+            return login.TwoFactorRequired
+                ? Results.Ok(new TwoFactorRequiredResponse(login.TwoFactorToken!))
+                : Results.Ok(ToResponse(login.Auth!));
         });
+
+        group.MapPost("/login/2fa", async (TwoFactorLoginRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.CompleteTwoFactorLoginAsync(req.TwoFactorToken, req.Code, ct);
+            return result.IsSuccess ? Results.Ok(ToResponse(result.Value)) : Problem(result.Error);
+        })
+        .WithSummary("Dokończenie logowania kodem 2FA (po odpowiedzi twoFactorRequired z /login).");
 
         group.MapPost("/refresh", async (RefreshRequest req, IdentityService svc, CancellationToken ct) =>
         {
@@ -109,6 +120,46 @@ public static class IdentityEndpoints
         })
         .RequireAuthorization()
         .WithSummary("Zmiana hasła (unieważnia wszystkie sesje).");
+
+        group.MapGet("/2fa/status", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.TwoFactorStatusAsync(userId, ct);
+            return result.IsSuccess ? Results.Ok(new { enabled = result.Value }) : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Status 2FA bieżącego konta.");
+
+        group.MapPost("/2fa/setup", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.BeginTwoFactorSetupAsync(userId, ct);
+            return result.IsSuccess
+                ? Results.Ok(new TwoFactorSetupResponse(result.Value.Secret, result.Value.OtpauthUri))
+                : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Rozpoczyna konfigurację 2FA — zwraca sekret i URI otpauth do QR.");
+
+        group.MapPost("/2fa/enable", async (TwoFactorCodeRequest req, ClaimsPrincipal principal, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.EnableTwoFactorAsync(userId, req.Code, ct);
+            if (result.IsSuccess) await audit.LogAsync("user.2fa.enabled", "user", userId.ToString(), ct: ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Aktywuje 2FA po potwierdzeniu kodem z authenticatora.");
+
+        group.MapPost("/2fa/disable", async (TwoFactorCodeRequest req, ClaimsPrincipal principal, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
+            var result = await svc.DisableTwoFactorAsync(userId, req.Code, ct);
+            if (result.IsSuccess) await audit.LogAsync("user.2fa.disabled", "user", userId.ToString(), ct: ct);
+            return result.IsSuccess ? Ok() : Problem(result.Error);
+        })
+        .RequireAuthorization()
+        .WithSummary("Wyłącza 2FA po potwierdzeniu kodem.");
 
         group.MapPost("/admin/users/{userId:guid}/active", async (Guid userId, SetActiveRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
         {

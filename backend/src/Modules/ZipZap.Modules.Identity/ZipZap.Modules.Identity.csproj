@@ -15,4 +15,8 @@
     <ProjectReference Include="..\..\ZipZap.Contracts\ZipZap.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZipZap.Modules.Identity.Tests" />
+  </ItemGroup>
+
 </Project>

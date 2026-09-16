@@ -24,7 +24,8 @@ public class GoogleLoginTests
             new IntegrationEventTypeRegistry(),
             new FakeEmailSender(),
             Options.Create(new IdentityOptions()),
-            new FakeGoogleTokenValidator(googlePayload));
+            new FakeGoogleTokenValidator(googlePayload),
+            new TotpService());
 
     [Fact]
     public async Task Unknown_google_email_creates_verified_customer()

@@ -30,6 +30,7 @@ public static class IdentityModule
         services.Configure<GoogleOptions>(config.GetSection(GoogleOptions.SectionName));
         services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<ITotpService, TotpService>();
         services.AddSingleton<IEmailSender, LoggingEmailSender>();
         // Domyślnie Client ID z env; host nadpisuje providerem czytającym magazyn panelu.
         services.AddSingleton<IGoogleClientIdProvider, OptionsGoogleClientIdProvider>();

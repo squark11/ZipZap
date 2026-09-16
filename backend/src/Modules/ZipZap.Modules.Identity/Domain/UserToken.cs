@@ -1,6 +1,6 @@
 namespace ZipZap.Modules.Identity.Domain;
 
-public enum UserTokenType { EmailVerification, PasswordReset }
+public enum UserTokenType { EmailVerification, PasswordReset, TwoFactorChallenge }
 
 /// <summary>
 /// Jednorazowy token (weryfikacja e-mail / reset hasła) przechowywany jako HASH,

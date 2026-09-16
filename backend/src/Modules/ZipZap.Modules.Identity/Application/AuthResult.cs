@@ -19,6 +19,20 @@ public sealed record AuthResult(
     Guid RefreshTokenId,
     UserDto User);
 
+/// <summary>
+/// Wynik logowania: albo pełne uwierzytelnienie (tokeny), albo wyzwanie 2FA —
+/// klient musi dokończyć logowanie kodem z aplikacji authenticator.
+/// </summary>
+public sealed record LoginResult(AuthResult? Auth, string? TwoFactorToken)
+{
+    public bool TwoFactorRequired => Auth is null;
+    public static LoginResult Authenticated(AuthResult a) => new(a, null);
+    public static LoginResult Challenge(string token) => new(null, token);
+}
+
+/// <summary>Dane do skonfigurowania 2FA — sekret (wpis ręczny) i URI otpauth (kod QR).</summary>
+public sealed record TwoFactorSetupDto(string Secret, string OtpauthUri);
+
 /// <summary>Członek zespołu sklepu (pracownik/kierowca) — do panelu admina.</summary>
 public sealed record TeamMemberDto(
     Guid Id, string Email, string FullName, string? Phone,
