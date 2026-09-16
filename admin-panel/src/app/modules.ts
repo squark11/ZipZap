@@ -13,7 +13,7 @@ export type PanelRole = 'Admin' | 'StoreEmployee' | 'Driver' | 'Customer';
 export type PanelTab =
   | 'onboarding' | 'dashboard' | 'orders' | 'deliveries' | 'catalog'
   | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings'
-  | 'admin-home' | 'users' | 'invoices';
+  | 'admin-home' | 'users' | 'invoices' | 'support';
 
 export interface PanelModule {
   id: PanelTab;
@@ -33,6 +33,7 @@ export const PANEL_MODULES: readonly PanelModule[] = [
   { id: 'users',        label: 'Użytkownicy',  icon: 'users',        roles: ['Admin'],            storeScoped: false },
   { id: 'invoices',     label: 'Faktury',      icon: 'finance',      roles: ['Admin'],            storeScoped: false },
   { id: 'drivers',      label: 'Dostawcy',     icon: 'drivers',      roles: ['Admin'],            storeScoped: false },
+  { id: 'support',      label: 'Wsparcie',     icon: 'support',      roles: ['Admin'],            storeScoped: false },
   { id: 'feedback',     label: 'Uwagi',        icon: 'feedback',     roles: ['Admin'],            storeScoped: false },
   { id: 'settings',     label: 'Konfiguracja', icon: 'settings',     roles: ['Admin'],            storeScoped: false },
 

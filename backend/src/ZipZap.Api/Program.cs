@@ -725,6 +725,26 @@ app.MapGet("/api/admin/invoices",
         unitFee = fee, grandTotal = grand, stores = rows });
 }).RequireAuthorization("Admin").WithTags("Admin");
 
+// Kod wsparcia sklepu — właściciel/Admin (sklep podaje go administratorowi przy prośbie o pomoc).
+app.MapGet("/api/stores/{storeId:guid}/support-code",
+    async (Guid storeId, CatalogService catalog, CancellationToken ct) =>
+{
+    var res = await catalog.GetOrCreateSupportCodeAsync(storeId, ct);
+    return res.IsSuccess
+        ? Results.Ok(new { supportCode = res.Value })
+        : Results.Problem(detail: res.Error.Message, statusCode: res.Error.ToStatusCode(), title: res.Error.Code);
+}).RequireAuthorization("StoreEmployee").WithTags("Stores");
+
+// Administrator serwisu: wgląd w sklep po kodzie wsparcia (bez kodu — brak wglądu w dane sklepu).
+app.MapGet("/api/admin/support",
+    async (string? code, CatalogService catalog, CancellationToken ct) =>
+{
+    var res = await catalog.FindBySupportCodeAsync(code ?? string.Empty, ct);
+    return res.IsSuccess
+        ? Results.Ok(res.Value)
+        : Results.Problem(detail: res.Error.Message, statusCode: res.Error.ToStatusCode(), title: res.Error.Code);
+}).RequireAuthorization("Admin").WithTags("Admin");
+
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
 app.MapCatalogEndpoints();

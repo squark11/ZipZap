@@ -88,6 +88,40 @@ public sealed class CatalogService
         return store is null ? Error.NotFound("Sklep nie istnieje.") : StoreDto.From(store);
     }
 
+    /// <summary>Kod wsparcia sklepu (właściciel/Admin); generuje unikalny przy pierwszym pobraniu.</summary>
+    public async Task<Result<string>> GetOrCreateSupportCodeAsync(Guid storeId, CancellationToken ct)
+    {
+        var guard = EnsureCanManageStore(storeId);
+        if (guard.IsFailure) return guard.Error;
+        var store = await _db.Stores.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == storeId, ct);
+        if (store is null) return Error.NotFound("Sklep nie istnieje.");
+        if (string.IsNullOrEmpty(store.SupportCode))
+        {
+            string code;
+            do { code = GenerateSupportCode(); }
+            while (await _db.Stores.IgnoreQueryFilters().AnyAsync(s => s.SupportCode == code, ct));
+            store.SetSupportCode(code);
+            await _db.SaveChangesAsync(ct);
+        }
+        return store.SupportCode!;
+    }
+
+    /// <summary>Administrator serwisu: znajduje sklep po kodzie wsparcia (wgląd tylko z kodem).</summary>
+    public async Task<Result<StoreDto>> FindBySupportCodeAsync(string code, CancellationToken ct)
+    {
+        var norm = (code ?? string.Empty).Trim().ToUpperInvariant();
+        if (norm.Length < 4) return Error.Validation("Podaj kod wsparcia.");
+        var store = await _db.Stores.AsNoTracking().IgnoreQueryFilters().FirstOrDefaultAsync(s => s.SupportCode == norm, ct);
+        return store is null ? Error.NotFound("Nie znaleziono sklepu dla tego kodu.") : StoreDto.From(store);
+    }
+
+    private static string GenerateSupportCode()
+    {
+        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // bez mylących 0/O/1/I
+        var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(6);
+        return new string(bytes.Select(b => alphabet[b % alphabet.Length]).ToArray());
+    }
+
     public async Task<IReadOnlyList<CategoryDto>> ListCategoriesAsync(Guid storeId, CancellationToken ct)
         => await _db.Categories.AsNoTracking().IgnoreQueryFilters()
             .Where(c => c.StoreId == storeId)

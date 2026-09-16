@@ -38,6 +38,8 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.Property(s => s.Address).HasMaxLength(300);
             e.Property(s => s.Phone).HasMaxLength(32);
             e.Property(s => s.Nip).HasMaxLength(15);
+            e.Property(s => s.SupportCode).HasMaxLength(12);
+            e.HasIndex(s => s.SupportCode).IsUnique().HasFilter("\"SupportCode\" IS NOT NULL");
             e.Property(s => s.LogoUrl).HasMaxLength(500);
             e.Property(s => s.Latitude);
             e.Property(s => s.Longitude);

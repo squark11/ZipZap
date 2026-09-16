@@ -7,6 +7,7 @@ const loaders: Record<string, () => Promise<any>> = {
   'admin-home': () => import('./admin-home').then(m => m.AdminHomeComponent),
   users:        () => import('./users').then(m => m.UsersComponent),
   invoices:     () => import('./invoices').then(m => m.InvoicesComponent),
+  support:      () => import('./support').then(m => m.SupportComponent),
   onboarding:   () => import('./onboarding').then(m => m.OnboardingComponent),
   'driver-home': () => import('./driver-home').then(m => m.DriverHomeComponent),
   dashboard:    () => import('./dashboard').then(m => m.DashboardComponent),

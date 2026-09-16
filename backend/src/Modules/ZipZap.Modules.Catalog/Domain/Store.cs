@@ -38,6 +38,9 @@ public sealed class Store : AggregateRoot
     /// <summary>Status operacyjny (przyjmowanie zamówień).</summary>
     public StoreStatus Status { get; private set; }
 
+    /// <summary>Kod wsparcia — sklep podaje go administratorowi serwisu przy prośbie o pomoc (wgląd tylko z kodem).</summary>
+    public string? SupportCode { get; private set; }
+
     public DateTime CreatedAtUtc { get; private set; }
 
     /// <summary>Sklep przyjmuje zamówienia tylko gdy aktywny i otwarty.</summary>
@@ -76,6 +79,8 @@ public sealed class Store : AggregateRoot
     }
 
     public void SetNip(string? nip) => Nip = NormalizeNip(nip);
+
+    public void SetSupportCode(string code) => SupportCode = code;
 
     public void UpdateCommissionRate(decimal rate) => CommissionRate = rate;
     public void UpdateMinimumOrderValue(decimal value) => MinimumOrderValue = value;

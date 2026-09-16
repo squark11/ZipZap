@@ -23,6 +23,9 @@ interface Slot {
     .lbl { display:block; font-size:13px; font-weight:600; color:#3A3F4B; margin:0 0 6px; }
     .ok-msg { color:#128040; font-size:13px; font-weight:600; margin-right:6px; }
     h3 { color:#3A3F4B; }
+    .support { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .support .code { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; letter-spacing:.14em;
+                     color:#0F2A2A; background:#EAF9F9; border:1px solid #BFECEC; border-radius:10px; padding:8px 16px; }
   `],
   template: `
   <div class="page-head">
@@ -30,6 +33,19 @@ interface Slot {
     <div class="controls">
       @if (ready?.readyToSell) { <span class="ok-msg">✓ Gotowy do sprzedaży</span> }
       <button class="btn ghost sm" (click)="load()">Odśwież</button>
+    </div>
+  </div>
+
+  <div class="card pad" style="margin-bottom:16px">
+    <h2 style="font-size:16px;margin:0 0 4px">Kod wsparcia</h2>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Podaj ten kod, gdy prosisz administratora o pomoc — dopiero on daje mu wgląd w Twój sklep.</p>
+    <div class="support">
+      @if (supportCode) {
+        <span class="code">{{ supportCode }}</span>
+        <button class="btn ghost sm" (click)="copyCode()">{{ copied ? '✓ Skopiowano' : 'Kopiuj' }}</button>
+      } @else {
+        <span class="muted">Ładowanie…</span>
+      }
     </div>
   </div>
 
@@ -131,6 +147,8 @@ export class OnboardingComponent {
   ready: Readiness | null = null;
   zones: Zone[] = [];
   slots: Slot[] = [];
+  supportCode = '';
+  copied = false;
   publishing = false;
   savingP = false;
   savedP = false;
@@ -151,6 +169,15 @@ export class OnboardingComponent {
     });
     this.api.getPublic<Zone[]>(`/ordering/stores/${id}/zones`).subscribe(z => this.zones = z);
     this.api.getPublic<Slot[]>(`/ordering/stores/${id}/slots`).subscribe(s => this.slots = s);
+    this.api.get<{ supportCode: string }>(`/stores/${id}/support-code`).subscribe({
+      next: r => this.supportCode = r.supportCode, error: () => this.supportCode = '',
+    });
+  }
+
+  copyCode() {
+    navigator.clipboard?.writeText(this.supportCode).then(() => {
+      this.copied = true; setTimeout(() => this.copied = false, 1500);
+    }).catch(() => {});
   }
 
   saveProfile() {
