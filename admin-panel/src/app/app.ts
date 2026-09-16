@@ -153,15 +153,17 @@ import { PANEL_MODULES } from './modules';
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
             <input placeholder="Szukaj zamówień (numer, klient)…" [ngModel]="search" (ngModelChange)="onSearchChange($event)" />
           </div>
-          <div class="store-select">
-            <select [ngModel]="selectedStoreId" (ngModelChange)="onStoreChange($event)">
-              @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
-            </select>
-            @if (api.isAdmin() || api.storeIds().length > 0) {
-              <button class="btn ghost sm" style="margin-left:8px" [disabled]="addingLocation" (click)="addLocation()"
-                title="Dodaj kolejną lokalizację swojego sklepu">+ Lokalizacja</button>
-            }
-          </div>
+          @if (!api.isAdmin() || api.isStoreAdmin()) {
+            <div class="store-select">
+              <select [ngModel]="selectedStoreId" (ngModelChange)="onStoreChange($event)">
+                @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
+              </select>
+              @if (api.storeIds().length > 0) {
+                <button class="btn ghost sm" style="margin-left:8px" [disabled]="addingLocation" (click)="addLocation()"
+                  title="Dodaj kolejną lokalizację swojego sklepu">+ Lokalizacja</button>
+              }
+            </div>
+          }
           <div class="userchip">
             <div class="avatar">{{ initials }}</div>
             <div class="who"><b>{{ api.roleLabel() }}</b><span>{{ api.userEmail() }}</span></div>

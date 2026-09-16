@@ -687,6 +687,44 @@ app.MapGet("/api/payments/stores/{storeId:guid}/invoice",
     });
 }).RequireAuthorization("StoreEmployee").WithTags("Payments");
 
+// Administrator serwisu: faktury wszystkich sklepów za miesiąc (nadzór rozliczeń ZipZap→sklep).
+app.MapGet("/api/admin/invoices",
+    async (string? month, CatalogService catalog, PaymentsDbContext db,
+           StoreBillingStore billing, PlatformSettingsStore platform, CancellationToken ct) =>
+{
+    var now = DateTime.UtcNow;
+    DateTime start = (!string.IsNullOrWhiteSpace(month) && DateTime.TryParse($"{month}-01", out var m))
+        ? new DateTime(m.Year, m.Month, 1, 0, 0, 0, DateTimeKind.Utc)
+        : new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+    var end = start.AddMonths(1);
+
+    var settings = await platform.GetAsync(ct);
+    var fee = settings.ZipZapDeliveryFee;
+    var stores = await catalog.ListStoresAsync(false, null, null, ct);
+
+    var ledger = await db.CommissionLedger.AsNoTracking()
+        .Where(l => l.CreatedAtUtc >= start && l.CreatedAtUtc < end)
+        .GroupBy(l => l.StoreId)
+        .Select(g => new { StoreId = g.Key, Count = g.Count(), Sum = g.Sum(x => x.Amount) })
+        .ToListAsync(ct);
+    var byStore = ledger.ToDictionary(x => x.StoreId, x => (x.Count, x.Sum));
+
+    var rows = new List<object>();
+    decimal grand = 0;
+    foreach (var s in stores)
+    {
+        var plan = (await billing.GetAsync(s.Id, ct)).Plan;
+        var isA = plan == "A";
+        byStore.TryGetValue(s.Id, out var agg);
+        var total = isA ? agg.Count * fee : agg.Sum;
+        grand += total;
+        rows.Add(new { storeId = s.Id, storeName = s.Name, city = s.City, isActive = s.IsActive,
+            plan, basis = isA ? "delivery" : "commission", orderCount = agg.Count, total });
+    }
+    return Results.Ok(new { period = start.ToString("yyyy-MM"), currency = settings.Currency,
+        unitFee = fee, grandTotal = grand, stores = rows });
+}).RequireAuthorization("Admin").WithTags("Admin");
+
 // --- Endpointy modułów ---
 app.MapIdentityEndpoints();
 app.MapCatalogEndpoints();
