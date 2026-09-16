@@ -322,6 +322,19 @@ public sealed class IdentityService
         return Result.Success();
     }
 
+    /// <summary>Administrator serwisu: nadaje rolę istniejącemu użytkownikowi (i aktywuje konto).</summary>
+    public async Task<Result> AssignRoleAsync(Guid userId, string roleName, Guid? storeId, CancellationToken ct)
+    {
+        if (!Enum.TryParse<Role>(roleName, ignoreCase: true, out var role))
+            return Result.Failure(Error.Validation($"Nieznana rola '{roleName}'."));
+        var user = await _db.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        user.AssignRole(role, storeId);
+        if (!user.IsActive) user.Activate();
+        await _db.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     /// <summary>Zespół sklepu: pracownicy i kierowcy przypisani do danego sklepu.</summary>
     public async Task<IReadOnlyList<TeamMemberDto>> ListStoreTeamAsync(Guid storeId, CancellationToken ct)
     {

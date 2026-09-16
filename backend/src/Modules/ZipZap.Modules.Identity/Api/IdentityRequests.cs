@@ -23,6 +23,8 @@ public sealed record ResetPasswordRequest(string Token, string NewPassword);
 public sealed record CreateUserRequest(
     string Email, string Password, string FullName, string? Phone, string Role, Guid? StoreId);
 
+public sealed record AssignRoleRequest(string Role, Guid? StoreId = null);
+
 public sealed record UserResponse(Guid Id, string Email, string FullName, string[] Roles, Guid[] StoreIds);
 
 public sealed record AuthResponse(

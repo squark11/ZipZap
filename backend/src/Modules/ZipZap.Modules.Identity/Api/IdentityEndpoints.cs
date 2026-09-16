@@ -69,6 +69,16 @@ public static class IdentityEndpoints
         .RequireAuthorization("Admin")
         .WithSummary("Utworzenie użytkownika z rolą (tylko ADMIN).");
 
+        group.MapPost("/admin/users/{userId:guid}/role", async (Guid userId, AssignRoleRequest req, IdentityService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var res = await svc.AssignRoleAsync(userId, req.Role, req.StoreId, ct);
+            if (res.IsSuccess)
+                await audit.LogAsync("user.role.assigned", "user", userId.ToString(), req.StoreId, new { req.Role }, ct);
+            return res.IsSuccess ? Results.Ok() : Problem(res.Error);
+        })
+        .RequireAuthorization("Admin")
+        .WithSummary("Nadanie roli istniejącemu użytkownikowi (tylko ADMIN).");
+
         group.MapGet("/admin/stores/{storeId:guid}/team", async (Guid storeId, IdentityService svc, CancellationToken ct) =>
             Results.Ok(await svc.ListStoreTeamAsync(storeId, ct)))
         .RequireAuthorization("Admin")
