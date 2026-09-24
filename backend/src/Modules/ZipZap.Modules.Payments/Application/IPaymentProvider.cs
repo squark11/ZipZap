@@ -38,7 +38,9 @@ public sealed class PaymentProviderRegistry
     public IPaymentProvider? Get(string key) => _providers.GetValueOrDefault(key);
 
     public IPaymentProvider Default =>
-        _providers.GetValueOrDefault(_defaultKey)
-        ?? _providers.Values.FirstOrDefault()
-        ?? throw new InvalidOperationException("Brak zarejestrowanego dostawcy płatności.");
+        DefaultOrNull ?? throw new InvalidOperationException("Brak zarejestrowanego dostawcy płatności.");
+
+    /// <summary>Domyślny dostawca lub null (tryb pilotażu bez płatności — brak zarejestrowanego dostawcy).</summary>
+    public IPaymentProvider? DefaultOrNull =>
+        _providers.GetValueOrDefault(_defaultKey) ?? _providers.Values.FirstOrDefault();
 }

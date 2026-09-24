@@ -41,38 +41,15 @@ using ZipZap.Modules.Feedback.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Twardy guard sekretów na produkcji (fail-fast) ---
-// Na produkcji NIE pozwalamy wystartować z domyślnymi/deweloperskimi sekretami.
-if (builder.Environment.IsProduction())
-{
-    var cfg = builder.Configuration;
-    var problems = new List<string>();
-
-    var key = cfg["Jwt:SigningKey"] ?? "";
-    if (key.StartsWith("CHANGE_ME", StringComparison.Ordinal) || key.Length < 32)
-        problems.Add("Jwt:SigningKey — ustaw losowy sekret min. 32 znaki (env: Jwt__SigningKey).");
-
-    var conn = cfg.GetConnectionString("Postgres") ?? "";
-    if (conn.Length == 0 || conn.Contains("Password=zipzap", StringComparison.OrdinalIgnoreCase))
-        problems.Add("ConnectionStrings:Postgres — ustaw produkcyjne hasło bazy (env: ConnectionStrings__Postgres).");
-
-    if ((cfg["RabbitMq:Password"] ?? "") is "" or "zipzap")
-        problems.Add("RabbitMq:Password — ustaw produkcyjne hasło (env: RabbitMq__Password).");
-
-    if ((cfg["Payments:Provider"] ?? "mock").Equals("mock", StringComparison.OrdinalIgnoreCase))
-        problems.Add("Payments:Provider = 'mock' — na produkcji użyj realnego dostawcy (env: Payments__Provider).");
-    if ((cfg["Payments:Mock:Secret"] ?? "") == "mock-dev-secret")
-        problems.Add("Payments:Mock:Secret — zmień domyślny sekret (env: Payments__Mock__Secret).");
-
-    if ((cfg["Seed:AdminPassword"] ?? "") is "" or "Admin123!")
-        problems.Add("Seed:AdminPassword — ustaw silne hasło administratora startowego (env: Seed__AdminPassword).");
-
-    if (problems.Count > 0)
-        throw new InvalidOperationException(
-            "Konfiguracja produkcyjna niebezpieczna/niekompletna:\n - " +
-            string.Join("\n - ", problems) +
-            "\nUstaw powyższe zmienne środowiskowe (patrz PRODUCTION_SETUP.md).");
-}
+// --- Twardy guard sekretów (fail-fast) ---
+// Działa na produkcji ORAZ w trybie publicznego pilotażu (Pilot:Public=true) — także gdy
+// ASPNETCORE_ENVIRONMENT=Development. Nie polegamy wyłącznie na IsProduction().
+var guardProblems = HardeningGuard.Check(builder.Configuration, builder.Environment.IsProduction());
+if (guardProblems.Count > 0)
+    throw new InvalidOperationException(
+        "Konfiguracja niebezpieczna/niekompletna dla środowiska publicznego:\n - " +
+        string.Join("\n - ", guardProblems) +
+        "\nUstaw powyższe zmienne środowiskowe (patrz PRODUCTION_SETUP.md).");
 
 // --- Wspólny rdzeń (event bus in-process/RabbitMQ, outbox dispatcher, kontekst najemcy) ---
 builder.Services.AddBuildingBlocks(builder.Configuration);
@@ -113,6 +90,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddSingleton<PlatformSettingsStore>();
+builder.Services.AddSingleton<StartupReadiness>();
 
 // Data Protection — szyfrowanie sekretów integracji at-rest; klucze utrwalane
 // (inaczej po restarcie nie odszyfrujemy zapisanych tokenów).
@@ -169,8 +147,9 @@ builder.Services.AddCors(o => o.AddPolicy(CorsPolicy, p =>
 
 // Limity nadużyć publicznych endpointów (logowanie, rejestracja, reset hasła, opinie).
 // Globalny limiter po IP tylko dla wrażliwych ścieżek; reszta bez limitu.
-// Wyłączalny konfiguracją (RateLimiting:Enabled=false) — używane w testach integracyjnych.
-var rateLimitEnabled = builder.Configuration.GetValue<bool>("RateLimiting:Enabled", true);
+// W trybie hartowanym (produkcja / publiczny pilotaż) limitera NIE da się wyłączyć konfiguracją;
+// flaga RateLimiting:Enabled działa wyłącznie w czystym dev (guard dodatkowo odrzuca ją w pilotażu).
+var rateLimitEnabled = hardened || builder.Configuration.GetValue<bool>("RateLimiting:Enabled", true);
 var rateLimitPerMinute = builder.Configuration.GetValue<int>("RateLimiting:PermitPerMinute", 10);
 builder.Services.AddRateLimiter(options =>
 {
@@ -235,15 +214,21 @@ var app = builder.Build();
 // Za odwrotnym proxy (Fly/hosting kończą TLS) — honoruj X-Forwarded-Proto/For,
 // aby Request.Scheme = https. Bez tego absolutne URL-e (logo sklepu, obrazki, linki,
 // redirecty płatności) generowałyby się jako http → mixed content na stronie https.
-var forwardedOptions = new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor,
-};
-forwardedOptions.KnownNetworks.Clear();
-forwardedOptions.KnownProxies.Clear();
+//
+// Zaufanie do nagłówków (limiter liczy po IP klienta, więc to jest granica bezpieczeństwa):
+//  - ForwardLimit = 1: bierzemy WYŁĄCZNIE ostatni (najbardziej prawy) wpis X-Forwarded-For —
+//    ten, który dopisuje nasze proxy hostingu (Render). Wpisy dodane przez klienta po lewej
+//    są ignorowane, więc podrobiony X-Forwarded-For nie daje nowego „kubełka" limitu.
+//  - Znane proxy/sieci można podać w ForwardedHeaders:KnownProxies / KnownNetworks (CIDR).
+//    Bez nich ufamy bezpośredniemu peerowi (PaaS z dynamicznymi IP proxy; kontener nie jest
+//    osiągalny z pominięciem proxy).
+var forwardedOptions = ForwardedHeadersConfig.Build(app.Configuration);
 app.UseForwardedHeaders(forwardedOptions);
 
-// --- Migracje modułów (wygoda dev/CI; błąd nie blokuje startu Swaggera) ---
+// --- Migracje modułów ---
+// Błąd migracji nie zatrzymuje procesu (dev: Swagger nadal działa), ALE usługa nie zgłasza
+// gotowości: /health/ready → 503 do czasu naprawy (warunek gotowości przed pilotażem).
+var readiness = app.Services.GetRequiredService<StartupReadiness>();
 await using (var scope = app.Services.CreateAsyncScope())
 {
     foreach (var migrator in scope.ServiceProvider.GetServices<IModuleDbMigrator>())
@@ -255,7 +240,31 @@ await using (var scope = app.Services.CreateAsyncScope())
         catch (Exception ex)
         {
             app.Logger.LogError(ex, "Migracja modułu {Module} nie powiodła się.", migrator.ModuleName);
+            readiness.Report($"migration:{migrator.ModuleName}");
         }
+    }
+}
+
+// Tryb publiczny: istniejący admin z domyślnym hasłem (seed jest pomijany, ale NIE zmienia haseł
+// kont już istniejących) blokuje gotowość. Logujemy tylko liczbę kont — bez haseł i adresów.
+if (hardened && readiness.IsReady)
+{
+    try
+    {
+        var weakAdmins = await IdentityModule.CountAdminsWithDefaultPasswordAsync(
+            app.Services, HardeningGuard.KnownDefaultAdminPasswords);
+        if (weakAdmins > 0)
+        {
+            app.Logger.LogWarning(
+                "Wykryto {Count} kont(a) administratora z domyślnym hasłem — publiczny test zablokowany (/health/ready=503) do zmiany hasła.",
+                weakAdmins);
+            readiness.Report("admin-default-password");
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Nie udało się sprawdzić haseł administratorów.");
+        readiness.Report("admin-check-failed");
     }
 }
 
@@ -328,12 +337,15 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "ZipZap.Ap
 app.MapGet("/health/live", () => Results.Ok(new { status = "live" })).WithTags("System");
 
 // Readiness — zależności (baza) osiągalne.
-app.MapGet("/health/ready", async (MessagingDbContext db, CancellationToken ct) =>
+app.MapGet("/health/ready", async (MessagingDbContext db, StartupReadiness startup, CancellationToken ct) =>
 {
     var dbOk = await db.Database.CanConnectAsync(ct);
-    return dbOk
-        ? Results.Ok(new { status = "ready", database = "up" })
-        : Results.Json(new { status = "not-ready", database = "down" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    // Warunki startowe (migracje, hasła adminów w trybie publicznym). Publicznie zwracamy tylko
+    // ogólny status — szczegóły są w logach (nie ujawniamy np. istnienia konta z domyślnym hasłem).
+    if (!dbOk || !startup.IsReady)
+        return Results.Json(new { status = "not-ready", database = dbOk ? "up" : "down", startupChecks = startup.IsReady ? "ok" : "failed" },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    return Results.Ok(new { status = "ready", database = "up", startupChecks = "ok" });
 }).WithTags("System");
 
 // Status konfiguracji (tylko admin) — SAME FLAGI, bez żadnych sekretów.

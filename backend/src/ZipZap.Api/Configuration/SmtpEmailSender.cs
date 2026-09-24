@@ -1,6 +1,7 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
+using ZipZap.BuildingBlocks.Logging;
 using ZipZap.Modules.Identity.Application;
 
 namespace ZipZap.Api.Configuration;

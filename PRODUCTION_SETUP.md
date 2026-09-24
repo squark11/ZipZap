@@ -13,29 +13,68 @@ Kolejność (późniejsze nadpisują wcześniejsze):
 `docker compose` czyta plik **`.env`** (ignorowany przez git) do podstawienia
 zmiennych. Skopiuj `.env.example` → `.env` i uzupełnij.
 
-## 2. Guard produkcyjny (fail-fast)
-Gdy `ASPNETCORE_ENVIRONMENT=Production`, API **odmówi startu**, jeśli wykryje
-sekrety deweloperskie/niekompletne (i wypisze, co ustawić):
-- `Jwt:SigningKey` = placeholder `CHANGE_ME…` lub < 32 znaki,
-- `ConnectionStrings:Postgres` z `Password=zipzap` (domyślne),
-- `RabbitMq:Password` puste lub `zipzap`,
-- `Payments:Provider = mock` (na produkcji wymagany realny dostawca),
-- `Payments:Mock:Secret = mock-dev-secret`,
-- `Seed:AdminPassword` puste lub `Admin123!`.
+## 2. Guard fail-fast (produkcja i publiczny pilotaż)
+API **odmówi startu** (i wypisze, co ustawić — bez wartości sekretów), gdy
+`ASPNETCORE_ENVIRONMENT=Production` **lub** `Pilot:Public=true` — także wtedy, gdy
+środowisko nazywa się `Development`. Reguły (`Security/HardeningGuard.cs`):
+
+| Reguła | Produkcja | Publiczny pilotaż |
+|---|---|---|
+| `Jwt:SigningKey` z `CHANGE_ME`/`DEV_ONLY` lub < 32 znaki | ✗ start | ✗ start |
+| `ConnectionStrings:Postgres` z hasłem `zipzap` (parsowane, odporne na spacje) | ✗ start | ✗ start |
+| `RabbitMq:Password` puste/`zipzap` | ✗ start | ✗ start, jeśli broker używany (`RabbitMq:Host`) |
+| `Payments:Provider = mock` / `Payments:Mock:Secret = mock-dev-secret` | ✗ start | n/d — mock w pilotażu **nie istnieje** |
+| `Seed:AdminPassword = Admin123!` | ✗ start | n/d — seed pomijany |
+| brak `Pilot:AdminPasswordConfirmed=true` | — | ✗ start |
+| `RateLimiting:Enabled=false` | ignorowane (limiter zawsze włączony) | ✗ start |
 
 ## 2a. Tryb publicznego pilotażu (hartowanie w Development)
-Pilotaż bywa wdrażany w `Development` (mock płatności, brak twardego guardu), ale
-**publiczny test nie może wystawiać narzędzi deweloperskich**. Ustaw:
+Pilotaż bywa wdrażany w `Development`, ale **publiczny test nie może wystawiać narzędzi
+deweloperskich ani mockowego przepływu płatności**. Ustaw:
 
 | Zmienna | Efekt |
 |---|---|
-| `PILOT__PUBLIC=true` | Tryb hartowany niezależnie od `ASPNETCORE_ENVIRONMENT`: **Swagger wyłączony**, **strona mocka płatności `/api/payments/mock/*` → 404**, **seed administratora pominięty** (żadnego konta z domyślnym hasłem), CORS bez otwartego fallbacku. |
-| `CORS__ALLOWEDORIGINS__0=https://panel.dowozka.pl` | Allowlista origin dla panelu/PWA (dodawaj kolejne `__1`, `__2`). Bez niej w trybie hartowanym CORS jest **zamknięty**; w czystym dev (bez allowlisty) — otwarty dla wygody. |
+| `PILOT__PUBLIC=true` | Tryb hartowany: **Swagger wyłączony**; **cały mockowy przepływ płatności wyłączony** — dostawca `mock` nie jest rejestrowany (brak sesji, `/api/payments/webhook/mock` → 404 nawet z poprawnym podpisem `mock-dev-secret`, `/api/payments/mock/*` → 404); **seed administratora pominięty**; CORS tylko z allowlisty; limiter zawsze włączony. |
+| `PILOT__ADMINPASSWORDCONFIRMED=true` | **Warunek operacyjny** (patrz niżej) — bez niego start zostaje przerwany. |
+| `CORS__ALLOWEDORIGINS__0=https://panel.dowozka.pl` | Allowlista origin dla panelu/PWA (kolejne `__1`, `__2`). Bez niej w trybie hartowanym CORS jest **zamknięty**. |
+| `JWT__SIGNINGKEY`, `CONNECTIONSTRINGS__POSTGRES` | Muszą być produkcyjne (guard powyżej). |
 
-Skutki hartowania:
-- **Seed admina**: uruchamia się tylko poza trybem hartowanym i tylko gdy `Seed:AdminPassword` jest jawnie ustawione — nigdy z `Admin123!`. Na pilotażu konto admina zakłada się raz (istnieje w bazie), więc seed jest zbędny.
-- **Limity nadużyć**: publiczne `POST` na logowanie/rejestrację/reset hasła/opinie są ograniczone (10/min na IP) — działa w każdym środowisku, bez dodatkowej konfiguracji.
-- **Logi**: adresy e-mail w logach są maskowane (bez pełnych danych osobowych).
+**Zamówienia w pilotażu są testowe i nieksięgowe.** Bez dostawcy płatności zamówienie
+tworzy wpis płatności `Pending` **bez sesji i bez autoryzacji**; po dostawie **nie** jest
+księgowana prowizja ani rozliczenie (prowizja tylko dla płatności potwierdzonej webhookiem).
+Nic nie udaje autoryzacji płatności.
+
+### Procedura przed publicznym testem — konto administratora
+Pominięcie seeda **nie usuwa ani nie zmienia** istniejącego konta `admin@zipzap.local`
+(ani innych kont administratorów). Przed ustawieniem `PILOT__ADMINPASSWORDCONFIRMED=true`:
+1. Zaloguj się na każde konto administratora i zmień hasło na **unikalne i silne**
+   (Konfiguracja → Konto i bezpieczeństwo), najlepiej z włączonym 2FA.
+2. Konta administratorów, których nie używasz, **dezaktywuj** (Użytkownicy).
+3. Dopiero wtedy ustaw `PILOT__ADMINPASSWORDCONFIRMED=true` i wdroż.
+
+Dodatkowo usługa sama sprawdza przy starcie, czy któreś aktywne konto administratora ma
+znane hasło domyślne (`Admin123!`). Jeśli tak — `/health/ready` zwraca **503** do czasu
+zmiany hasła (w logach tylko liczba kont, bez haseł i adresów).
+
+### Gotowość usługi (`/health/ready`)
+`/health/ready` zwraca **503**, gdy: baza jest nieosiągalna, **migracja któregokolwiek modułu
+się nie powiodła** (proces działa dalej, ale nie zgłasza gotowości) lub (w trybie publicznym)
+admin ma domyślne hasło. Odpowiedź publiczna nie zawiera szczegółów — są w logach.
+➜ **Na hostingu ustaw health check na `/health/ready`** (nie `/health`), inaczej te warunki
+nie zablokują ruchu.
+
+### Limiter i zaufanie do nagłówków proxy
+- Limit: 10 × `POST`/min na IP klienta dla logowania, rejestracji, resetu hasła i opinii
+  (`RATELIMITING__PERMITPERMINUTE`). W trybie hartowanym nie da się go wyłączyć.
+- IP klienta: `X-Forwarded-For` z **`ForwardLimit=1`** — liczy się tylko ostatni wpis
+  dopisany przez proxy hostingu; adresy dopisane przez klienta po lewej są ignorowane, więc
+  podrobiony nagłówek nie omija limitu. Znane adresy proxy można podać w
+  `FORWARDEDHEADERS__KNOWNPROXIES__0` / `FORWARDEDHEADERS__KNOWNNETWORKS__0` (CIDR).
+  Założenie: kontener jest osiągalny **wyłącznie przez proxy hostingu** (tak jest na Render).
+
+### Logi
+Adresy e-mail są maskowane; treść wiadomości (linki z tokenami weryfikacji/resetu) **nigdy**
+nie trafia do logów.
 
 > Płatności rzeczywiste pozostają **wyłączone** do decyzji właściciela (patrz `PILOT_BUSINESS_MODEL.md`).
 

@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using ZipZap.BuildingBlocks.Logging;
 using ZipZap.Modules.Identity.Application;
 
 namespace ZipZap.Api.Configuration;

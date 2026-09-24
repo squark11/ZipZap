@@ -43,6 +43,27 @@ public static class IdentityModule
     }
 
     /// <summary>
+    /// Liczba aktywnych kont administratora, których hasło pasuje do którejś ze znanych
+    /// domyślnych wartości (np. z seeda deweloperskiego). Używane jako warunek gotowości
+    /// publicznego pilotażu. Nie zwraca ani nie loguje haseł ani adresów.
+    /// </summary>
+    public static async Task<int> CountAdminsWithDefaultPasswordAsync(
+        IServiceProvider services, IEnumerable<string> defaultPasswords, CancellationToken ct = default)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var candidates = defaultPasswords.ToArray();
+
+        var hashes = await db.Users.AsNoTracking()
+            .Where(u => u.IsActive && u.Roles.Any(r => r.Role == Role.Admin))
+            .Select(u => u.PasswordHash)
+            .ToListAsync(ct);
+
+        return hashes.Count(h => candidates.Any(p => hasher.Verify(p, h)));
+    }
+
+    /// <summary>
     /// DEV-only: zakłada domyślnego administratora, jeśli żaden nie istnieje.
     /// Umożliwia bootstrap platformy (potem twórz kolejnych przez /api/identity/admin/users).
     /// </summary>

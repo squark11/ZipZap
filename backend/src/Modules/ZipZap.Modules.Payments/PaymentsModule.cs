@@ -27,7 +27,11 @@ public static class PaymentsModule
 
         // Dostawcy płatności (abstrakcja) + rejestr z domyślnym kluczem z konfiguracji.
         services.Configure<PaymentsOptions>(config.GetSection(PaymentsOptions.SectionName));
-        services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
+        // Mock (z jawnym w repo sekretem `mock-dev-secret`) NIE istnieje w trybie publicznego pilotażu:
+        // brak sesji mocka i brak weryfikatora dla /api/payments/webhook/mock (→ 404). Zamówienia
+        // w pilotażu są testowe i nieksięgowe (patrz PaymentsEventHandlers).
+        if (!config.GetValue<bool>("Pilot:Public", false))
+            services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
         services.AddSingleton(sp => new PaymentProviderRegistry(
             sp.GetServices<IPaymentProvider>(),
             sp.GetRequiredService<IOptions<PaymentsOptions>>().Value.Provider));

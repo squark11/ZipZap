@@ -1,11 +1,13 @@
 using Microsoft.Extensions.Logging;
+using ZipZap.BuildingBlocks.Logging;
 using ZipZap.Modules.Identity.Application;
 
 namespace ZipZap.Modules.Identity.Infrastructure;
 
 /// <summary>
-/// Mockowy sender: loguje e-mail zamiast wysyłać (dev/test). Realny SMTP/dostawca
-/// = przyszły adapter. NIE loguje haseł; token pojawia się w linku wiadomości.
+/// Mockowy sender (domyślny w module; host nadpisuje go realnym senderem HTTP/SMTP).
+/// NIE loguje treści wiadomości — linki weryfikacji/resetu zawierają jednorazowe tokeny,
+/// które nie mogą trafić do logów. Adres odbiorcy jest maskowany.
 /// </summary>
 public sealed class LoggingEmailSender : IEmailSender
 {
@@ -15,7 +17,8 @@ public sealed class LoggingEmailSender : IEmailSender
 
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
-        _logger.LogInformation("[EMAIL] to={To} subject={Subject}\n{Body}", message.To, message.Subject, message.Body);
+        _logger.LogInformation("[EMAIL:mock] to={To} subject={Subject} (treść pominięta — zawiera tokeny)",
+            EmailLog.Mask(message.To), message.Subject);
         return Task.CompletedTask;
     }
 }

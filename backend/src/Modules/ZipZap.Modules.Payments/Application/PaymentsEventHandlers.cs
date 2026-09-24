@@ -36,7 +36,16 @@ public sealed class PaymentsEventHandlers :
         // Per-store bramka: jeśli sklep skonfigurował dostawcę i jest on zarejestrowany,
         // użyj go; inaczej dostawca domyślny (mock) — bezpieczny fallback.
         var key = await _storeGateway.GetProviderKeyAsync(e.StoreId, ct);
-        var provider = (key is not null ? _providers.Get(key) : null) ?? _providers.Default;
+        var provider = (key is not null ? _providers.Get(key) : null) ?? _providers.DefaultOrNull;
+        if (provider is null)
+        {
+            // Pilotaż bez płatności (tryb hartowany: mock wyłączony, brak realnej bramki):
+            // zamówienie testowe — płatność zostaje Pending, BEZ sesji i BEZ autoryzacji.
+            // Nic nie jest księgowane jako opłacone; rozliczenie tylko po realnym webhooku.
+            _db.Payments.Add(payment);
+            await _db.SaveChangesAsync(ct);
+            return;
+        }
         var session = await provider.CreateSessionAsync(
             new PaymentSessionRequest(payment.Id, e.OrderId, e.Total, "PLN", $"ZipZap zamówienie {e.OrderId:N}"), ct);
         payment.AttachSession(provider.Key, session.SessionId, session.RedirectUrl);
@@ -50,6 +59,9 @@ public sealed class PaymentsEventHandlers :
     {
         var payment = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == e.OrderId, ct);
         if (payment is null) return;
+        // Księgujemy prowizję WYŁĄCZNIE dla płatności potwierdzonej webhookiem. Zamówienie testowe
+        // (bez sesji / nieopłacone / odrzucone) nie generuje fikcyjnego przychodu ani rozliczenia.
+        if (payment.Status != PaymentStatus.Authorized) return;
         if (await _db.CommissionLedger.AnyAsync(l => l.OrderId == e.OrderId, ct)) return; // idempotencja
 
         _db.CommissionLedger.Add(new CommissionLedgerEntry(e.StoreId, e.OrderId, payment.CommissionAmount));

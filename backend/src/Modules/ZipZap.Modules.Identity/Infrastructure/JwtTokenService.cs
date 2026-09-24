@@ -31,8 +31,16 @@ public sealed class JwtTokenService : ITokenService
         foreach (var role in user.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role.Role.ToString()));
-            if (role.StoreId is Guid storeId)
+            if (role.StoreId is not Guid storeId) continue;
+
+            // `store_id` = sklep ZARZĄDZANY (pracownik) → jedyna podstawa ManagesStore/StoreIds.
+            // Kierowca dostaje osobny claim: przypisanie do sklepu NIE daje uprawnień zarządczych
+            // (inaczej kierowca sklepu A przechodziłby ManagesStore(A), a pracownik B + kierowca A
+            // mógłby zarządzać sklepem A).
+            if (role.Role == Role.StoreEmployee)
                 claims.Add(new Claim("store_id", storeId.ToString()));
+            else if (role.Role == Role.Driver)
+                claims.Add(new Claim("driver_store_id", storeId.ToString()));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));
