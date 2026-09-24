@@ -20,6 +20,7 @@ public sealed class HardeningGuardTests
         {
             ["Pilot:Public"] = "true",
             ["Pilot:AdminPasswordConfirmed"] = "true",
+            ["Pilot:PaymentMode"] = "test",
             ["Jwt:SigningKey"] = StrongJwt,
             ["ConnectionStrings:Postgres"] = StrongDb,
         };
@@ -42,6 +43,8 @@ public sealed class HardeningGuardTests
     [InlineData("ConnectionStrings:Postgres", "Host=db;Username=zipzap;Password = zipzap", "ConnectionStrings:Postgres")]
     [InlineData("Pilot:AdminPasswordConfirmed", "false", "Pilot:AdminPasswordConfirmed")]
     [InlineData("RateLimiting:Enabled", "false", "RateLimiting:Enabled")]
+    [InlineData("Pilot:PaymentMode", "online", "Pilot:PaymentMode")]
+    [InlineData("Pilot:PaymentMode", "", "Pilot:PaymentMode")]
     public void Unsafe_public_pilot_is_rejected(string key, string value, string expected)
         => HardeningGuard.Check(Cfg(SafePilot((key, value))), isProduction: false)
             .Should().Contain(p => p.StartsWith(expected));

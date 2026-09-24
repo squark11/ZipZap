@@ -23,14 +23,16 @@ public sealed class OrderingService
     private readonly ICurrentUser _user;
     private readonly IIntegrationEventTypeRegistry _events;
     private readonly IStoreLegalPolicyProvider _legal;
+    private readonly PilotOrderingOptions _pilot;
 
     public OrderingService(OrderingDbContext db, ICurrentUser user, IIntegrationEventTypeRegistry events,
-        IStoreLegalPolicyProvider legal)
+        IStoreLegalPolicyProvider legal, Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot)
     {
         _db = db;
         _user = user;
         _events = events;
         _legal = legal;
+        _pilot = pilot.Value;
     }
 
     // ---------------- Koszyk ----------------
@@ -176,6 +178,15 @@ public sealed class OrderingService
     {
         if (_user.UserId is not Guid customerId)
             return Error.Unauthorized("Złożenie zamówienia wymaga zalogowania.");
+
+        // Tryb płatności pilotażu (W1 = zamówienia testowe bez opłaty) — bramka zamkniętej grupy.
+        var paymentMode = (_pilot.PaymentMode ?? PaymentModes.Online).Trim().ToLowerInvariant();
+        if (!PaymentModes.IsKnown(paymentMode))
+            return Error.Validation("Zamawianie jest chwilowo niedostępne (błędna konfiguracja trybu płatności).");
+        var isAdmin = _user.Roles.Contains("Admin");
+        if (paymentMode == PaymentModes.Test && !isAdmin && !_user.Roles.Contains("Tester"))
+            return Error.Forbidden("Zamówienia w pilotażu są dostępne tylko dla zaproszonych testerów.");
+
         if (string.IsNullOrWhiteSpace(deliveryAddress)) return Error.Validation("Adres dostawy jest wymagany.");
         if (string.IsNullOrWhiteSpace(contactPhone)) return Error.Validation("Telefon kontaktowy jest wymagany.");
 
@@ -185,6 +196,17 @@ public sealed class OrderingService
             var existing = await _db.Orders.AsNoTracking().Include(o => o.Items).Include(o => o.History)
                 .FirstOrDefaultAsync(o => o.CustomerId == customerId && o.IdempotencyKey == idempotencyKey, ct);
             if (existing is not null) return OrderDto.From(existing);
+        }
+
+        // Limit kosztu W1: każde zamówienie testowe to towar kupiony przez operatora.
+        if (paymentMode == PaymentModes.Test && !isAdmin && _pilot.TestOrdersPerTesterPerDay > 0)
+        {
+            var since = DateTime.UtcNow.AddHours(-24);
+            var recent = await _db.Orders.CountAsync(o => o.CustomerId == customerId
+                && o.PaymentMode == PaymentModes.Test && o.PlacedAtUtc >= since
+                && o.Status != OrderStatus.Cancelled, ct);
+            if (recent >= _pilot.TestOrdersPerTesterPerDay)
+                return Error.Conflict($"Osiągnięto limit {_pilot.TestOrdersPerTesterPerDay} zamówień testowych na dobę.");
         }
 
         var cart = await LoadCartAsync(cartId, ct);
@@ -228,7 +250,7 @@ public sealed class OrderingService
             .ToList();
 
         var order = Order.Place(cart.StoreId, customerId, lines, store.CommissionRate, zone.DeliveryFee,
-            deliveryZoneId, timeSlotId, deliveryAddress.Trim(), contactPhone.Trim());
+            deliveryZoneId, timeSlotId, deliveryAddress.Trim(), contactPhone.Trim(), paymentMode: paymentMode);
         order.SetIdempotencyKey(string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey);
 
         cart.AssignCustomer(customerId);
@@ -236,7 +258,7 @@ public sealed class OrderingService
 
         _db.Orders.Add(order);
         _db.AddOutboxMessage(new OrderPlaced(order.Id, order.StoreId, customerId,
-            order.Subtotal, order.CommissionAmount, order.DeliveryFee, order.Total, timeSlotId), _events);
+            order.Subtotal, order.CommissionAmount, order.DeliveryFee, order.Total, timeSlotId, paymentMode), _events);
 
         try
         {

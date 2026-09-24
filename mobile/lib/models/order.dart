@@ -64,6 +64,10 @@ class Order {
   final String? deliveryStartTime;
   final String? deliveryEndTime;
 
+  /// Tryb płatności zapisany przy złożeniu: `online` albo `test` (pilotaż — zamówienie testowe bez opłaty).
+  final String paymentMode;
+  bool get isTestOrder => paymentMode == 'test';
+
   /// Czytelne okno dostawy, np. „Dziś, 14:00–16:00" (null gdy brak danych).
   String? get deliveryWindowLabel {
     final st = deliveryStartTime, en = deliveryEndTime;
@@ -94,6 +98,7 @@ class Order {
     this.deliveryDate,
     this.deliveryStartTime,
     this.deliveryEndTime,
+    this.paymentMode = 'online',
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -121,5 +126,6 @@ class Order {
         deliveryDate: j['deliveryDate']?.toString(),
         deliveryStartTime: j['deliveryStartTime']?.toString(),
         deliveryEndTime: j['deliveryEndTime']?.toString(),
+        paymentMode: (j['paymentMode'] ?? 'online').toString(),
       );
 }

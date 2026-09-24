@@ -27,6 +27,20 @@ public class PaymentsEventHandlersTests
         new(orderId, Guid.NewGuid(), Guid.NewGuid(), 12m, 1.2m, 8m, 20m, Guid.NewGuid());
 
     [Fact]
+    public async Task W1_test_order_creates_no_payment_at_all_even_with_provider()
+    {
+        using var db = NewDb();
+        var handlers = new PaymentsEventHandlers(db, WithMock(), new NullStorePaymentGateway());
+        var placed = Placed(Guid.NewGuid()) with { PaymentMode = PaymentModes.Test };
+
+        await handlers.HandleAsync(placed);
+        await handlers.HandleAsync(new OrderDelivered(placed.OrderId, placed.StoreId));
+
+        (await db.Payments.CountAsync()).Should().Be(0, "zamówienie testowe W1 nie ma płatności ani „Oczekuje\"");
+        (await db.CommissionLedger.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
     public async Task Without_provider_order_is_test_only_no_session_no_authorization()
     {
         using var db = NewDb();

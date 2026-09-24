@@ -56,6 +56,10 @@ public static class HardeningGuard
                              "(istniejące konto admin@zipzap.local NIE jest zmieniane przez pominięcie seeda).");
             if (cfg.GetValue<bool>("RateLimiting:Enabled", true) == false)
                 problems.Add("RateLimiting:Enabled=false — w trybie publicznym limiter nie może być wyłączony.");
+            // Decyzja właściciela: pilotaż W1 (zamknięta grupa testerów, bez opłat). Płatności online nie
+            // istnieją w trybie publicznym, a W2/W3 nie są zatwierdzone — inny tryb = zamówienia „Oczekuje" bez końca.
+            if (!string.Equals(cfg["Pilot:PaymentMode"]?.Trim(), "test", StringComparison.OrdinalIgnoreCase))
+                problems.Add("Pilot:PaymentMode — w publicznym pilotażu wymagany tryb 'test' (W1: zamówienia testowe testerów, bez opłat).");
         }
 
         return problems;

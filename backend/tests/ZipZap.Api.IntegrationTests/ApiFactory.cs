@@ -148,6 +148,7 @@ public class PilotApiFactory : ApiFactory
     {
         builder.UseSetting("Pilot:Public", "true");
         builder.UseSetting("Pilot:AdminPasswordConfirmed", "true");
+        builder.UseSetting("Pilot:PaymentMode", "test");
         builder.UseSetting("Jwt:SigningKey", "pilot-it-signing-key-" + new string('k', 48));
         builder.UseSetting("Cors:AllowedOrigins:0", AllowedOrigin);
         _extra?.Invoke(builder);
@@ -156,22 +157,51 @@ public class PilotApiFactory : ApiFactory
     /// <summary>Świeża baza dla każdego uruchomienia (deterministyczny stan: brak kont, brak seeda).</summary>
     private static void RecreateDatabase(string database)
     {
-        var admin = new NpgsqlConnectionStringBuilder(BaseConnectionString) { Database = "postgres" };
-        using var c = new NpgsqlConnection(admin.ConnectionString);
-        c.Open();
-        Exec(c, $"""
+        TestDatabases.Exec($"""
             DO $$ BEGIN
               IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{PilotRole}') THEN
                 CREATE ROLE {PilotRole} LOGIN PASSWORD '{PilotPassword}';
               END IF;
             END $$;
             """);
-        Exec(c, $"DROP DATABASE IF EXISTS {database} WITH (FORCE);");
-        Exec(c, $"CREATE DATABASE {database} OWNER {PilotRole};");
+        TestDatabases.Recreate(database, owner: PilotRole);
+    }
+}
+
+/// <summary>
+/// Pilotaż W1 w czystym dev: zamówienia testowe (Pilot:PaymentMode=test) na OSOBNEJ świeżej bazie
+/// (seed admina działa) — dwa hosty nigdy nie migrują tej samej bazy równolegle.
+/// </summary>
+public class TestModeApiFactory : ApiFactory
+{
+    public const int DailyCap = 2;
+    private const string Database = "zipzap_it_w1";
+
+    public TestModeApiFactory() => TestDatabases.Recreate(Database, owner: null);
+
+    protected override string ConnectionString =>
+        new NpgsqlConnectionStringBuilder(BaseConnectionString) { Database = Database }.ConnectionString;
+
+    protected override void ConfigureSettings(IWebHostBuilder builder)
+    {
+        builder.UseSetting("Pilot:PaymentMode", "test");
+        builder.UseSetting("Pilot:TestOrdersPerTesterPerDay", DailyCap.ToString());
+    }
+}
+
+internal static class TestDatabases
+{
+    public static void Recreate(string database, string? owner)
+    {
+        Exec($"DROP DATABASE IF EXISTS {database} WITH (FORCE);");
+        Exec(owner is null ? $"CREATE DATABASE {database};" : $"CREATE DATABASE {database} OWNER {owner};");
     }
 
-    private static void Exec(NpgsqlConnection c, string sql)
+    public static void Exec(string sql)
     {
+        var admin = new NpgsqlConnectionStringBuilder(ApiFactory.BaseConnectionString) { Database = "postgres" };
+        using var c = new NpgsqlConnection(admin.ConnectionString);
+        c.Open();
         using var cmd = new NpgsqlCommand(sql, c);
         cmd.ExecuteNonQuery();
     }
@@ -182,3 +212,6 @@ public sealed class ApiCollection : ICollectionFixture<ApiFactory> { }
 
 [CollectionDefinition("pilot")]
 public sealed class PilotCollection : ICollectionFixture<PilotApiFactory> { }
+
+[CollectionDefinition("w1")]
+public sealed class TestModeCollection : ICollectionFixture<TestModeApiFactory> { }

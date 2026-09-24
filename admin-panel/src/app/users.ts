@@ -75,6 +75,7 @@ interface AdminUser {
             <option value="StoreEmployee">Zarządca sklepu</option>
             <option value="Driver">Dostawca</option>
             <option value="Customer">Klient</option>
+            <option value="Tester">Tester pilotażu (zamówienia testowe bez opłaty)</option>
           </select>
           <button class="btn ghost sm" (click)="assignRole(u)" [disabled]="busy">Nadaj rolę</button>
         </div>
@@ -144,7 +145,8 @@ export class UsersComponent implements OnInit {
       .map(r => r === 'Admin' ? 'Administrator serwisu'
         : r === 'StoreEmployee' ? 'Zarządca sklepu'
         : r === 'Driver' ? 'Dostawca'
-        : r === 'Customer' ? 'Klient' : r)
+        : r === 'Customer' ? 'Klient'
+        : r === 'Tester' ? 'Tester pilotażu' : r)
       .filter(Boolean).join(', ');
   }
 

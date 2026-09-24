@@ -99,7 +99,11 @@ interface Group { key: string; label: string; statuses: string[]; }
                     <div class="detail-grid">
                       <div class="box">
                         <h4>Płatność</h4>
-                        @if (payments[o.id] === undefined) { <div class="kv muted">Ładowanie…</div> }
+                        @if (isTest(o.id)) {
+                          <div class="kv"><span class="paybadge pay-none">Testowe — bez opłaty</span></div>
+                          <div class="kv muted">Pilotaż W1: klient nie płaci; towar kupuje operator. Brak płatności i brak księgowania prowizji.</div>
+                        }
+                        @else if (payments[o.id] === undefined) { <div class="kv muted">Ładowanie…</div> }
                         @else if (payments[o.id] === null) { <div class="kv muted">Brak płatności (jeszcze nie utworzona).</div> }
                         @else {
                           <div class="kv"><span class="paybadge" [class]="payClass(o.id)">{{ payLabel(o.id) }}</span></div>
@@ -172,6 +176,7 @@ export class OrdersComponent {
   load() {
     this.loading = true;
     this.payments = {};
+    this.testOrders.clear();
     this.deliveries = {};
     this.api.get<OrderDto[]>(`/ordering/stores/${this.storeId()}/orders`).subscribe({
       next: o => {
@@ -184,9 +189,14 @@ export class OrdersComponent {
     });
   }
 
+  // Zamówienia testowe pilotażu (W1) — bez płatności; nie odpytujemy o nie modułu płatności.
+  testOrders = new Set<string>();
+  isTest(orderId: string) { return this.testOrders.has(orderId); }
+
   // Status płatności per zamówienie (widok „na pierwszy rzut oka").
   private loadPayments(orders: OrderDto[]) {
     for (const o of orders) {
+      if (o.paymentMode === 'test') { this.testOrders.add(o.id); continue; }
       this.api.get<PaymentDto>(`/payments/orders/${o.id}`).subscribe({
         next: p => this.payments[o.id] = p,
         error: () => this.payments[o.id] = null,
@@ -203,6 +213,7 @@ export class OrdersComponent {
   }
 
   payLabel(orderId: string): string {
+    if (this.isTest(orderId)) return 'Testowe — bez opłaty';
     const p = this.payments[orderId];
     if (p === undefined) return '…';
     if (p === null) return '—';
@@ -217,6 +228,7 @@ export class OrdersComponent {
   }
 
   payClass(orderId: string): string {
+    if (this.isTest(orderId)) return 'pay-none';
     const p = this.payments[orderId];
     if (!p) return 'pay-none';
     switch (p.status) {

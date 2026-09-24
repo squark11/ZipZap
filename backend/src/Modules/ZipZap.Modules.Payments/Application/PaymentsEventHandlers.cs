@@ -29,6 +29,9 @@ public sealed class PaymentsEventHandlers :
 
     public async Task HandleAsync(OrderPlaced e, CancellationToken ct = default)
     {
+        // Pilotaż W1: zamówienie testowe bez opłaty — nie tworzymy żadnej płatności (brak „Oczekuje"
+        // w nieskończoność, brak sesji, brak księgowania). Prawda o trybie jest w zamówieniu.
+        if (e.PaymentMode == PaymentModes.Test) return;
         if (await _db.Payments.AnyAsync(p => p.OrderId == e.OrderId, ct)) return; // idempotencja
 
         var payment = new Payment(e.OrderId, e.StoreId, e.CustomerId, e.Total, e.DeliveryFee, e.CommissionAmount);

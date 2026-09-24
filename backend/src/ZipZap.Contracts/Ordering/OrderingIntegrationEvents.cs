@@ -8,7 +8,7 @@ namespace ZipZap.Contracts.Ordering;
 public sealed record OrderPlaced(
     Guid OrderId, Guid StoreId, Guid CustomerId,
     decimal Subtotal, decimal CommissionAmount, decimal DeliveryFee, decimal Total,
-    Guid TimeSlotId) : IntegrationEvent;
+    Guid TimeSlotId, string PaymentMode = PaymentModes.Online) : IntegrationEvent;
 
 public sealed record OrderReadyForPickup(Guid OrderId, Guid StoreId) : IntegrationEvent;
 

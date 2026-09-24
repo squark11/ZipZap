@@ -6,5 +6,6 @@ public enum Role
     Customer,        // klient
     StoreEmployee,   // pracownik sklepu (scope: StoreId)
     Driver,          // kierowca (scope: StoreId)
-    Admin            // administrator platformy
+    Admin,           // administrator platformy
+    Tester           // zaproszony tester pilotażu (W1): jedyny klient uprawniony do zamówień testowych bez opłaty
 }

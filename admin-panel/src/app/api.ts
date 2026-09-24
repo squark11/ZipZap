@@ -18,6 +18,8 @@ export interface OrderDto {
   subtotal: number; commissionAmount: number; deliveryFee: number; total: number;
   contactPhone: string; deliveryAddress: string; placedAtUtc: string;
   items: OrderItemDto[]; history: OrderStatusChangeDto[];
+  /** `online` albo `test` (pilotaż W1 — zamówienie testowe bez opłaty, bez płatności). */
+  paymentMode?: string;
 }
 export interface DeliveryDto {
   id: string; orderId: string; storeId: string; driverId?: string; status: string;

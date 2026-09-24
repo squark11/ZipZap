@@ -1,4 +1,5 @@
 using ZipZap.BuildingBlocks.Domain;
+using ZipZap.Contracts.Ordering;
 
 namespace ZipZap.Modules.Ordering.Domain;
 
@@ -39,6 +40,13 @@ public sealed class Order : AggregateRoot
     public string? IdempotencyKey { get; private set; }
     public DateTime PlacedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Tryb płatności zapisany w chwili złożenia: <c>online</c> (bramka) albo <c>test</c> (pilotaż W1 —
+    /// zamówienie testowe bez opłaty, bez płatności i bez księgowania).
+    /// </summary>
+    public string PaymentMode { get; private set; } = PaymentModes.Online;
+    public bool IsTestOrder => PaymentMode == PaymentModes.Test;
+
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
     public IReadOnlyCollection<OrderStatusChange> History => _history.AsReadOnly();
 
@@ -54,10 +62,13 @@ public sealed class Order : AggregateRoot
         Guid timeSlotId,
         string deliveryAddress,
         string contactPhone,
-        string currency = "PLN")
+        string currency = "PLN",
+        string paymentMode = PaymentModes.Online)
     {
         if (lines is null || lines.Count == 0)
             throw new OrderingDomainException("Nie można złożyć zamówienia z pustego koszyka.");
+        if (!PaymentModes.IsKnown(paymentMode))
+            throw new OrderingDomainException($"Nieznany tryb płatności '{paymentMode}'.");
         if (commissionRate is < 0 or > 1)
             throw new OrderingDomainException("Prowizja musi być w zakresie 0–1.");
         if (deliveryFee < 0)
@@ -76,6 +87,7 @@ public sealed class Order : AggregateRoot
             ContactPhone = contactPhone,
             Currency = currency,
             PlacedAtUtc = DateTime.UtcNow,
+            PaymentMode = paymentMode,
         };
 
         foreach (var line in lines)

@@ -21,6 +21,12 @@ public sealed class PilotPublicModeTests
     private readonly PilotApiFactory _p;
     public PilotPublicModeTests(PilotApiFactory p) => _p = p;
 
+    private sealed record PublicConfig(string paymentMode);
+
+    [Fact]
+    public async Task Public_pilot_announces_test_payment_mode()
+        => (await _p.Anon().GetFromJsonAsync<PublicConfig>("/api/config/public"))!.paymentMode.Should().Be("test");
+
     [Fact]
     public async Task Swagger_is_not_exposed()
     {

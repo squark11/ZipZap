@@ -80,6 +80,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pilotaż W1: w trybie zamówień testowych nie ma płatności online — ten ekran nie może
+    // pokazać „Do zapłaty" ani oczekiwania na bramkę (np. po wejściu ze starego linku).
+    final testMode = ref.watch(publicConfigProvider).valueOrNull?.isTestOrdering ?? false;
+    if (testMode) {
+      _timer?.cancel();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/orders/${widget.orderId}');
+      });
+      return const Scaffold(body: LoadingView(label: 'Otwieram zamówienie…'));
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Płatność'), automaticallyImplyLeading: false),
       body: _loading

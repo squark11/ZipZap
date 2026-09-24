@@ -26,6 +26,7 @@ public static class OrderingModule
 
         services.AddScoped<IOutboxProcessor, OutboxProcessor<OrderingDbContext>>();
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<OrderingDbContext>>();
+        services.Configure<PilotOrderingOptions>(config.GetSection(PilotOrderingOptions.SectionName));
         services.AddScoped<OrderingService>();
 
         // Domyślnie brak polityki prawnej sklepu; host nadpisuje adapterem nad magazynem dokumentów.

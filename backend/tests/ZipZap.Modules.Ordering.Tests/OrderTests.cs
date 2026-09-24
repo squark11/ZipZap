@@ -38,6 +38,27 @@ public class OrderTests
     }
 
     [Fact]
+    public void Place_defaults_to_online_and_records_test_mode_when_requested()
+    {
+        PlaceSampleOrder().PaymentMode.Should().Be("online");
+
+        var lines = new List<OrderLine> { new(Guid.NewGuid(), "Chleb", 5m, "szt", 1) };
+        var test = Order.Place(StoreId, CustomerId, lines, 0.10m, 8m, ZoneId, SlotId, "adres", "600",
+            paymentMode: "test");
+        test.PaymentMode.Should().Be("test");
+        test.IsTestOrder.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Place_with_unknown_payment_mode_throws()
+    {
+        var lines = new List<OrderLine> { new(Guid.NewGuid(), "Chleb", 5m, "szt", 1) };
+        var act = () => Order.Place(StoreId, CustomerId, lines, 0.10m, 8m, ZoneId, SlotId, "adres", "600",
+            paymentMode: "free");
+        act.Should().Throw<OrderingDomainException>();
+    }
+
+    [Fact]
     public void Place_with_empty_cart_throws()
     {
         var act = () => Order.Place(StoreId, CustomerId, new List<OrderLine>(), 0.10m, 5m,

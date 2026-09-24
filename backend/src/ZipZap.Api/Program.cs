@@ -425,7 +425,8 @@ app.MapPost("/api/admin/config/smtp/test",
 
 // Publiczna konfiguracja dla aplikacji klienta — Google Client ID + captcha (provider + site key, jawne).
 app.MapGet("/api/config/public",
-    async (IGoogleClientIdProvider google, PlatformIntegrationsStore store, CancellationToken ct) =>
+    async (IGoogleClientIdProvider google, PlatformIntegrationsStore store,
+        Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot, CancellationToken ct) =>
 {
     var googleId = await google.GetClientIdAsync(ct);
     var status = await store.GetStatusAsync(ct);
@@ -437,6 +438,8 @@ app.MapGet("/api/config/public",
         googleSignInEnabled = !string.IsNullOrWhiteSpace(googleId),
         captchaProvider = captchaEnabled ? status.CaptchaProvider : null,
         captchaSiteKey = captchaEnabled ? status.CaptchaSiteKey : null,
+        // „online" albo „test" (pilotaż W1): aplikacja NIE pokazuje wtedy ekranu płatności.
+        paymentMode = (pilot.Value.PaymentMode ?? "online").Trim().ToLowerInvariant(),
     });
 }).WithTags("System");
 

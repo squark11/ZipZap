@@ -89,6 +89,8 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(o => o.DeliveryAddress).IsRequired().HasMaxLength(500);
             e.Property(o => o.ContactPhone).IsRequired().HasMaxLength(32);
             e.Property(o => o.IdempotencyKey).HasMaxLength(80);
+            e.Property(o => o.PaymentMode).IsRequired().HasMaxLength(16).HasDefaultValue("online");
+            e.Ignore(o => o.IsTestOrder);
             e.HasIndex(o => new { o.StoreId, o.Status });
             e.HasIndex(o => o.CustomerId);
             // Idempotencja checkoutu: para (klient, klucz) unikalna, gdy klucz podany.

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,12 @@ public sealed class DevModeControlTests
 {
     private readonly ApiFactory _f;
     public DevModeControlTests(ApiFactory f) => _f = f;
+
+    private sealed record PublicConfig(string paymentMode);
+
+    [Fact]
+    public async Task Plain_dev_keeps_online_payment_mode()
+        => (await _f.Anon().GetFromJsonAsync<PublicConfig>("/api/config/public"))!.paymentMode.Should().Be("online");
 
     [Fact]
     public async Task Swagger_is_available_in_plain_dev()

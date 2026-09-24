@@ -26,6 +26,7 @@ API **odmówi startu** (i wypisze, co ustawić — bez wartości sekretów), gdy
 | `Payments:Provider = mock` / `Payments:Mock:Secret = mock-dev-secret` | ✗ start | n/d — mock w pilotażu **nie istnieje** |
 | `Seed:AdminPassword = Admin123!` | ✗ start | n/d — seed pomijany |
 | brak `Pilot:AdminPasswordConfirmed=true` | — | ✗ start |
+| `Pilot:PaymentMode` ≠ `test` (W1) | — | ✗ start |
 | `RateLimiting:Enabled=false` | ignorowane (limiter zawsze włączony) | ✗ start |
 
 ## 2a. Tryb publicznego pilotażu (hartowanie w Development)
@@ -36,13 +37,14 @@ deweloperskich ani mockowego przepływu płatności**. Ustaw:
 |---|---|
 | `PILOT__PUBLIC=true` | Tryb hartowany: **Swagger wyłączony**; **cały mockowy przepływ płatności wyłączony** — dostawca `mock` nie jest rejestrowany (brak sesji, `/api/payments/webhook/mock` → 404 nawet z poprawnym podpisem `mock-dev-secret`, `/api/payments/mock/*` → 404); **seed administratora pominięty**; CORS tylko z allowlisty; limiter zawsze włączony. |
 | `PILOT__ADMINPASSWORDCONFIRMED=true` | **Warunek operacyjny** (patrz niżej) — bez niego start zostaje przerwany. |
+| `PILOT__PAYMENTMODE=test` | **Wymagane** (decyzja: W1). Zamówienia testowe bez opłaty — **tylko konta z rolą `Tester`** (Panel → Użytkownicy → Nadaj rolę „Tester pilotażu"); reszta może przeglądać, ale nie zamawiać. Aplikacja nie pokazuje ekranu płatności. Zasady grupy: `PILOT_BUSINESS_MODEL.md` §9.6. |
+| `PILOT__TESTORDERSPERTESTERPERDAY=3` | Limit zamówień testowych na testera w 24 h (koszt towaru ponosi operator). |
 | `CORS__ALLOWEDORIGINS__0=https://panel.dowozka.pl` | Allowlista origin dla panelu/PWA (kolejne `__1`, `__2`). Bez niej w trybie hartowanym CORS jest **zamknięty**. |
 | `JWT__SIGNINGKEY`, `CONNECTIONSTRINGS__POSTGRES` | Muszą być produkcyjne (guard powyżej). |
 
-**Zamówienia w pilotażu są testowe i nieksięgowe.** Bez dostawcy płatności zamówienie
-tworzy wpis płatności `Pending` **bez sesji i bez autoryzacji**; po dostawie **nie** jest
-księgowana prowizja ani rozliczenie (prowizja tylko dla płatności potwierdzonej webhookiem).
-Nic nie udaje autoryzacji płatności.
+**Zamówienia w pilotażu są testowe i nieksięgowe (W1).** Zamówienie zapisuje tryb `test`;
+**nie powstaje żaden wpis płatności**, sesja ani autoryzacja, a po dostawie **nie** jest
+księgowana prowizja ani rozliczenie. Nic nie udaje autoryzacji płatności.
 
 ### Procedura przed publicznym testem — konto administratora
 Pominięcie seeda **nie usuwa ani nie zmienia** istniejącego konta `admin@zipzap.local`

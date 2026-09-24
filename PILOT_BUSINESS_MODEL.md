@@ -157,8 +157,10 @@ Zbieramy **agregaty i identyfikatory techniczne**, **nie** dane osobowe ani peł
 
 ## 9. Operacyjny przepływ pieniędzy w pilotażu — stan i decyzja
 
-> **Status: BLOKER.** Dopóki właściciel nie wybierze wariantu z §9.3, pilotaż **nie jest gotowy do testu z
-> prawdziwymi klientami** (może ruszyć najwyżej zamknięta grupa testerów w wariancie W1).
+> **Decyzja właściciela (2026-09-24): W1 wyłącznie dla zamkniętej grupy testerów, bez pobierania pieniędzy.**
+> W2 i W3 **nie są wybrane** — wracamy do nich po konsultacji z księgowym/prawnikiem. **Publiczny test z
+> prawdziwymi klientami jest niedopuszczalny** do czasu tej decyzji. Wdrożenie techniczne W1 i ograniczenie
+> do zamkniętej grupy — §9.6.
 
 ### 9.1 Stan faktyczny w systemie (zweryfikowany w kodzie, gałąź `pilot-s0-rounds`)
 - Złożenie zamówienia tworzy wpis płatności **`Pending` bez sesji i bez autoryzacji** (tryb `Pilot:Public`).
@@ -227,6 +229,37 @@ Zbieramy **agregaty i identyfikatory techniczne**, **nie** dane osobowe ani peł
 4. **Panel**: akcja „Pobrano płatność” / „Opłacone u sklepu” oraz kolumna statusu pobrania w zamówieniach
    i w rundzie.
 5. **Raport** (S5): wartość towarów sklepów (GMV) oddzielnie od przychodu operatora.
+
+### 9.6 W1 w systemie i ograniczenie do zamkniętej grupy (gałąź `pilot-s0-rounds`, niewdrożone)
+
+**Co widzi tester:** przed złożeniem zamówienia baner „Zamówienie testowe — bez opłaty", podsumowanie
+z wartością zamówienia i wierszem „Opłata: bez opłaty — zamówienie testowe", przycisk „Złóż zamówienie
+testowe". Po złożeniu trafia **od razu na śledzenie zamówienia** (z tym samym banerem) — **nie widzi ekranu
+„Do zapłaty" ani komunikatu o oczekiwaniu na potwierdzenie płatności**. Nawet wejście na stary adres
+ekranu płatności przekierowuje do śledzenia.
+
+**Co widzi operator/sklep:** w „Zamówieniach" kolumna płatności „Testowe — bez opłaty" (zamiast
+„Oczekuje"), w szczegółach: „klient nie płaci; towar kupuje operator; brak płatności i księgowania".
+
+**Jak system to oznacza:** zamówienie zapisuje tryb `test` w chwili złożenia (zmiana konfiguracji później
+nie zmienia znaczenia starych zamówień). Dla zamówienia testowego **nie powstaje żaden wpis płatności**
+ani prowizja; Faktury/Rozliczenia go nie obejmują.
+
+**Ograniczenie do zamkniętej grupy — warstwy:**
+
+| Warstwa | Jak działa | Stan |
+|---|---|---|
+| Rola `Tester` | W trybie `Pilot:PaymentMode=test` zamówienie może złożyć **tylko** konto z rolą `Tester` (lub Admin do kontroli). Pozostali dostają odmowę **zanim** zostanie zajęte miejsce w terminie dostawy. Przeglądanie oferty (także bez logowania) zostaje otwarte. | wdrożone w kodzie |
+| Limit kosztu | Maks. `Pilot:TestOrdersPerTesterPerDay` zamówień testowych na testera w 24 h (domyślnie 3; anulowane się nie liczą) — każde zamówienie to towar kupiony przez operatora. | wdrożone w kodzie |
+| Konfiguracja „fail-closed" | W publicznym pilotażu serwis **nie wystartuje** bez `Pilot:PaymentMode=test` — nie da się przypadkiem włączyć zamówień bez płatności dla wszystkich ani trybu „Oczekuje" bez końca. | wdrożone w kodzie |
+| Zaproszenie (procedura) | Operator prowadzi listę zaproszonych (imię, e-mail). Tester zakłada konto w PWA → admin nadaje rolę „Tester pilotażu" (Panel → Użytkownicy) → tester wylogowuje się i loguje ponownie (rola trafia do tokenu). | procedura |
+| Odebranie dostępu | Panel → Użytkownicy → **Dezaktywuj** (unieważnia sesje; token dostępu wygasa w ≤ 15 min). Brak jeszcze osobnej akcji „odbierz tylko rolę Tester" — do dodania, jeśli potrzebne. | częściowo |
+| Kontrola przed rundą | Operator przegląda zamówienia testowe przed rundą i może **anulować** podejrzane. | procedura |
+| Materiały QR | Na czas W1 QR/linki rozdajemy **tylko testerom**; nie drukujemy publicznych materiałów zachęcających do zamówień. | procedura |
+
+**Czego to nie blokuje (świadome ryzyka):** tester może udostępnić swoje konto innej osobie — ogranicza to
+limit dzienny i przegląd przed rundą. Mocniejsze opcje (kody zaproszeń przy rejestracji, weryfikacja
+telefonu, lista dozwolonych adresów dostawy) — nie wdrożone, do decyzji.
 
 ---
 *Dokument roboczy pilotażu. Uzupełniać po konsultacji z doradcą. Ostateczne decyzje podatkowe/prawne —

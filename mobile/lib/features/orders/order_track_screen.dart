@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/test_order_banner.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/order.dart';
 
@@ -128,6 +129,10 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
               StatusPill(o.status),
             ],
           ),
+          if (o.isTestOrder) ...[
+            const SizedBox(height: 12),
+            const TestOrderBanner(placed: true),
+          ],
           const SizedBox(height: 4),
           Text('Złożono ${shortDateTime(o.placedAtUtc)}',
               style: TextStyle(color: context.zz.textMuted, fontSize: 13)),

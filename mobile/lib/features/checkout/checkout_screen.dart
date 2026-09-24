@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/test_order_banner.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/delivery.dart';
 import '../../models/store_legal.dart';
@@ -80,7 +81,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             consentAccepted: _consent,
           );
       ref.read(cartControllerProvider.notifier).clearAfterCheckout();
-      if (mounted) context.go('/pay/${order.id}');
+      // Tryb decyduje zamówienie z serwera (nie lokalna konfiguracja): zamówienie testowe
+      // (pilotaż) NIGDY nie trafia na ekran płatności.
+      if (mounted) context.go(order.isTestOrder ? '/orders/${order.id}' : '/pay/${order.id}');
     } on ApiException catch (e) {
       _snack(e.message);
     } finally {
@@ -92,7 +95,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   /// Pierwszy brakujący warunek złożenia zamówienia (null = można składać).
-  String? _missingReason(StoreLegal? legal) {
+  String? _missingReason(StoreLegal? legal, {required bool testerBlocked}) {
+    if (testerBlocked) return 'Zamówienia w pilotażu są dostępne tylko dla zaproszonych testerów.';
     if (_address.text.trim().isEmpty) return 'Podaj adres dostawy.';
     if (_phone.text.trim().isEmpty) return 'Podaj telefon kontaktowy.';
     if (_zoneId == null) return 'Wybierz strefę dostawy.';
@@ -107,9 +111,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
     final c = cart.cart;
+    // Pilotaż W1: zamówienia testowe bez opłaty, tylko dla testerów (serwer i tak to egzekwuje).
+    final testMode = ref.watch(publicConfigProvider).valueOrNull?.isTestOrdering ?? false;
+    final roles = ref.watch(authControllerProvider).user?.roles ?? const <String>[];
+    final testerBlocked = testMode && !roles.contains('Tester') && !roles.contains('Admin');
+    final title = testMode ? 'Dostawa — zamówienie testowe' : 'Dostawa i płatność';
     if (c == null || c.items.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Dostawa i płatność')),
+        appBar: AppBar(title: Text(title)),
         body: const EmptyView(
           icon: Icons.shopping_cart_outlined,
           title: 'Koszyk jest pusty',
@@ -120,7 +129,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final zones = ref.watch(zonesProvider(c.storeId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dostawa i płatność')),
+      appBar: AppBar(title: Text(title)),
       body: zones.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(
@@ -136,10 +145,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             }
           }
           final legal = ref.watch(storeLegalProvider(c.storeId)).valueOrNull;
-          final missing = _missingReason(legal);
+          final missing = _missingReason(legal, testerBlocked: testerBlocked);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (testMode) ...[
+                TestOrderBanner(blocked: testerBlocked),
+                const SizedBox(height: 16),
+              ],
               const _Label('Adres dostawy', icon: 'home'),
               TextField(
                 controller: _address,
@@ -196,7 +209,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               _SummaryRow('Wartość produktów', zl(cart.subtotal)),
               _SummaryRow('Opłata za dostawę', zl(fee)),
               const SizedBox(height: 4),
-              _SummaryRow('Razem', zl(cart.subtotal + fee), bold: true),
+              if (testMode) ...[
+                _SummaryRow('Wartość zamówienia', zl(cart.subtotal + fee)),
+                _SummaryRow('Opłata', 'bez opłaty — zamówienie testowe', bold: true),
+              ] else
+                _SummaryRow('Razem', zl(cart.subtotal + fee), bold: true),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: (_submitting || missing != null) ? null : () => _submit(fee),
@@ -205,12 +222,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         height: 22,
                         width: 22,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Złóż zamówienie i przejdź do płatności'),
+                    : Text(testMode
+                        ? 'Złóż zamówienie testowe'
+                        : 'Złóż zamówienie i przejdź do płatności'),
               ),
               const SizedBox(height: 8),
               Text(
                 missing == null || _submitting
-                    ? 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.'
+                    ? (testMode
+                        ? 'Nie pobieramy żadnej płatności — to zamówienie testowe pilotażu.'
+                        : 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.')
                     : missing,
                 textAlign: TextAlign.center,
                 style: TextStyle(
