@@ -24,8 +24,12 @@ public sealed class HttpContextCurrentUser : ICurrentUser
     public Guid? StoreId =>
         Guid.TryParse(Principal?.FindFirstValue("store_id"), out var storeId) ? storeId : null;
 
-    public IReadOnlyCollection<Guid> StoreIds =>
-        Principal?.FindAll("store_id")
+    public IReadOnlyCollection<Guid> StoreIds => GuidClaims("store_id");
+
+    public IReadOnlyCollection<Guid> DriverStoreIds => GuidClaims("driver_store_id");
+
+    private IReadOnlyCollection<Guid> GuidClaims(string type) =>
+        Principal?.FindAll(type)
             .Select(c => Guid.TryParse(c.Value, out var id) ? id : (Guid?)null)
             .Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray()
         ?? Array.Empty<Guid>();

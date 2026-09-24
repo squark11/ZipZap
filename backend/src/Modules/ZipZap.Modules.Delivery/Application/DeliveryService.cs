@@ -31,10 +31,21 @@ public sealed class DeliveryService
         _events = events;
     }
 
+    /// <summary>
+    /// Pula dostępnych dostaw — WYŁĄCZNIE ze sklepów, do których kierowca jest przypisany
+    /// (claim <c>driver_store_id</c>). Admin widzi wszystkie. Brak przypisania = pusta lista.
+    /// </summary>
     public async Task<IReadOnlyList<DeliveryDto>> ListAvailableAsync(CancellationToken ct)
-        => await _db.Deliveries.AsNoTracking()
-            .Where(d => d.Status == DeliveryStatus.AvailableForPickup)
-            .OrderBy(d => d.CreatedAtUtc).Select(d => DeliveryDto.From(d)).ToListAsync(ct);
+    {
+        var query = _db.Deliveries.AsNoTracking().Where(d => d.Status == DeliveryStatus.AvailableForPickup);
+        if (!_user.Roles.Contains("Admin"))
+        {
+            var stores = _user.DriverStoreIds.ToArray();
+            if (stores.Length == 0) return Array.Empty<DeliveryDto>();
+            query = query.Where(d => stores.Contains(d.StoreId));
+        }
+        return await query.OrderBy(d => d.CreatedAtUtc).Select(d => DeliveryDto.From(d)).ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<DeliveryDto>> ListMineAsync(CancellationToken ct)
     {
@@ -83,6 +94,11 @@ public sealed class DeliveryService
         if (delivery is null) return Result.Failure<DeliveryDto>(Error.NotFound("Dostawa nie istnieje."));
 
         var isAdmin = _user.Roles.Contains("Admin");
+        // Zakres: kierowca obsługuje tylko dostawy sklepów, do których jest przypisany — sprawdzane
+        // PRZED jakąkolwiek zmianą stanu i przed emisją OrderPickedUp/OrderDelivered. Dotyczy też
+        // odbioru/dostarczenia (np. po odpięciu kierowcy od sklepu).
+        if (!_user.DrivesForStore(delivery.StoreId))
+            return Result.Failure<DeliveryDto>(Error.Forbidden("Dostawa należy do sklepu, do którego nie jesteś przypisany."));
         if (requireOwner && !isAdmin && !delivery.IsOwnedBy(driverId))
             return Result.Failure<DeliveryDto>(Error.Forbidden("To nie jest Twoja dostawa."));
 

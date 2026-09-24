@@ -19,4 +19,13 @@ public interface ICurrentUser
 
     /// <summary>Czy może zarządzać danym sklepem: Admin lub pracownik TEGO sklepu (także jednej z wielu lokalizacji).</summary>
     bool ManagesStore(Guid storeId) => Roles.Contains("Admin") || StoreIds.Contains(storeId);
+
+    /// <summary>
+    /// Sklepy, do których użytkownik jest przypisany jako KIEROWCA (claim <c>driver_store_id</c>).
+    /// Nie dają uprawnień zarządczych — tylko prawo obsługi dostaw tych sklepów.
+    /// </summary>
+    IReadOnlyCollection<Guid> DriverStoreIds => Array.Empty<Guid>();
+
+    /// <summary>Czy może obsługiwać dostawy danego sklepu: Admin lub kierowca przypisany do TEGO sklepu.</summary>
+    bool DrivesForStore(Guid storeId) => Roles.Contains("Admin") || DriverStoreIds.Contains(storeId);
 }
