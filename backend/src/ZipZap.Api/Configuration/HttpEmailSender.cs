@@ -68,7 +68,7 @@ public sealed class HttpEmailSender : IEmailSender
             _logger.LogWarning("[EMAIL:http] {Provider} {Status}: {Body}", provider, (int)resp.StatusCode, Trunc(body));
             throw new InvalidOperationException($"Dostawca e-mail ({provider}) zwrócił {(int)resp.StatusCode}: {Trunc(body)}");
         }
-        _logger.LogInformation("[EMAIL:http] wysłano ({Provider}) to={To} subject={Subject}", provider, message.To, message.Subject);
+        _logger.LogInformation("[EMAIL:http] wysłano ({Provider}) to={To} subject={Subject}", provider, EmailLog.Mask(message.To), message.Subject);
     }
 
     private static HttpRequestMessage BuildResend(string apiKey, string from, string fromName, EmailMessage m)

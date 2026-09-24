@@ -147,10 +147,55 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
-// CORS dla panelu Angular w dev (JWT w nagłówku — bez ciasteczek).
-const string DevCorsPolicy = "dev-cors";
-builder.Services.AddCors(o => o.AddPolicy(DevCorsPolicy, p =>
-    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+// Tryb „publiczny pilotaż": hartuje aplikację niezależnie od ASPNETCORE_ENVIRONMENT
+// (można wdrożyć w Development, ale bez Swaggera, seeda z domyślnym hasłem i otwartego CORS).
+// Owner ustawia Pilot__Public=true na środowisku pilotażu; lokalnie zostaje wygoda dev.
+var publicPilot = builder.Configuration.GetValue<bool>("Pilot:Public", false);
+var hardened = publicPilot || builder.Environment.IsProduction();
+
+// CORS: panel/PWA wołają API cross-origin (JWT w nagłówku, bez ciasteczek).
+// Allowlista z konfiguracji (Cors:AllowedOrigins) wygrywa wszędzie; bez niej — otwarte tylko w dev.
+const string CorsPolicy = "app-cors";
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
+builder.Services.AddCors(o => o.AddPolicy(CorsPolicy, p =>
+{
+    if (corsOrigins.Length > 0)
+        p.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod();
+    else if (!hardened)
+        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod(); // dev/lokalnie
+    // hartowane bez allowlisty → brak dozwolonych origins (zamknięte).
+}));
+
+// Limity nadużyć publicznych endpointów (logowanie, rejestracja, reset hasła, opinie).
+// Globalny limiter po IP tylko dla wrażliwych ścieżek; reszta bez limitu.
+// Wyłączalny konfiguracją (RateLimiting:Enabled=false) — używane w testach integracyjnych.
+var rateLimitEnabled = builder.Configuration.GetValue<bool>("RateLimiting:Enabled", true);
+var rateLimitPerMinute = builder.Configuration.GetValue<int>("RateLimiting:PermitPerMinute", 10);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+    {
+        var path = ctx.Request.Path.Value ?? string.Empty;
+        var sensitive =
+            path.StartsWith("/api/identity/login", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/identity/register", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/identity/password", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/register", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/feedback", StringComparison.OrdinalIgnoreCase);
+        if (!rateLimitEnabled || !sensitive || !HttpMethods.IsPost(ctx.Request.Method))
+            return System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("none");
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ip,
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            });
+    });
+});
 
 // Jednolita koperta błędu (RFC7807 + code + traceId) dla wszystkich odpowiedzi
 // błędnych, w tym nieobsłużonych wyjątków (żadnych stack trace do klienta).
@@ -248,20 +293,27 @@ app.Use(async (context, next) =>
     }
 });
 
-if (app.Environment.IsDevelopment())
+// Swagger tylko poza trybem hartowanym (publiczny pilotaż go NIE wystawia).
+if (app.Environment.IsDevelopment() && !publicPilot)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    // Bootstrap pierwszego administratora (tylko dev).
-    await IdentityModule.SeedDevelopmentAdminAsync(
-        app.Services,
-        app.Configuration["Seed:AdminEmail"] ?? "admin@zipzap.local",
-        app.Configuration["Seed:AdminPassword"] ?? "Admin123!");
 }
 
-if (app.Environment.IsDevelopment())
-    app.UseCors(DevCorsPolicy);
+// Bootstrap administratora startowego — NIGDY z domyślnym hasłem na środowisku publicznym.
+// Seeduje tylko, gdy Seed:AdminPassword jest jawnie ustawione i nie jesteśmy w trybie hartowanym.
+var seedPassword = app.Configuration["Seed:AdminPassword"];
+if (!hardened)
+{
+    if (!string.IsNullOrWhiteSpace(seedPassword))
+        await IdentityModule.SeedDevelopmentAdminAsync(app.Services,
+            app.Configuration["Seed:AdminEmail"] ?? "admin@zipzap.local", seedPassword);
+    else
+        app.Logger.LogWarning("Seed admina pominięty: brak Seed:AdminPassword (nie zakładamy konta z domyślnym hasłem).");
+}
+
+app.UseCors(CorsPolicy);
+app.UseRateLimiter();
 
 // Serwuje statyczne zasoby (m.in. /mock/* — grafiki demo dla seeda pilotażu).
 app.UseStaticFiles();

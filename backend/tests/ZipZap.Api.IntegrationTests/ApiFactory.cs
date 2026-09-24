@@ -22,6 +22,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:Postgres",
             Environment.GetEnvironmentVariable("ZIPZAP_TEST_POSTGRES")
             ?? "Host=localhost;Port=5432;Database=zipzap_it;Username=zipzap;Password=zipzap");
+        // Testy strzelają setki żądań logowania/rejestracji z jednego IP — limiter wyłączony w teście.
+        builder.UseSetting("RateLimiting:Enabled", "false");
     }
 
     public HttpClient Anon() => CreateClient();

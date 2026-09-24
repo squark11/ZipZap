@@ -30,7 +30,7 @@ public sealed class SmtpEmailSender : IEmailSender
         if (!cfg.Enabled)
         {
             _logger.LogInformation("[EMAIL:mock] SMTP nieustawiony (panel ani env). to={To} subject={Subject}",
-                message.To, message.Subject);
+                EmailLog.Mask(message.To), message.Subject);
             return;
         }
 
@@ -48,7 +48,7 @@ public sealed class SmtpEmailSender : IEmailSender
             await client.AuthenticateAsync(cfg.Username, cfg.Password ?? string.Empty, ct);
         await client.SendAsync(msg, ct);
         await client.DisconnectAsync(true, ct);
-        _logger.LogInformation("[EMAIL] wysłano to={To} subject={Subject}", message.To, message.Subject);
+        _logger.LogInformation("[EMAIL] wysłano to={To} subject={Subject}", EmailLog.Mask(message.To), message.Subject);
     }
 
     /// <summary>Konfiguracja SMTP z env (Email:Smtp:*), gdy panel nieustawiony. Port domyślny 465, SSL domyślnie on.</summary>

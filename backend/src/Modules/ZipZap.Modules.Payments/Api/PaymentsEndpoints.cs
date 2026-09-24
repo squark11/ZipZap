@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using ZipZap.BuildingBlocks.Messaging;
@@ -44,9 +45,9 @@ public static class PaymentsEndpoints
         // --- Dev: hostowana „strona płatności" mocka (zastępuje brakującą stronę panelu) ---
         // Tylko w Development. Klika sukces/porażkę → wysyła poprawnie PODPISANY webhook do
         // tej samej ścieżki (płatność pozostaje webhook-autorytatywna, bez fałszywego sukcesu).
-        group.MapGet("/mock/pay", async (Guid payment, PaymentsDbContext db, IHostEnvironment env, CancellationToken ct) =>
+        group.MapGet("/mock/pay", async (Guid payment, PaymentsDbContext db, IHostEnvironment env, IConfiguration config, CancellationToken ct) =>
         {
-            if (!env.IsDevelopment()) return Results.NotFound();
+            if (!MockPayEnabled(env, config)) return Results.NotFound();
             var p = await db.Payments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == payment, ct);
             if (p is null) return Results.NotFound();
             return Results.Content(MockPayPageHtml(p.Id, p.Amount, p.Status.ToString()), "text/html; charset=utf-8");
@@ -54,9 +55,9 @@ public static class PaymentsEndpoints
 
         group.MapPost("/mock/complete", async (
             HttpRequest request, PaymentsDbContext db, PaymentProviderRegistry providers,
-            IIntegrationEventTypeRegistry events, IHostEnvironment env, IOptions<PaymentsOptions> opts, CancellationToken ct) =>
+            IIntegrationEventTypeRegistry events, IHostEnvironment env, IConfiguration config, IOptions<PaymentsOptions> opts, CancellationToken ct) =>
         {
-            if (!env.IsDevelopment()) return Results.NotFound();
+            if (!MockPayEnabled(env, config)) return Results.NotFound();
             var driver = providers.Get("mock");
             if (driver is null) return Results.NotFound();
 
@@ -140,6 +141,10 @@ public static class PaymentsEndpoints
     }
 
     private static bool CanViewStore(ICurrentUser user, Guid storeId) => user.ManagesStore(storeId);
+
+    // Strona mocka płatności dostępna tylko w dev i tylko poza trybem hartowanym (publiczny pilotaż jej nie wystawia).
+    private static bool MockPayEnabled(IHostEnvironment env, IConfiguration config)
+        => env.IsDevelopment() && !config.GetValue<bool>("Pilot:Public", false);
 
     private static IResult Forbidden()
         => Results.Problem(detail: "Brak dostępu do danych tego sklepu.", statusCode: 403, title: "forbidden");

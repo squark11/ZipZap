@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using ZipZap.BuildingBlocks.Domain;
+using ZipZap.BuildingBlocks.MultiTenancy;
 using ZipZap.Modules.Delivery.Application;
 using ZipZap.Modules.Delivery.Infrastructure;
 
@@ -39,10 +40,13 @@ public static class DeliveryEndpoints
             .RequireAuthorization("Driver")
             .WithSummary("Kierowca oznacza dostarczenie (→ OrderDelivered).");
 
-        group.MapGet("/orders/{orderId:guid}", async (Guid orderId, DeliveryDbContext db, CancellationToken ct) =>
+        group.MapGet("/orders/{orderId:guid}", async (Guid orderId, DeliveryDbContext db, ICurrentUser user, CancellationToken ct) =>
         {
             var d = await db.Deliveries.AsNoTracking().FirstOrDefaultAsync(x => x.OrderId == orderId, ct);
-            return d is null ? Results.NotFound() : Results.Ok(DeliveryDto.From(d));
+            if (d is null) return Results.NotFound();
+            // Izolacja: dostawę widzi obsługa sklepu (dowolna z lokalizacji), przypisany kierowca lub admin.
+            var allowed = user.ManagesStore(d.StoreId) || (d.DriverId is Guid drv && user.UserId == drv);
+            return allowed ? Results.Ok(DeliveryDto.From(d)) : Results.Forbid();
         }).RequireAuthorization();
 
         // Widok operacyjny sklepu: wszystkie dostawy sklepu (StoreEmployee/Admin).

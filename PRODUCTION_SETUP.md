@@ -23,6 +23,22 @@ sekrety deweloperskie/niekompletne (i wypisze, co ustawić):
 - `Payments:Mock:Secret = mock-dev-secret`,
 - `Seed:AdminPassword` puste lub `Admin123!`.
 
+## 2a. Tryb publicznego pilotażu (hartowanie w Development)
+Pilotaż bywa wdrażany w `Development` (mock płatności, brak twardego guardu), ale
+**publiczny test nie może wystawiać narzędzi deweloperskich**. Ustaw:
+
+| Zmienna | Efekt |
+|---|---|
+| `PILOT__PUBLIC=true` | Tryb hartowany niezależnie od `ASPNETCORE_ENVIRONMENT`: **Swagger wyłączony**, **strona mocka płatności `/api/payments/mock/*` → 404**, **seed administratora pominięty** (żadnego konta z domyślnym hasłem), CORS bez otwartego fallbacku. |
+| `CORS__ALLOWEDORIGINS__0=https://panel.dowozka.pl` | Allowlista origin dla panelu/PWA (dodawaj kolejne `__1`, `__2`). Bez niej w trybie hartowanym CORS jest **zamknięty**; w czystym dev (bez allowlisty) — otwarty dla wygody. |
+
+Skutki hartowania:
+- **Seed admina**: uruchamia się tylko poza trybem hartowanym i tylko gdy `Seed:AdminPassword` jest jawnie ustawione — nigdy z `Admin123!`. Na pilotażu konto admina zakłada się raz (istnieje w bazie), więc seed jest zbędny.
+- **Limity nadużyć**: publiczne `POST` na logowanie/rejestrację/reset hasła/opinie są ograniczone (10/min na IP) — działa w każdym środowisku, bez dodatkowej konfiguracji.
+- **Logi**: adresy e-mail w logach są maskowane (bez pełnych danych osobowych).
+
+> Płatności rzeczywiste pozostają **wyłączone** do decyzji właściciela (patrz `PILOT_BUSINESS_MODEL.md`).
+
 ## 3. Zmienne środowiskowe (z `.env.example`)
 | Zmienna | Opis |
 |---|---|

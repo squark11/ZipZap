@@ -255,10 +255,11 @@ public sealed class OrderingService
         var order = await LoadOrderAsync(orderId, ct);
         if (order is null) return Error.NotFound("Zamówienie nie istnieje.");
 
+        // Izolacja PII (telefon/adres): dostęp ma właściciel zamówienia, admin lub obsługa TEGO sklepu.
+        // Kierowca NIE ma dostępu do dowolnych zamówień — dostęp per-przypisanie dojdzie z realnym UI kierowcy.
         var isOwner = _user.UserId == order.CustomerId;
         var isStaff = _user.Roles.Contains("Admin")
-                      || (_user.Roles.Contains("StoreEmployee") && _user.StoreIds.Contains(order.StoreId))
-                      || _user.Roles.Contains("Driver");
+                      || (_user.Roles.Contains("StoreEmployee") && _user.StoreIds.Contains(order.StoreId));
         if (!isOwner && !isStaff) return Error.Forbidden("Brak dostępu do zamówienia.");
 
         // Dołącz okno dostawy (data + godziny slotu), by klient widział termin na śledzeniu.

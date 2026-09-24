@@ -58,8 +58,8 @@ public sealed class DeliveryService
         return Result.Success<IReadOnlyList<DeliveryDto>>(items);
     }
 
-    private bool CanViewStore(Guid storeId)
-        => _user.Roles.Contains("Admin") || (_user.Roles.Contains("StoreEmployee") && _user.StoreId == storeId);
+    // Multi-lokalizacja: uwzględnij WSZYSTKIE sklepy użytkownika, nie tylko pierwszy (ManagesStore = StoreIds.Contains).
+    private bool CanViewStore(Guid storeId) => _user.ManagesStore(storeId);
 
     public Task<Result<DeliveryDto>> AcceptAsync(Guid deliveryId, CancellationToken ct)
         => MutateAsync(deliveryId, requireOwner: false, apply: (d, driverId) => d.Accept(driverId), emit: null, ct);
