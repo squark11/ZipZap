@@ -3,6 +3,7 @@ import '../../models/address.dart';
 import '../../models/cart.dart';
 import '../../models/delivery.dart';
 import '../../models/order.dart';
+import '../../models/purchasing_round.dart';
 import '../../models/store_legal.dart';
 
 class OrderingRepository {
@@ -44,6 +45,12 @@ class OrderingRepository {
     return StoreLegal.fromJson(data as Map<String, dynamic>);
   }
 
+  /// Najbliższa runda zakupowa sklepu, jej termin graniczny i najwcześniejsza dostawa.
+  Future<RoundPreview> getRoundPreview(String storeId) async {
+    final data = await _api.get('/ordering/stores/$storeId/purchasing-round');
+    return RoundPreview.fromJson(data as Map<String, dynamic>);
+  }
+
   Future<List<DeliveryZone>> listZones(String storeId) async {
     final data = await _api.get('/ordering/stores/$storeId/zones');
     return (data as List).map((e) => DeliveryZone.fromJson(e as Map<String, dynamic>)).toList();
@@ -66,6 +73,7 @@ class OrderingRepository {
     required String contactPhone,
     required String idempotencyKey,
     bool consentAccepted = false,
+    DateTime? expectedRoundStartsAtUtc,
   }) async {
     final data = await _api.post('/ordering/carts/$cartId/checkout',
         headers: {'Idempotency-Key': idempotencyKey},
@@ -76,6 +84,8 @@ class OrderingRepository {
           'deliveryAddress': deliveryAddress,
           'contactPhone': contactPhone,
           'consentAccepted': consentAccepted,
+          // Runda pokazana klientowi — gdy termin graniczny minie, serwer odrzuca (409) zamiast przesuwać po cichu.
+          'expectedRoundStartsAtUtc': ?expectedRoundStartsAtUtc?.toUtc().toIso8601String(),
         });
     return Order.fromJson(data as Map<String, dynamic>);
   }

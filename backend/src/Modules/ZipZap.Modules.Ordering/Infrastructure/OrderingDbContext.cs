@@ -22,11 +22,42 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
     public DbSet<DeliveryZone> DeliveryZones => Set<DeliveryZone>();
     public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
+    public DbSet<PurchasingSchedule> PurchasingSchedules => Set<PurchasingSchedule>();
+    public DbSet<PurchasingRound> PurchasingRounds => Set<PurchasingRound>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasDefaultSchema(Schema);
+
+        // ---- Rundy zakupowe (osobne od terminów dostaw i od DeliveryWaves) ----
+        b.Entity<PurchasingSchedule>(e =>
+        {
+            e.ToTable("purchasing_schedule");
+            e.HasKey(s => s.Id);
+            e.Property(s => s.TimeZoneId).IsRequired().HasMaxLength(64);
+            e.Property(s => s.RoundsJson).IsRequired();
+            e.Ignore(s => s.Rounds);
+            // Trwała konfiguracja startowa (do potwierdzenia przez właściciela; edytowalna w panelu).
+            e.HasData(new
+            {
+                Id = PurchasingSchedule.GlobalId,
+                TimeZoneId = PurchasingSchedule.DefaultTimeZone,
+                RoundsJson = PurchasingSchedule.DefaultRoundsJson,
+                ActiveDaysMask = PurchasingSchedule.DefaultActiveDaysMask,
+                MinDeliveryLeadMinutes = PurchasingSchedule.DefaultMinDeliveryLeadMinutes,
+                UpdatedAtUtc = new DateTime(2026, 9, 24, 0, 0, 0, DateTimeKind.Utc),
+            });
+        });
+
+        b.Entity<PurchasingRound>(e =>
+        {
+            e.ToTable("purchasing_rounds");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.TimeZoneId).IsRequired().HasMaxLength(64);
+            e.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(r => new { r.StoreId, r.StartsAtUtc }).IsUnique();
+        });
 
         // ---- Read-model ----
         b.Entity<CatalogStoreView>(e =>
@@ -91,6 +122,7 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(o => o.IdempotencyKey).HasMaxLength(80);
             e.Property(o => o.PaymentMode).IsRequired().HasMaxLength(16).HasDefaultValue("online");
             e.Ignore(o => o.IsTestOrder);
+            e.HasIndex(o => o.PurchasingRoundId);
             e.HasIndex(o => new { o.StoreId, o.Status });
             e.HasIndex(o => o.CustomerId);
             // Idempotencja checkoutu: para (klient, klucz) unikalna, gdy klucz podany.

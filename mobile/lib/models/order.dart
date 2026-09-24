@@ -1,4 +1,5 @@
 import '../core/util/format.dart';
+import 'purchasing_round.dart';
 
 class OrderItem {
   final String productId;
@@ -68,6 +69,9 @@ class Order {
   final String paymentMode;
   bool get isTestOrder => paymentMode == 'test';
 
+  /// Runda zakupowa, do której przypisano zamówienie (null dla zamówień sprzed rund).
+  final PurchasingRound? purchasingRound;
+
   /// Czytelne okno dostawy, np. „Dziś, 14:00–16:00" (null gdy brak danych).
   String? get deliveryWindowLabel {
     final st = deliveryStartTime, en = deliveryEndTime;
@@ -99,6 +103,7 @@ class Order {
     this.deliveryStartTime,
     this.deliveryEndTime,
     this.paymentMode = 'online',
+    this.purchasingRound,
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -127,5 +132,8 @@ class Order {
         deliveryStartTime: j['deliveryStartTime']?.toString(),
         deliveryEndTime: j['deliveryEndTime']?.toString(),
         paymentMode: (j['paymentMode'] ?? 'online').toString(),
+        purchasingRound: j['purchasingRound'] is Map<String, dynamic>
+            ? PurchasingRound.fromJson(j['purchasingRound'] as Map<String, dynamic>)
+            : null,
       );
 }

@@ -2,6 +2,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Xunit;
 
@@ -189,6 +191,32 @@ public class TestModeApiFactory : ApiFactory
     }
 }
 
+/// <summary>Zegar ustawiany przez test (rundy zakupowe liczone deterministycznie).</summary>
+public sealed class MutableClock : TimeProvider
+{
+    private DateTimeOffset _now = DateTimeOffset.UtcNow;
+    public void Set(DateTime utc) => _now = new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc));
+    public override DateTimeOffset GetUtcNow() => _now;
+}
+
+/// <summary>
+/// Rundy zakupowe ze stałym zegarem na OSOBNEJ świeżej bazie — testy zmieniające globalny harmonogram
+/// nie wpływają na inne kolekcje.
+/// </summary>
+public class RoundsApiFactory : ApiFactory
+{
+    private const string Database = "zipzap_it_rounds";
+    public MutableClock Clock { get; } = new();
+
+    public RoundsApiFactory() => TestDatabases.Recreate(Database, owner: null);
+
+    protected override string ConnectionString =>
+        new NpgsqlConnectionStringBuilder(BaseConnectionString) { Database = Database }.ConnectionString;
+
+    protected override void ConfigureSettings(IWebHostBuilder builder) =>
+        builder.ConfigureTestServices(s => s.AddSingleton<TimeProvider>(Clock));
+}
+
 internal static class TestDatabases
 {
     public static void Recreate(string database, string? owner)
@@ -215,3 +243,6 @@ public sealed class PilotCollection : ICollectionFixture<PilotApiFactory> { }
 
 [CollectionDefinition("w1")]
 public sealed class TestModeCollection : ICollectionFixture<TestModeApiFactory> { }
+
+[CollectionDefinition("rounds")]
+public sealed class RoundsCollection : ICollectionFixture<RoundsApiFactory> { }

@@ -108,6 +108,19 @@ docker compose up -d --build
 API: `http://<host>:5080` (za reverse-proxy z TLS na produkcji). Migracje bazy
 wykonują się automatycznie przy starcie.
 
+> ⚠ **Wdrożenie = migracja produkcyjnej bazy.** Ponieważ migracje uruchamiają się przy starcie,
+> każdy deploy nowego kodu (np. auto-deploy Render z `main`) od razu zmienia schemat produkcyjnej bazy.
+> Branch pilotażowy zawiera migracje, które **nie zostały jeszcze zastosowane na produkcji**:
+> `Ordering_PaymentMode` (kolumna `orders.PaymentMode`, domyślnie `online`) i
+> `Ordering_PurchasingRounds` (tabele `purchasing_schedule` z wierszem startowym i `purchasing_rounds`,
+> kolumny rundy w `orders` — wszystkie nullable). Obie są addytywne (bez usuwania danych). Przed
+> scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
+
+### Rundy zakupowe
+Harmonogram rund (12:00/16:00, cutoff 30 min, pon–sob, dostawa ≥ 60 min po rundzie — **wartości
+startowe do potwierdzenia**) jest w bazie i edytowalny w panelu (Konfiguracja → Rundy zakupowe).
+Nie wymaga zmiennych środowiskowych. Strefa `Europe/Warsaw` — obraz `aspnet:8.0` zawiera tzdata/ICU.
+
 ## 5. Integracje wymagające dokonfigurowania (odłożone)
 Poniższe mają w kodzie **abstrakcję + mock** — realny adapter wymaga poświadczeń.
 Nigdy nie commituj kluczy; ustaw je zmiennymi środowiskowymi.

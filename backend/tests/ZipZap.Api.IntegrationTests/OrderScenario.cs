@@ -12,7 +12,9 @@ internal static class OrderScenario
     private sealed record IdDto(Guid id);
     private sealed record CartDto(Guid id, string cartToken);
 
-    public static async Task<Setup> StoreWithSlotAsync(ApiFactory f, int maxOrders = 20)
+    /// <param name="slotDate">Data terminu dostawy (lokalna); domyślnie +3 dni — zawsze PO najbliższej rundzie.</param>
+    public static async Task<Setup> StoreWithSlotAsync(ApiFactory f, int maxOrders = 20,
+        DateOnly? slotDate = null, string startTime = "18:00:00", string endTime = "20:00:00", string storeStatus = "Open")
     {
         var admin = await f.LoginAdminAsync();
         var ac = f.Authed(admin.accessToken);
@@ -25,7 +27,7 @@ internal static class OrderScenario
             var view = await db.CatalogStores.FindAsync(storeId);
             if (view is null) db.CatalogStores.Add(view = new CatalogStoreView { Id = storeId });
             view.Name = "Sklep IT"; view.CommissionRate = 0.10m; view.MinimumOrderValue = 0m;
-            view.IsActive = true; view.Status = "Open";
+            view.IsActive = true; view.Status = storeStatus;
             db.CatalogProducts.Add(new CatalogProductView
             {
                 Id = productId, StoreId = storeId, Name = "Mleko 1l", Price = 4.00m, IsAvailable = true,
@@ -38,16 +40,29 @@ internal static class OrderScenario
             .Content.ReadFromJsonAsync<IdDto>())!;
         var slotResp = await ac.PostAsJsonAsync($"/api/ordering/stores/{storeId}/slots", new
         {
-            deliveryZoneId = zone.id, date = DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd"),
-            startTime = "10:00:00", endTime = "12:00:00", maxOrders,
+            deliveryZoneId = zone.id,
+            date = (slotDate ?? DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(3))).ToString("yyyy-MM-dd"),
+            startTime, endTime, maxOrders,
         });
         slotResp.EnsureSuccessStatusCode();
         var slotId = (await slotResp.Content.ReadFromJsonAsync<IdDto>())!.id;
         return new Setup(admin.accessToken, storeId, zone.id, slotId, productId);
     }
 
+    /// <summary>Dodatkowy termin dostawy dla istniejącego sklepu/strefy.</summary>
+    public static async Task<Guid> AddSlotAsync(ApiFactory f, Setup s, DateOnly date, string startTime, string endTime)
+    {
+        var resp = await f.Authed(s.AdminToken).PostAsJsonAsync($"/api/ordering/stores/{s.StoreId}/slots", new
+        {
+            deliveryZoneId = s.ZoneId, date = date.ToString("yyyy-MM-dd"), startTime, endTime, maxOrders = 20,
+        });
+        resp.EnsureSuccessStatusCode();
+        return (await resp.Content.ReadFromJsonAsync<IdDto>())!.id;
+    }
+
     /// <summary>Nowy koszyk z jednym produktem i próba złożenia zamówienia (zwraca surową odpowiedź).</summary>
-    public static async Task<HttpResponseMessage> CheckoutAsync(ApiFactory f, Setup s, string customerToken)
+    public static async Task<HttpResponseMessage> CheckoutAsync(ApiFactory f, Setup s, string customerToken,
+        Guid? slotId = null, DateTime? expectedRoundStartsAtUtc = null)
     {
         var cc = f.Authed(customerToken);
         var cart = (await (await cc.PostAsJsonAsync("/api/ordering/carts", new { storeId = s.StoreId }))
@@ -56,8 +71,9 @@ internal static class OrderScenario
             new { productId = s.ProductId, quantity = 1 })).EnsureSuccessStatusCode();
         return await cc.PostAsJsonAsync($"/api/ordering/carts/{cart.id}/checkout", new
         {
-            token = cart.cartToken, deliveryZoneId = s.ZoneId, timeSlotId = s.SlotId,
+            token = cart.cartToken, deliveryZoneId = s.ZoneId, timeSlotId = slotId ?? s.SlotId,
             deliveryAddress = "ul. Testowa 1, 30-001 Kraków", contactPhone = "600100200", consentAccepted = true,
+            expectedRoundStartsAtUtc,
         });
     }
 

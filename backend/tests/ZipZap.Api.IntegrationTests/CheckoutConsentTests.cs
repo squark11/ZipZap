@@ -39,8 +39,9 @@ public sealed class CheckoutConsentTests
         });
         var zone = new DeliveryZone(storeId, "Strefa", 5.00m);
         db.DeliveryZones.Add(zone);
-        var slot = new TimeSlot(storeId, zone.Id, DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(1)),
-            new TimeOnly(10, 0), new TimeOnly(12, 0), maxOrders: 10);
+        // Termin dostawy zawsze PO najbliższej rundzie zakupowej (+3 dni, wieczór) — test niezależny od zegara.
+        var slot = new TimeSlot(storeId, zone.Id, DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(3)),
+            new TimeOnly(18, 0), new TimeOnly(20, 0), maxOrders: 10);
         db.TimeSlots.Add(slot);
 
         var cart = Cart.Create(storeId, customerId);

@@ -21,6 +21,24 @@ zamówienia i klienta**.
 **Runda zakupowa ≠ okno dostawy.** Runda = kiedy operator *kupuje/kompletuje*. Okno dostawy =
 kiedy klient *dostaje*. Klient musi widzieć oba oraz **nie wolno obiecywać dostawy natychmiastowej**.
 
+### 1.1. Jak działają rundy w systemie (S1a — zaimplementowane lokalnie, niewdrożone)
+
+- **Harmonogram jest trwały** (tabela `ordering.purchasing_schedule`, edycja: panel → Konfiguracja →
+  „Rundy zakupowe”, tylko admin, zmiana audytowana). Nie zależy od pamięci procesu ani od `App_Data`.
+- **Wartości startowe — DO POTWIERDZENIA ze sklepem:** rundy **12:00 i 16:00**, zamówienia przyjmowane do
+  **30 min przed rundą** (cutoff), rundy **pon–sob** (niedziela wyłączona), okno dostawy może zacząć się
+  najwcześniej **60 min po starcie rundy**.
+- Godziny są **lokalne `Europe/Warsaw`**; konkretna runda jest zapisywana w **UTC** i liczona osobno dla
+  każdej daty (zmiana czasu jest uwzględniona; godzina nieistniejąca → runda pominięta, podwójna →
+  wcześniejsze wystąpienie).
+- Zamówienie trafia do **najbliższej rundy, której cutoff jeszcze nie minął** (dni aktywne, sklep otwarty).
+  Jeśli klient widział rundę, której cutoff minął przed potwierdzeniem, serwer **odrzuca** zamówienie (409)
+  z nową godziną zamiast po cichu przenosić je do kolejnej rundy.
+- Klient **przed zamówieniem** widzi rundę, cutoff i najwcześniejszy początek dostawy; terminy dostawy
+  wcześniejsze niż runda + 60 min są niedostępne (również po stronie serwera). Sklep zamknięty / brak rundy →
+  czytelny komunikat i brak możliwości złożenia zamówienia.
+- Rundy są **niezależne** od terminów dostaw (`time_slots`) i od „fal dostaw” w ustawieniach platformy.
+
 Docelowo produkt to **marketplace lokalnych sklepów** — każdy sklep prowadzi własny katalog i
 ofertę. Pilotaż nie może przekształcić platformy w jeden centralny sklep Dowózka.pl ani przenieść
 własności asortymentu na platformę.

@@ -24,16 +24,26 @@ public sealed class OrderingService
     private readonly IIntegrationEventTypeRegistry _events;
     private readonly IStoreLegalPolicyProvider _legal;
     private readonly PilotOrderingOptions _pilot;
+    private readonly PurchasingRoundService _rounds;
 
     public OrderingService(OrderingDbContext db, ICurrentUser user, IIntegrationEventTypeRegistry events,
-        IStoreLegalPolicyProvider legal, Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot)
+        IStoreLegalPolicyProvider legal, Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot,
+        PurchasingRoundService rounds)
     {
         _db = db;
         _user = user;
         _events = events;
         _legal = legal;
         _pilot = pilot.Value;
+        _rounds = rounds;
     }
+
+    private static DateTime AsUtc(DateTime d) => d.Kind switch
+    {
+        DateTimeKind.Utc => d,
+        DateTimeKind.Local => d.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(d, DateTimeKind.Utc),
+    };
 
     // ---------------- Koszyk ----------------
 
@@ -174,7 +184,7 @@ public sealed class OrderingService
 
     public async Task<Result<OrderDto>> PlaceOrderAsync(Guid cartId, string token, Guid deliveryZoneId,
         Guid timeSlotId, string deliveryAddress, string contactPhone, bool consentAccepted,
-        string? idempotencyKey, CancellationToken ct)
+        string? idempotencyKey, CancellationToken ct, DateTime? expectedRoundStartsAtUtc = null)
     {
         if (_user.UserId is not Guid customerId)
             return Error.Unauthorized("Złożenie zamówienia wymaga zalogowania.");
@@ -195,7 +205,8 @@ public sealed class OrderingService
         {
             var existing = await _db.Orders.AsNoTracking().Include(o => o.Items).Include(o => o.History)
                 .FirstOrDefaultAsync(o => o.CustomerId == customerId && o.IdempotencyKey == idempotencyKey, ct);
-            if (existing is not null) return OrderDto.From(existing);
+            if (existing is not null)
+                return OrderDto.From(existing, round: await _rounds.InfoAsync(existing.PurchasingRoundId, ct));
         }
 
         // Limit kosztu W1: każde zamówienie testowe to towar kupiony przez operatora.
@@ -241,6 +252,29 @@ public sealed class OrderingService
         if (unavailable.Count > 0)
             return Error.Validation($"Produkty niedostępne: {string.Join(", ", unavailable)}.");
 
+        // Runda zakupowa (kiedy operator kupuje) — osobna od terminu dostawy. Najbliższa runda z niewygasłym
+        // terminem granicznym; klient mógł zobaczyć inną w podglądzie (termin minął w międzyczasie) → 409.
+        var round = await _rounds.ResolveAsync(ct);
+        if (round is null)
+            return Error.Validation("Brak dostępnej rundy zakupowej w najbliższych dniach — spróbuj później.");
+        var occ = round.Occurrence;
+        if (expectedRoundStartsAtUtc is DateTime expected
+            && Math.Abs((AsUtc(expected) - occ.StartsAtUtc).TotalSeconds) > 1)
+            return Error.Conflict($"Minął termin graniczny wybranej rundy. Zamówienie trafiłoby do rundy " +
+                $"{occ.LocalDate:dd.MM} o {occ.LocalTime:HH:mm} — sprawdź termin i potwierdź ponownie.");
+
+        // Okno dostawy musi zaczynać się PO zakupach w rundzie (+ czas na kompletację).
+        var slotStartUtc = RoundCalculator.ToUtc(slot.Date, slot.StartTime, round.TimeZone);
+        if (slotStartUtc is null || slotStartUtc < round.EarliestDeliveryUtc)
+        {
+            var earliest = TimeZoneInfo.ConvertTimeFromUtc(round.EarliestDeliveryUtc, round.TimeZone);
+            return Error.Validation($"Wybrany termin dostawy jest przed zakupami w rundzie {occ.LocalDate:dd.MM} " +
+                $"o {occ.LocalTime:HH:mm}. Wybierz termin rozpoczynający się od {earliest:dd.MM HH:mm}.");
+        }
+
+        // Utrwalenie rundy PRZED zmianami koszyka/slotu (osobny zapis — nie wypycha połowicznego checkoutu).
+        var roundEntity = await _rounds.EnsureRoundAsync(cart.StoreId, round, ct);
+
         // Rezerwacja slotu (limit).
         try { slot.Reserve(); }
         catch (OrderingDomainException ex) { return Error.Conflict(ex.Message); }
@@ -251,6 +285,7 @@ public sealed class OrderingService
 
         var order = Order.Place(cart.StoreId, customerId, lines, store.CommissionRate, zone.DeliveryFee,
             deliveryZoneId, timeSlotId, deliveryAddress.Trim(), contactPhone.Trim(), paymentMode: paymentMode);
+        order.AssignToRound(roundEntity.Id, roundEntity.StartsAtUtc, roundEntity.CutoffAtUtc);
         order.SetIdempotencyKey(string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey);
 
         cart.AssignCustomer(customerId);
@@ -269,7 +304,7 @@ public sealed class OrderingService
             return Error.Conflict("Wybrany slot został właśnie zapełniony. Wybierz inny termin.");
         }
 
-        return OrderDto.From(order);
+        return OrderDto.From(order, slot, PurchasingRoundService.ToInfo(roundEntity));
     }
 
     public async Task<Result<OrderDto>> GetOrderAsync(Guid orderId, CancellationToken ct)
@@ -287,7 +322,7 @@ public sealed class OrderingService
         // Dołącz okno dostawy (data + godziny slotu), by klient widział termin na śledzeniu.
         var slot = await _db.TimeSlots.AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == order.TimeSlotId, ct);
-        return OrderDto.From(order, slot);
+        return OrderDto.From(order, slot, await _rounds.InfoAsync(order.PurchasingRoundId, ct));
     }
 
     public async Task<IReadOnlyList<OrderDto>> ListMyOrdersAsync(CancellationToken ct)

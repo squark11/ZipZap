@@ -13,6 +13,7 @@ import '../../core/widgets/states.dart';
 import '../../core/widgets/test_order_banner.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/delivery.dart';
+import '../../models/purchasing_round.dart';
 import '../../models/store_legal.dart';
 import '../cart/cart_controller.dart';
 
@@ -26,6 +27,10 @@ final slotsProvider =
     FutureProvider.autoDispose.family<List<TimeSlot>, ({String storeId, String zoneId})>(
         (ref, k) =>
             ref.read(orderingRepositoryProvider).listSlots(k.storeId, zoneId: k.zoneId));
+
+/// Najbliższa runda zakupowa sklepu (+ termin graniczny i najwcześniejsza dostawa).
+final roundPreviewProvider = FutureProvider.autoDispose.family<RoundPreview, String>(
+    (ref, storeId) => ref.read(orderingRepositoryProvider).getRoundPreview(storeId));
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -68,6 +73,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _snack('Wybierz strefę i termin dostawy.');
       return;
     }
+    final round = ref.read(roundPreviewProvider(cart.storeId)).valueOrNull?.round;
     setState(() => _submitting = true);
     try {
       final order = await ref.read(orderingRepositoryProvider).checkout(
@@ -79,12 +85,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             contactPhone: _phone.text.trim(),
             idempotencyKey: _idempotencyKey,
             consentAccepted: _consent,
+            expectedRoundStartsAtUtc: round?.startsAtUtc,
           );
       ref.read(cartControllerProvider.notifier).clearAfterCheckout();
       // Tryb decyduje zamówienie z serwera (nie lokalna konfiguracja): zamówienie testowe
       // (pilotaż) NIGDY nie trafia na ekran płatności.
       if (mounted) context.go(order.isTestOrder ? '/orders/${order.id}' : '/pay/${order.id}');
     } on ApiException catch (e) {
+      // 409: m.in. minął termin graniczny pokazanej rundy — odświeżamy rundę i terminy,
+      // klient potwierdza ponownie (bez cichego przesunięcia zamówienia).
+      if (e.statusCode == 409) {
+        ref.invalidate(roundPreviewProvider(cart.storeId));
+        if (_zoneId != null) {
+          ref.invalidate(slotsProvider((storeId: cart.storeId, zoneId: _zoneId!)));
+        }
+      }
       _snack(e.message);
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -95,12 +110,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   /// Pierwszy brakujący warunek złożenia zamówienia (null = można składać).
-  String? _missingReason(StoreLegal? legal, {required bool testerBlocked}) {
+  String? _missingReason(StoreLegal? legal,
+      {required bool testerBlocked, required AsyncValue<RoundPreview> round, TimeSlot? slot}) {
     if (testerBlocked) return 'Zamówienia w pilotażu są dostępne tylko dla zaproszonych testerów.';
+    final preview = round.valueOrNull;
+    if (preview == null) {
+      return round.hasError
+          ? 'Nie udało się sprawdzić rundy zakupowej — spróbuj ponownie.'
+          : 'Sprawdzamy najbliższą rundę zakupową…';
+    }
+    if (!preview.available) return preview.message ?? 'Sklep nie przyjmuje teraz zamówień.';
     if (_address.text.trim().isEmpty) return 'Podaj adres dostawy.';
     if (_phone.text.trim().isEmpty) return 'Podaj telefon kontaktowy.';
     if (_zoneId == null) return 'Wybierz strefę dostawy.';
     if (_slotId == null) return 'Wybierz termin dostawy.';
+    if (slot != null && !preview.allowsSlot(slot)) {
+      return 'Wybrany termin jest przed zakupami w rundzie — wybierz późniejszy.';
+    }
     if ((legal?.requiresAcceptance ?? false) && !_consent) {
       return 'Zaakceptuj regulamin i politykę prywatności.';
     }
@@ -145,7 +171,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             }
           }
           final legal = ref.watch(storeLegalProvider(c.storeId)).valueOrNull;
-          final missing = _missingReason(legal, testerBlocked: testerBlocked);
+          final round = ref.watch(roundPreviewProvider(c.storeId));
+          TimeSlot? selectedSlot;
+          if (_zoneId != null && _slotId != null) {
+            final slots = ref
+                    .watch(slotsProvider((storeId: c.storeId, zoneId: _zoneId!)))
+                    .valueOrNull ??
+                const <TimeSlot>[];
+            for (final s in slots) {
+              if (s.id == _slotId) selectedSlot = s;
+            }
+          }
+          final missing = _missingReason(legal,
+              testerBlocked: testerBlocked, round: round, slot: selectedSlot);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -153,6 +191,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 TestOrderBanner(blocked: testerBlocked),
                 const SizedBox(height: 16),
               ],
+              _RoundCard(
+                round: round,
+                onRetry: () => ref.invalidate(roundPreviewProvider(c.storeId)),
+              ),
+              const SizedBox(height: 16),
               const _Label('Adres dostawy', icon: 'home'),
               TextField(
                 controller: _address,
@@ -184,6 +227,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   storeId: c.storeId,
                   zoneId: _zoneId!,
                   value: _slotId,
+                  round: round.valueOrNull,
                   onChanged: (v) => setState(() => _slotId = v),
                 ),
                 const SizedBox(height: 16),
@@ -275,11 +319,13 @@ class _SlotPicker extends ConsumerWidget {
   final String storeId;
   final String zoneId;
   final String? value;
+  final RoundPreview? round;
   final ValueChanged<String?> onChanged;
   const _SlotPicker(
       {required this.storeId,
       required this.zoneId,
       required this.value,
+      required this.round,
       required this.onChanged});
 
   @override
@@ -296,6 +342,7 @@ class _SlotPicker extends ConsumerWidget {
           return Text('Brak dostępnych terminów w tej strefie.',
               style: TextStyle(color: context.zz.textMuted));
         }
+        final r = round;
         return Column(
           children: [
             for (final s in list)
@@ -304,6 +351,12 @@ class _SlotPicker extends ConsumerWidget {
                 child: _SlotCard(
                   slot: s,
                   selected: s.id == value,
+                  // Termin przed zakupami w rundzie (lub gdy runda nieznana) — nie do wybrania.
+                  tooEarlyNote: r == null || r.allowsSlot(s)
+                      ? null
+                      : (r.earliestDeliveryLabel == null
+                          ? 'Niedostępny'
+                          : 'Za wcześnie — dostawy od ${r.earliestDeliveryLabel}'),
                   onTap: () => onChanged(s.id),
                 ),
               ),
@@ -318,17 +371,20 @@ class _SlotPicker extends ConsumerWidget {
 class _SlotCard extends StatelessWidget {
   final TimeSlot slot;
   final bool selected;
+  final String? tooEarlyNote;
   final VoidCallback onTap;
-  const _SlotCard({required this.slot, required this.selected, required this.onTap});
+  const _SlotCard(
+      {required this.slot, required this.selected, required this.onTap, this.tooEarlyNote});
 
   @override
   Widget build(BuildContext context) {
     final soldOut = slot.remainingCapacity <= 0;
+    final disabled = soldOut || tooEarlyNote != null;
     return InkWell(
-      onTap: soldOut ? null : onTap,
+      onTap: disabled ? null : onTap,
       borderRadius: BorderRadius.circular(ZzRadius.md),
       child: Opacity(
-        opacity: soldOut ? 0.5 : 1,
+        opacity: disabled ? 0.5 : 1,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -353,9 +409,10 @@ class _SlotCard extends StatelessWidget {
                             color: selected ? ZzColors.orange600 : context.zz.text)),
                     const SizedBox(height: 2),
                     Text(
-                        soldOut
-                            ? 'Brak wolnych miejsc'
-                            : 'Wolne miejsca: ${slot.remainingCapacity}',
+                        tooEarlyNote ??
+                            (soldOut
+                                ? 'Brak wolnych miejsc'
+                                : 'Wolne miejsca: ${slot.remainingCapacity}'),
                         style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
                   ],
                 ),
@@ -368,6 +425,90 @@ class _SlotCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Runda zakupowa PRZED złożeniem zamówienia: kiedy sklep robi zakupy, do kiedy zamówić
+/// (termin graniczny) i od kiedy możliwa dostawa. Okno dostawy wybiera się osobno poniżej.
+class _RoundCard extends StatelessWidget {
+  final AsyncValue<RoundPreview> round;
+  final VoidCallback onRetry;
+  const _RoundCard({required this.round, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return round.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: LinearProgressIndicator(color: ZzColors.orange),
+      ),
+      error: (e, _) => _box(
+        context,
+        warn: true,
+        children: [
+          Text('Nie udało się sprawdzić rundy zakupowej.',
+              style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w600)),
+          TextButton(onPressed: onRetry, child: const Text('Spróbuj ponownie')),
+        ],
+      ),
+      data: (p) {
+        final r = p.round;
+        if (!p.available || r == null) {
+          return _box(
+            context,
+            warn: true,
+            children: [
+              Text(
+                  p.reason == 'store_closed'
+                      ? 'Sklep jest zamknięty'
+                      : 'Brak dostępnej rundy zakupowej',
+                  style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(p.message ?? 'Sklep nie przyjmuje teraz zamówień.',
+                  style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+            ],
+          );
+        }
+        return _box(
+          context,
+          children: [
+            Text('Zakupy w sklepie: ${r.label}',
+                style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('Zamów do ${r.cutoffLabel} — później zamówienie trafi do kolejnej rundy.',
+                style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+            if (p.earliestDeliveryLabel != null) ...[
+              const SizedBox(height: 4),
+              Text('Dostawa najwcześniej: ${p.earliestDeliveryLabel} (termin wybierasz poniżej).',
+                  style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+            ],
+            const SizedBox(height: 4),
+            Text('Godziny według czasu polskiego.',
+                style: TextStyle(color: context.zz.textMuted, fontSize: 11)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _box(BuildContext context, {required List<Widget> children, bool warn = false}) =>
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: warn ? context.zz.surface : context.zz.orangeTint,
+          border: Border.all(color: warn ? ZzColors.orange600 : ZzColors.orange),
+          borderRadius: BorderRadius.circular(ZzRadius.md),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ZzIcon(warn ? 'info' : 'cart', size: 20, color: ZzColors.orange600),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+            ),
+          ],
+        ),
+      );
 }
 
 /// Klikalne linki do dokumentów prawnych sklepu (otwierane w przeglądarce).

@@ -653,9 +653,13 @@ app.MapPost("/api/admin/seed/pilot",
         foreach (var p in products)
             await catalog.CreateProductAsync(storeId, catId, p.name, null, p.price, "PLN", p.unit, null, $"{baseUrl}/mock/{p.img}", p.options, ct);
 
+        // Terminy dostaw PO rundach zakupowych 12:00/16:00 (+60 min na zakupy) — wcześniejsze byłyby odrzucane.
         var zone = await ordering.CreateZoneAsync(storeId, "Centrum", 8.00m, null, ct);
         if (zone.IsSuccess)
-            await ordering.CreateSlotAsync(storeId, zone.Value.Id, tomorrow, new TimeOnly(10, 0), new TimeOnly(12, 0), 20, ct);
+        {
+            await ordering.CreateSlotAsync(storeId, zone.Value.Id, tomorrow, new TimeOnly(13, 0), new TimeOnly(15, 0), 20, ct);
+            await ordering.CreateSlotAsync(storeId, zone.Value.Id, tomorrow, new TimeOnly(17, 0), new TimeOnly(19, 0), 20, ct);
+        }
 
         created.Add(s.slug);
     }

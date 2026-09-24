@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Persistence;
@@ -27,6 +28,9 @@ public static class OrderingModule
         services.AddScoped<IOutboxProcessor, OutboxProcessor<OrderingDbContext>>();
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<OrderingDbContext>>();
         services.Configure<PilotOrderingOptions>(config.GetSection(PilotOrderingOptions.SectionName));
+        // Czas bieżący przez TimeProvider — rundy liczone deterministycznie w testach (stały zegar).
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<PurchasingRoundService>();
         services.AddScoped<OrderingService>();
 
         // Domyślnie brak polityki prawnej sklepu; host nadpisuje adapterem nad magazynem dokumentów.

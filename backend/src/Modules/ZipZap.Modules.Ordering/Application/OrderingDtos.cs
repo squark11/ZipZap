@@ -31,17 +31,17 @@ public sealed record OrderDto(
     Guid DeliveryZoneId, Guid TimeSlotId, string DeliveryAddress, string ContactPhone, DateTime PlacedAtUtc,
     IReadOnlyList<OrderItemDto> Items, IReadOnlyList<OrderStatusChangeDto> History,
     DateOnly? DeliveryDate = null, TimeOnly? DeliveryStartTime = null, TimeOnly? DeliveryEndTime = null,
-    string PaymentMode = "online")
+    string PaymentMode = "online", PurchasingRoundInfo? PurchasingRound = null)
 {
-    /// <summary>Mapuje zamówienie; gdy podano slot — dołącza okno dostawy.</summary>
-    public static OrderDto From(Order o, TimeSlot? slot = null) =>
+    /// <summary>Mapuje zamówienie; gdy podano slot — dołącza okno dostawy, gdy rundę — rundę zakupową.</summary>
+    public static OrderDto From(Order o, TimeSlot? slot = null, PurchasingRoundInfo? round = null) =>
         new(o.Id, o.StoreId, o.CustomerId, o.Status.ToString(),
             o.Subtotal, o.CommissionAmount, o.DeliveryFee, o.Total, o.Currency,
             o.DeliveryZoneId, o.TimeSlotId, o.DeliveryAddress, o.ContactPhone, o.PlacedAtUtc,
             o.Items.Select(OrderItemDto.From).ToList(),
             o.History.OrderBy(h => h.ChangedAtUtc).Select(OrderStatusChangeDto.From).ToList(),
             slot?.Date, slot?.StartTime, slot?.EndTime,
-            o.PaymentMode);
+            o.PaymentMode, round);
 }
 
 public sealed record DeliveryZoneDto(Guid Id, Guid StoreId, string Name, decimal DeliveryFee, bool IsActive)

@@ -47,6 +47,20 @@ public sealed class Order : AggregateRoot
     public string PaymentMode { get; private set; } = PaymentModes.Online;
     public bool IsTestOrder => PaymentMode == PaymentModes.Test;
 
+    /// <summary>Runda zakupowa, w której operator kupi pozycje tego zamówienia (+ migawka chwil w UTC).</summary>
+    public Guid? PurchasingRoundId { get; private set; }
+    public DateTime? RoundStartsAtUtc { get; private set; }
+    public DateTime? RoundCutoffAtUtc { get; private set; }
+
+    public void AssignToRound(Guid roundId, DateTime startsAtUtc, DateTime cutoffAtUtc)
+    {
+        if (PurchasingRoundId is not null)
+            throw new OrderingDomainException("Zamówienie jest już przypisane do rundy zakupowej.");
+        PurchasingRoundId = roundId;
+        RoundStartsAtUtc = startsAtUtc;
+        RoundCutoffAtUtc = cutoffAtUtc;
+    }
+
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
     public IReadOnlyCollection<OrderStatusChange> History => _history.AsReadOnly();
 

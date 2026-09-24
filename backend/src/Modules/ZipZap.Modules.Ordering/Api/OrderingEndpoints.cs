@@ -46,6 +46,28 @@ public static class OrderingEndpoints
             Respond(await svc.CreateSlotAsync(storeId, req.DeliveryZoneId, req.Date, req.StartTime, req.EndTime, req.MaxOrders, ct)))
             .RequireAuthorization("StoreEmployee");
 
+        // ---------- Rundy zakupowe (osobne od terminów dostaw) ----------
+
+        // Publiczne (bez logowania): najbliższa runda + termin graniczny + najwcześniejsza dostawa — PRZED zamówieniem.
+        group.MapGet("/stores/{storeId:guid}/purchasing-round", async (Guid storeId, PurchasingRoundService rounds, CancellationToken ct) =>
+            Respond(await rounds.PreviewAsync(storeId, ct)))
+            .WithSummary("Najbliższa runda zakupowa sklepu (czas lokalny + UTC) i najwcześniejszy początek dostawy.");
+
+        group.MapGet("/admin/purchasing-schedule", async (PurchasingRoundService rounds, CancellationToken ct) =>
+            Results.Ok(await rounds.GetScheduleAsync(ct)))
+            .RequireAuthorization("Admin");
+
+        group.MapPut("/admin/purchasing-schedule", async (PurchasingScheduleDto req, PurchasingRoundService rounds,
+            IAuditLogger audit, CancellationToken ct) =>
+        {
+            var result = await rounds.UpdateScheduleAsync(req, ct);
+            if (result.IsSuccess)
+                await audit.LogAsync("purchasing_schedule.updated", "purchasing_schedule", null, null, result.Value, ct);
+            return Respond(result);
+        })
+            .RequireAuthorization("Admin")
+            .WithSummary("Zmiana harmonogramu rund (godziny lokalne, cutoff, dni, czas do dostawy).");
+
         // ---------- Zamówienia ----------
 
         group.MapPost("/carts/{cartId:guid}/checkout", async (Guid cartId, PlaceOrderRequest req, HttpContext http,
@@ -53,7 +75,8 @@ public static class OrderingEndpoints
         {
             var idempotencyKey = http.Request.Headers.TryGetValue("Idempotency-Key", out var k) ? k.ToString() : null;
             var result = await svc.PlaceOrderAsync(cartId, req.Token, req.DeliveryZoneId, req.TimeSlotId,
-                req.DeliveryAddress, req.ContactPhone, req.ConsentAccepted, idempotencyKey, ct);
+                req.DeliveryAddress, req.ContactPhone, req.ConsentAccepted, idempotencyKey, ct,
+                req.ExpectedRoundStartsAtUtc);
 
             // Trwały dowód zgody: gdy sklep wymagał akceptacji, zapisz przyjęte dokumenty (URL + czas) w audycie.
             if (result.IsSuccess && req.ConsentAccepted)

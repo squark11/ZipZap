@@ -65,9 +65,10 @@ public sealed class CustomerJourneyE2ETests
         var zone = (await (await ac.PostAsJsonAsync($"/api/ordering/stores/{storeId}/zones",
             new { name = "Centrum", deliveryFee = 8.00m, postalCodes = (string[]?)null }))
             .Content.ReadFromJsonAsync<Zone>())!;
-        var date = DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd");
+        // Termin dostawy zawsze PO najbliższej rundzie zakupowej (+3 dni, wieczór) — test niezależny od zegara.
+        var date = DateTime.UtcNow.Date.AddDays(3).ToString("yyyy-MM-dd");
         var slotResp = await ac.PostAsJsonAsync($"/api/ordering/stores/{storeId}/slots",
-            new { deliveryZoneId = zone.id, date, startTime = "10:00:00", endTime = "12:00:00", maxOrders = 20 });
+            new { deliveryZoneId = zone.id, date, startTime = "18:00:00", endTime = "20:00:00", maxOrders = 20 });
         slotResp.EnsureSuccessStatusCode();
         var slotId = (await slotResp.Content.ReadFromJsonAsync<Dictionary<string, object>>())!["id"].ToString();
 

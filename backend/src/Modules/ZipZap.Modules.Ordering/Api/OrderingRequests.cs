@@ -13,4 +13,6 @@ public sealed record CreateSlotRequest(
 
 public sealed record PlaceOrderRequest(
     string Token, Guid DeliveryZoneId, Guid TimeSlotId, string DeliveryAddress, string ContactPhone,
-    bool ConsentAccepted = false);
+    bool ConsentAccepted = false,
+    // Runda widziana przez klienta w podglądzie; gdy termin graniczny minął w międzyczasie → 409 zamiast cichej zmiany.
+    DateTime? ExpectedRoundStartsAtUtc = null);

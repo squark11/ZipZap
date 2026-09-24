@@ -176,6 +176,19 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
             ),
             const SizedBox(height: 6),
           ],
+          if (o.purchasingRound != null) ...[
+            Row(
+              children: [
+                const ZzIcon('cart', size: 16, color: ZzColors.orange),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('Zakupy w sklepie: ${o.purchasingRound!.label}',
+                      style: TextStyle(color: context.zz.textMuted)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           Text(o.deliveryAddress),
           Text('tel. ${o.contactPhone}',
               style: TextStyle(color: context.zz.textMuted)),

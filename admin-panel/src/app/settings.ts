@@ -26,6 +26,21 @@ export interface PlatformSettings {
   operatorContact?: string;
 }
 
+/** Harmonogram rund zakupowych (kiedy sklep kompletuje zamówienia) — osobny od fal i terminów dostaw. */
+export interface PurchasingSchedule {
+  timeZoneId: string;
+  rounds: { localTime: string; cutoffMinutes: number }[];
+  activeDays: string[];
+  minDeliveryLeadMinutes: number;
+  updatedAtUtc?: string;
+}
+
+const WEEK_DAYS = [
+  { key: 'Monday', label: 'Pn' }, { key: 'Tuesday', label: 'Wt' }, { key: 'Wednesday', label: 'Śr' },
+  { key: 'Thursday', label: 'Cz' }, { key: 'Friday', label: 'Pt' }, { key: 'Saturday', label: 'Sb' },
+  { key: 'Sunday', label: 'Nd' },
+];
+
 export interface PlatformIntegrations {
   googleClientId?: string;
   captchaProvider?: string;
@@ -77,6 +92,12 @@ export interface PlatformIntegrations {
     <button class="tile" (click)="open('platform')">
       <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
       <span class="tbody"><span class="ttl">Ustawienia platformy</span><span class="tst">prowizja, waluta, fale dostaw</span></span>
+      <span class="tcta">Konfiguruj →</span>
+    </button>
+
+    <button class="tile" (click)="open('rounds')">
+      <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/><path d="M12 11v3l2 1.5"/></svg></span>
+      <span class="tbody"><span class="ttl">Rundy zakupowe</span><span class="tst">{{ roundsSummary }}</span></span>
       <span class="tcta">Konfiguruj →</span>
     </button>
 
@@ -178,9 +199,44 @@ export interface PlatformIntegrations {
     </div>
   </app-config-modal>
 
+  <!-- ===== Rundy zakupowe ===== -->
+  <app-config-modal [open]="panel === 'rounds'" title="Rundy zakupowe"
+      [saving]="savingR" [saved]="savedR" (save)="saveSchedule()" (close)="close()">
+    <p class="muted" style="margin-top:0">Godziny, o których sklep robi zakupy i kompletuje zamówienia. Zamówienie trafia do najbliższej rundy, której termin graniczny jeszcze nie minął. To <b>nie</b> są fale ani terminy dostaw — okna dostaw ustawia się w terminach sklepu.</p>
+    @if (schedule) {
+      <label class="lbl">Rundy (czas lokalny: {{ schedule.timeZoneId }})</label>
+      <div class="waves">
+        @for (r of schedule.rounds; track $index) {
+          <div class="wave">
+            <input type="time" [(ngModel)]="r.localTime" [name]="'round'+$index" [id]="'round'+$index" aria-label="Godzina rundy" />
+            <label class="inline-lbl" [for]="'cutoff'+$index">zamówienia do</label>
+            <input type="number" min="0" max="720" class="num" [(ngModel)]="r.cutoffMinutes" [name]="'cutoff'+$index" [id]="'cutoff'+$index" />
+            <span class="inline-lbl">min przed</span>
+            <button class="btn ghost sm" (click)="removeRound($index)" [disabled]="schedule.rounds.length <= 1">Usuń</button>
+          </div>
+        }
+        <button class="btn ghost sm" (click)="addRound()">+ Dodaj rundę</button>
+      </div>
+      <label class="lbl">Dni z rundami</label>
+      <div class="days">
+        @for (d of weekDays; track d.key) {
+          <label class="day" [class.on]="isDay(d.key)">
+            <input type="checkbox" [checked]="isDay(d.key)" (change)="toggleDay(d.key)" [name]="'day'+d.key" [id]="'day'+d.key" /> {{ d.label }}
+          </label>
+        }
+      </div>
+      <label class="lbl" for="leadmin">Dostawa najwcześniej (minut po starcie rundy)</label>
+      <input type="number" min="0" max="1440" id="leadmin" name="leadmin" class="num" [(ngModel)]="schedule.minDeliveryLeadMinutes" />
+      <p class="note" style="margin-top:12px">Zmiana czasu (letni/zimowy) jest uwzględniana automatycznie. Wartości startowe — 12:00 i 16:00, zamówienia do 30 min przed, pon–sob, dostawa od 60 min po rundzie — do potwierdzenia ze sklepem.</p>
+    } @else {
+      <p class="muted">Wczytywanie harmonogramu…</p>
+    }
+    @if (roundsError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ roundsError }}</p> }
+  </app-config-modal>
+
   <!-- ===== Dane demo ===== -->
   <app-config-modal [open]="panel === 'demo'" title="Dane demo (pilotaż)" [showFooter]="false" (close)="close()">
-    <p class="muted" style="margin-top:0">Tworzy sklepy <b>Rapacz</b> i <b>Lewiatan</b> z logo, produktami (zdjęcia), strefą i terminem dostawy. Idempotentne (nie duplikuje). Dane do podmiany przez sklep.</p>
+    <p class="muted" style="margin-top:0">Tworzy sklepy <b>Rapacz</b> i <b>Lewiatan</b> z logo, produktami (zdjęcia), strefą i dwoma terminami dostawy na jutro (13–15, 17–19 — po rundach zakupowych). Idempotentne (nie duplikuje). Dane do podmiany przez sklep.</p>
     <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
       <button class="btn primary sm" (click)="seedDemo()" [disabled]="seeding">Zasiej sklepy demo</button>
       @if (seedMsg) { <span class="ok-inline">{{ seedMsg }}</span> }
@@ -231,6 +287,13 @@ export interface PlatformIntegrations {
     .waves { display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
     .wave { display:flex; gap:8px; align-items:center; }
     .wave input { width:130px; }
+    .wave input.num, input.num { width:90px; }
+    .wave { flex-wrap:wrap; }
+    .inline-lbl { font-size:13px; color:#6B7280; }
+    .days { display:flex; gap:6px; flex-wrap:wrap; }
+    .day { display:flex; align-items:center; gap:4px; border:1px solid #E5E7EB; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; }
+    .day.on { border-color:#14B9BA; background:#E7F7F7; color:#0C7D7E; font-weight:600; }
+    .day input { width:auto; }
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     @media (max-width:560px){ .grid2 { grid-template-columns:1fr; } }
     .ok-inline { color:#128040; font-size:13px; font-weight:600; }
@@ -261,6 +324,20 @@ export class SettingsComponent implements OnInit {
   seedMsg = '';
   seedError = '';
 
+  readonly weekDays = WEEK_DAYS;
+  schedule: PurchasingSchedule | null = null;
+  savingR = false;
+  savedR = false;
+  roundsError = '';
+
+  get roundsSummary(): string {
+    const s = this.schedule;
+    if (!s || !s.rounds.length) return '—';
+    const cut = new Set(s.rounds.map(r => r.cutoffMinutes));
+    const cutTxt = cut.size === 1 ? `, zamówienia do ${s.rounds[0].cutoffMinutes} min przed` : '';
+    return s.rounds.map(r => r.localTime).join(' · ') + cutTxt;
+  }
+
   get smtpConfigured(): boolean {
     return !!(this.integrations.smtpHost && this.integrations.hasSmtpPassword && this.integrations.smtpFromEmail);
   }
@@ -285,6 +362,37 @@ export class SettingsComponent implements OnInit {
     this.api.get<PlatformIntegrations>('/admin/config/integrations').subscribe({
       next: i => { this.integrations = this.mapIntegrations(i); this.captchaSecret = ''; this.smtpPassword = ''; },
       error: () => {},
+    });
+    this.api.get<PurchasingSchedule>('/ordering/admin/purchasing-schedule').subscribe({
+      next: s => this.applySchedule(s),
+      error: () => {},
+    });
+  }
+
+  private applySchedule(s: PurchasingSchedule) {
+    this.schedule = { ...s, rounds: (s.rounds ?? []).map(r => ({ ...r })), activeDays: [...(s.activeDays ?? [])] };
+  }
+
+  isDay(key: string) { return !!this.schedule?.activeDays.includes(key); }
+  toggleDay(key: string) {
+    if (!this.schedule) return;
+    const d = this.schedule.activeDays;
+    this.schedule.activeDays = d.includes(key) ? d.filter(x => x !== key) : [...d, key];
+  }
+  addRound() { this.schedule?.rounds.push({ localTime: '18:00', cutoffMinutes: 30 }); }
+  removeRound(i: number) { this.schedule?.rounds.splice(i, 1); }
+
+  saveSchedule() {
+    if (!this.schedule) return;
+    this.savingR = true; this.savedR = false; this.roundsError = '';
+    const body: PurchasingSchedule = {
+      ...this.schedule,
+      rounds: this.schedule.rounds.map(r => ({ localTime: r.localTime, cutoffMinutes: Number(r.cutoffMinutes) })),
+      minDeliveryLeadMinutes: Number(this.schedule.minDeliveryLeadMinutes),
+    };
+    this.api.put<PurchasingSchedule>('/ordering/admin/purchasing-schedule', body).subscribe({
+      next: s => { this.applySchedule(s); this.savingR = false; this.savedR = true; setTimeout(() => this.savedR = false, 2500); },
+      error: e => { this.savingR = false; this.roundsError = e?.error?.detail ?? 'Nie udało się zapisać harmonogramu.'; },
     });
   }
 
