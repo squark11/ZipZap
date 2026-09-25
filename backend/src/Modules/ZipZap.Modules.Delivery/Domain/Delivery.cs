@@ -97,27 +97,52 @@ public sealed class Delivery : Entity
     }
 
     public DeliveryChange MarkPickedUp(Guid by, string? byLabel, DateTime nowUtc)
+        => PickUp(DeliveryChange.PickedUp, by, byLabel, nowUtc, reason: null);
+
+    public DeliveryChange MarkDelivered(Guid by, string? byLabel, DateTime nowUtc)
+        => Deliver(DeliveryChange.Delivered, by, byLabel, nowUtc, reason: null);
+
+    /// <summary>
+    /// Awaryjne potwierdzenie przez administratora (np. telefon kierowcy nie działa) — te same reguły przejść
+    /// (bez przeskakiwania przypisania), osobna akcja w historii z obowiązkowym powodem.
+    /// </summary>
+    public DeliveryChange OverridePickedUp(Guid by, string? byLabel, string reason, DateTime nowUtc)
+        => PickUp(DeliveryChange.OverridePickedUp, by, byLabel, nowUtc, RequireReason(reason));
+
+    public DeliveryChange OverrideDelivered(Guid by, string? byLabel, string reason, DateTime nowUtc)
+        => Deliver(DeliveryChange.OverrideDelivered, by, byLabel, nowUtc, RequireReason(reason));
+
+    private DeliveryChange PickUp(string action, Guid by, string? byLabel, DateTime nowUtc, string? reason)
     {
         if (Status != DeliveryStatus.Assigned)
             throw new DeliveryDomainException("Dostawę można odebrać dopiero po przypisaniu.");
         Status = DeliveryStatus.InTransit;
         PickedUpAtUtc = nowUtc;
-        return Changed(DeliveryChange.PickedUp, DeliveryStatus.Assigned, DriverId, by, byLabel, nowUtc);
+        return Changed(action, DeliveryStatus.Assigned, DriverId, by, byLabel, nowUtc, reason);
     }
 
-    public DeliveryChange MarkDelivered(Guid by, string? byLabel, DateTime nowUtc)
+    private DeliveryChange Deliver(string action, Guid by, string? byLabel, DateTime nowUtc, string? reason)
     {
         if (Status != DeliveryStatus.InTransit)
             throw new DeliveryDomainException("Dostawę można oznaczyć jako dostarczoną dopiero w trakcie dostawy.");
         Status = DeliveryStatus.Delivered;
         DeliveredAtUtc = nowUtc;
-        return Changed(DeliveryChange.Delivered, DeliveryStatus.InTransit, DriverId, by, byLabel, nowUtc);
+        return Changed(action, DeliveryStatus.InTransit, DriverId, by, byLabel, nowUtc, reason);
     }
 
-    private DeliveryChange Changed(string action, DeliveryStatus from, Guid? previousDriver, Guid by, string? byLabel, DateTime nowUtc)
+    private static string RequireReason(string? reason)
+    {
+        var r = (reason ?? "").Trim();
+        if (r.Length is < 10 or > DeliveryChange.MaxReasonLength)
+            throw new DeliveryDomainException($"Podaj powód awaryjnej zmiany (10–{DeliveryChange.MaxReasonLength} znaków, bez danych klienta).");
+        return r;
+    }
+
+    private DeliveryChange Changed(string action, DeliveryStatus from, Guid? previousDriver, Guid by, string? byLabel,
+        DateTime nowUtc, string? reason = null)
     {
         Version++;
-        return new DeliveryChange(Id, action, from, Status, DriverId, previousDriver, StopSequence, Version, by, byLabel, nowUtc);
+        return new DeliveryChange(Id, action, from, Status, DriverId, previousDriver, StopSequence, Version, by, byLabel, nowUtc, reason);
     }
 }
 
@@ -129,6 +154,9 @@ public sealed class DeliveryChange : Entity
     public const string Reordered = "reordered";
     public const string PickedUp = "picked_up";
     public const string Delivered = "delivered";
+    public const string OverridePickedUp = "override_picked_up";
+    public const string OverrideDelivered = "override_delivered";
+    public const int MaxReasonLength = 300;
 
     public Guid DeliveryId { get; private set; }
     public string Action { get; private set; } = default!;
@@ -141,12 +169,16 @@ public sealed class DeliveryChange : Entity
     public Guid ActorId { get; private set; }
     public string? ActorLabel { get; private set; }
     public DateTime AtUtc { get; private set; }
+    /// <summary>Powód — wymagany wyłącznie przy awaryjnych akcjach administratora.</summary>
+    public string? Reason { get; private set; }
 
     private DeliveryChange() { } // EF
 
     internal DeliveryChange(Guid deliveryId, string action, DeliveryStatus from, DeliveryStatus to, Guid? driverId,
-        Guid? previousDriverId, int? stopSequence, int version, Guid actorId, string? actorLabel, DateTime atUtc)
+        Guid? previousDriverId, int? stopSequence, int version, Guid actorId, string? actorLabel, DateTime atUtc,
+        string? reason = null)
     {
+        Reason = reason;
         DeliveryId = deliveryId;
         Action = action;
         FromStatus = from;

@@ -76,6 +76,10 @@ kiedy klient *dostaje*. Klient musi widzieć oba oraz **nie wolno obiecywać dos
 - **Statusy:** nieprzypisana → przypisana → w drodze → dostarczona. `OrderDelivered` powstaje wyłącznie przy
   poprawnym zakończeniu przypisanej dostawy (dokładnie raz, także przy wielokrotnym kliknięciu); bezpośrednie
   oznaczanie zamówienia jako dostarczone w module zamówień jest zablokowane.
+- **Administrator nie ma wyjątku** w akcjach kierowcy („odebrano”/„dostarczono” — tylko kierowca przypisany do tej
+  dostawy, z aktywnym przypisaniem do sklepu). W sytuacji awaryjnej (np. telefon kierowcy nie działa) admin używa
+  osobnej akcji **„Awaryjnie…”**: wymagany powód (10–300 znaków, bez danych klienta), te same reguły przejść (nie
+  pomija przypisania), wpis w historii dostawy z powodem i w audycie.
 - **Równoległe zmiany:** dwa przypisania tej samej dostawy → wygrywa jedno (drugie 409); kolejność trasy zapisuje się
   w całości albo wcale (wersje przystanków + blokada trasy).
 - **Prywatność:** link do map budowany w przeglądarce i otwierany z `noreferrer` (adresy trafiają tylko do aplikacji

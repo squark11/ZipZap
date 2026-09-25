@@ -46,6 +46,7 @@ public sealed class DeliveryDbContext : DbContext, IOutboxDbContext
             e.Property(c => c.FromStatus).HasConversion<string>().HasMaxLength(24);
             e.Property(c => c.ToStatus).HasConversion<string>().HasMaxLength(24);
             e.Property(c => c.ActorLabel).HasMaxLength(256);
+            e.Property(c => c.Reason).HasMaxLength(DeliveryChange.MaxReasonLength);
             e.HasIndex(c => new { c.DeliveryId, c.Version }).IsUnique();
         });
 

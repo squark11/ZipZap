@@ -13,7 +13,7 @@ export interface BoardDelivery {
 }
 interface Driver { id: string; fullName: string; }
 interface Board { deliveries: BoardDelivery[]; drivers: Driver[]; }
-interface Change { action: string; fromStatus: string; toStatus: string; stopSequence?: number; actor?: string; atUtc: string; }
+interface Change { action: string; fromStatus: string; toStatus: string; stopSequence?: number; actor?: string; atUtc: string; reason?: string; }
 interface Route { key: string; driverId: string; driverName: string; date?: string; start?: string; end?: string; stops: BoardDelivery[]; dirty: boolean; }
 
 const STATUS: Record<string, string> = {
@@ -21,6 +21,7 @@ const STATUS: Record<string, string> = {
 };
 const ACTION: Record<string, string> = {
   assigned: 'przypisano', unassigned: 'zdjęto przypisanie', reordered: 'zmieniono kolejność', picked_up: 'odebrano', delivered: 'dostarczono',
+  override_picked_up: 'AWARYJNIE odebrano (admin)', override_delivered: 'AWARYJNIE dostarczono (admin)',
 };
 
 @Component({
@@ -121,9 +122,11 @@ const ACTION: Record<string, string> = {
                 <button class="btn ghost sm" [disabled]="i === 0" (click)="move(r, i, -1)" [attr.aria-label]="'Wyżej: #' + d.orderCode">↑</button>
                 <button class="btn ghost sm" [disabled]="last" (click)="move(r, i, 1)" [attr.aria-label]="'Niżej: #' + d.orderCode">↓</button>
                 @if (d.status === 'Assigned') { <button class="btn ghost sm" [disabled]="busy || r.dirty" (click)="unassign(d)">Zdejmij</button> }
+                @if (isAdmin()) { <button class="btn danger sm" [disabled]="busy || r.dirty" (click)="override(d)"
+                  title="Tylko w sytuacji awaryjnej (np. telefon kierowcy nie działa) — wymaga powodu, zapisuje się w historii i audycie">Awaryjnie…</button> }
                 <button class="btn ghost sm" (click)="toggleHistory(d)">Historia</button>
               </div>
-              @if (history[d.id]; as h) { <ol class="hist">@for (c of h; track $index) { <li>{{ c.atUtc | date:'dd.MM HH:mm' }} · {{ c.actor || '—' }}: {{ act(c.action) }}@if (c.stopSequence) { (przystanek {{ c.stopSequence }}) }</li> }</ol> }
+              @if (history[d.id]; as h) { <ol class="hist">@for (c of h; track $index) { <li>{{ c.atUtc | date:'dd.MM HH:mm' }} · {{ c.actor || '—' }}: {{ act(c.action) }}@if (c.stopSequence) { (przystanek {{ c.stopSequence }}) }@if (c.reason) { — powód: „{{ c.reason }}” }</li> }</ol> }
             </div>
           }
         </section>
@@ -211,6 +214,18 @@ export class DeliveriesComponent {
 
   unassign(d: BoardDelivery) {
     this.run(this.api.post(`/delivery/stores/${this.storeId()}/deliveries/${d.id}/unassign`, { expectedVersion: d.version }));
+  }
+
+  isAdmin() { return this.api.isAdmin(); }
+
+  /// Awaryjna akcja administratora (osobny endpoint, nie „kierowca-admin"): wymagany powód, bez danych klienta.
+  override(d: BoardDelivery) {
+    const action = d.status === 'Assigned' ? 'picked_up' : 'delivered';
+    const what = action === 'picked_up' ? 'ODEBRANIE' : 'DOSTARCZENIE';
+    const reason = prompt(`Awaryjne potwierdzenie: ${what} zamówienia #${d.orderCode}.\n` +
+      'Podaj powód (min. 10 znaków, bez danych klienta) — trafi do historii i audytu:');
+    if (reason === null) return;
+    this.run(this.api.post(`/delivery/admin/deliveries/${d.id}/override`, { action, reason, expectedVersion: d.version }));
   }
 
   move(r: Route, i: number, delta: number) {

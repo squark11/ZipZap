@@ -42,13 +42,15 @@ public sealed record DriverDeliveryDto(
 
 public sealed record DeliveryChangeDto(
     string Action, string FromStatus, string ToStatus, Guid? DriverId, Guid? PreviousDriverId,
-    int? StopSequence, int Version, string? Actor, DateTime AtUtc)
+    int? StopSequence, int Version, string? Actor, DateTime AtUtc, string? Reason = null)
 {
     public static DeliveryChangeDto From(DeliveryChange c) => new(c.Action, c.FromStatus.ToString(), c.ToStatus.ToString(),
-        c.DriverId, c.PreviousDriverId, c.StopSequence, c.Version, c.ActorLabel, c.AtUtc);
+        c.DriverId, c.PreviousDriverId, c.StopSequence, c.Version, c.ActorLabel, c.AtUtc, c.Reason);
 }
 
 public sealed record AssignDriverInput(Guid DriverId, int ExpectedVersion);
+/// <summary>Awaryjna akcja administratora: <c>picked_up</c> albo <c>delivered</c>, z powodem (bez danych klienta).</summary>
+public sealed record AdminOverrideInput(string Action, string Reason, int ExpectedVersion);
 public sealed record UnassignDriverInput(int ExpectedVersion);
 public sealed record RouteStopInput(Guid DeliveryId, int ExpectedVersion);
 public sealed record RouteOrderInput(
@@ -154,20 +156,60 @@ public sealed class DeliveryService
         var delivery = await _db.Deliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, ct);
         if (delivery is null) return Result.Failure<DeliveryDto>(Error.NotFound("Dostawa nie istnieje."));
 
-        // Sprawdzenia PRZED jakąkolwiek zmianą stanu i przed emisją OrderPickedUp/OrderDelivered:
-        // przypisanie tej dostawy do kierowcy + aktualne (z bazy) przypisanie kierowcy do sklepu i aktywne konto.
-        if (!IsAdmin)
-        {
-            if (!delivery.IsOwnedBy(me))
-                return Result.Failure<DeliveryDto>(Error.Forbidden("To nie jest Twoja dostawa."));
-            if (!await _drivers.IsActiveDriverOfStoreAsync(me, delivery.StoreId, ct))
-                return Result.Failure<DeliveryDto>(Error.Forbidden("Nie jesteś aktywnym kierowcą sklepu tej dostawy."));
-        }
+        // Sprawdzenia PRZED jakąkolwiek zmianą stanu i przed emisją OrderPickedUp/OrderDelivered — BEZ WYJĄTKU dla
+        // administratora: tylko kierowca, któremu przypisano TĘ dostawę, z aktywnym (w bazie) przypisaniem do jej sklepu.
+        // Awaryjna zmiana przez administratora to osobna, audytowana akcja z powodem (OverrideAsync).
+        if (!delivery.IsOwnedBy(me))
+            return Result.Failure<DeliveryDto>(Error.Forbidden("To nie jest Twoja dostawa."));
+        if (!await _drivers.IsActiveDriverOfStoreAsync(me, delivery.StoreId, ct))
+            return Result.Failure<DeliveryDto>(Error.Forbidden("Nie jesteś aktywnym kierowcą sklepu tej dostawy."));
 
         DeliveryChange change;
         try { change = step(delivery, me, _user.Email, DateTime.UtcNow); }
         catch (DeliveryDomainException ex) { return Result.Failure<DeliveryDto>(Error.Conflict(ex.Message)); }
 
+        return await CommitStepAsync(delivery, change, emit, ct);
+    }
+
+    /// <summary>
+    /// Awaryjne potwierdzenie odbioru/dostarczenia przez ADMINISTRATORA (np. telefon kierowcy nie działa):
+    /// wymagany powód i oczekiwana wersja; te same reguły przejść (bez przeskakiwania przypisania); osobny wpis
+    /// historii „override_*" z powodem + audyt. Zdarzenia jak przy zwykłym przejściu — dokładnie raz.
+    /// </summary>
+    public async Task<Result<DeliveryDto>> OverrideAsync(Guid deliveryId, AdminOverrideInput input, CancellationToken ct)
+    {
+        if (!IsAdmin) return Result.Failure<DeliveryDto>(Error.Forbidden("Awaryjna zmiana jest dostępna tylko dla administratora."));
+        if (_user.UserId is not Guid by) return Result.Failure<DeliveryDto>(Error.Unauthorized("Wymagane logowanie."));
+        var action = (input.Action ?? "").Trim().ToLowerInvariant();
+        if (action is not ("picked_up" or "delivered"))
+            return Result.Failure<DeliveryDto>(Error.Validation("Akcja awaryjna: picked_up albo delivered."));
+
+        var reason = (input.Reason ?? "").Trim();
+        if (reason.Length is < 10 or > DeliveryChange.MaxReasonLength)
+            return Result.Failure<DeliveryDto>(Error.Validation(
+                $"Podaj powód awaryjnej zmiany (10–{DeliveryChange.MaxReasonLength} znaków, bez danych klienta)."));
+
+        var delivery = await _db.Deliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, ct);
+        if (delivery is null) return Result.Failure<DeliveryDto>(Error.NotFound("Dostawa nie istnieje."));
+        if (delivery.Version != input.ExpectedVersion) return Stale<DeliveryDto>();
+
+        DeliveryChange change;
+        try
+        {
+            var now = DateTime.UtcNow;
+            change = action == "picked_up"
+                ? delivery.OverridePickedUp(by, _user.Email, reason, now)
+                : delivery.OverrideDelivered(by, _user.Email, reason, now);
+        }
+        catch (DeliveryDomainException ex) { return Result.Failure<DeliveryDto>(Error.Conflict(ex.Message)); }
+
+        return await CommitStepAsync(delivery, change,
+            action == "picked_up" ? d => new OrderPickedUp(d.OrderId, d.StoreId) : d => new OrderDelivered(d.OrderId, d.StoreId), ct);
+    }
+
+    private async Task<Result<DeliveryDto>> CommitStepAsync(Domain.Delivery delivery, DeliveryChange change,
+        Func<Domain.Delivery, IIntegrationEvent> emit, CancellationToken ct)
+    {
         _db.DeliveryChanges.Add(change);
         _db.AddOutboxMessage(emit(delivery), _events); // zdarzenie tylko po poprawnym przejściu, w tej samej transakcji
 

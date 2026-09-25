@@ -43,6 +43,23 @@ public static class DeliveryEndpoints
             .RequireAuthorization("Driver")
             .WithSummary("Przypisany kierowca oznacza dostarczenie (→ OrderDelivered, dokładnie raz).");
 
+        // ---------- Administrator: awaryjna zmiana (osobna akcja, NIE wyjątek w endpointach kierowcy) ----------
+
+        group.MapPost("/admin/deliveries/{deliveryId:guid}/override", async (Guid deliveryId, AdminOverrideInput req,
+            DeliveryService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var result = await svc.OverrideAsync(deliveryId, req, ct);
+            if (result.IsSuccess)
+            {
+                var d = result.Value;
+                await audit.LogAsync("delivery.admin_override", "delivery", d.Id.ToString(), d.StoreId,
+                    new { d.OrderId, action = req.Action, reason = req.Reason?.Trim(), d.DriverId, d.Status, d.Version }, ct);
+            }
+            return Respond(result);
+        })
+            .RequireAuthorization("Admin")
+            .WithSummary("Awaryjne potwierdzenie odbioru/dostarczenia przez administratora — wymagany powód, audyt.");
+
         group.MapGet("/orders/{orderId:guid}", async (Guid orderId, DeliveryDbContext db, ICurrentUser user, CancellationToken ct) =>
         {
             var d = await db.Deliveries.AsNoTracking().FirstOrDefaultAsync(x => x.OrderId == orderId, ct);

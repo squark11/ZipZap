@@ -258,6 +258,106 @@ public sealed class DeliveryDispatchTests
         (await dc.GetStringAsync("/api/delivery/mine")).Should().NotContain("Testowa").And.NotContain(Phone);
     }
 
+    private sealed record Snapshot(string Status, Guid? DriverId, int Version, int History, int DeliveryOutbox, int OrderingOutbox, string OrderStatus);
+
+    private async Task<Snapshot> SnapshotAsync(string adminToken, Guid deliveryId, Guid orderId)
+    {
+        using var scope = _f.Services.CreateScope();
+        var ddb = scope.ServiceProvider.GetRequiredService<DeliveryDbContext>();
+        var odb = scope.ServiceProvider.GetRequiredService<ZipZap.Modules.Ordering.Infrastructure.OrderingDbContext>();
+        var d = await ddb.Deliveries.AsNoTracking().SingleAsync(x => x.Id == deliveryId);
+        var key = orderId.ToString();
+        var order = (await _f.Authed(adminToken).GetFromJsonAsync<OrderDto>($"/api/ordering/orders/{orderId}"))!;
+        return new Snapshot(d.Status.ToString(), d.DriverId, d.Version,
+            await ddb.DeliveryChanges.CountAsync(c => c.DeliveryId == deliveryId),
+            await ddb.OutboxMessages.CountAsync(m => m.Payload.Contains(key)),
+            await odb.OutboxMessages.CountAsync(m => m.Payload.Contains(key)),
+            order.status);
+    }
+
+    private async Task WaitForOrderStatusAsync(string adminToken, Guid orderId, string expected)
+    {
+        for (var i = 0; i < 50; i++)
+        {
+            await DeliveryScenario.FlushOutboxAsync(_f);
+            if ((await _f.Authed(adminToken).GetFromJsonAsync<OrderDto>($"/api/ordering/orders/{orderId}"))!.status == expected) return;
+            await Task.Delay(100);
+        }
+        throw new TimeoutException($"Zamówienie nie osiągnęło statusu {expected}.");
+    }
+
+    [Fact]
+    public async Task Admin_cannot_use_driver_actions_on_someone_elses_or_unassigned_delivery()
+    {
+        var s = await OrderScenario.StoreWithSlotAsync(_f);
+        var assigned = await DeliveryScenario.ReadyOrderAsync(_f, s);
+        var unassigned = await DeliveryScenario.ReadyOrderAsync(_f, s);
+        var driver = await _f.CreateStaffAsync(s.AdminToken, s.StoreId.ToString(), "Driver");
+        (await DeliveryScenario.AssignAsync(_f, s.AdminToken, s.StoreId, assigned.DeliveryId, Guid.Parse(driver.user.id))).EnsureSuccessStatusCode();
+        (await _f.Authed(driver.accessToken).PostAsync($"/api/delivery/{assigned.DeliveryId}/pick-up", null)).EnsureSuccessStatusCode();
+        await WaitForOrderStatusAsync(s.AdminToken, assigned.OrderId, "InDelivery"); // legalny odbiór kierowcy przetworzony
+
+        var before = new[]
+        {
+            await SnapshotAsync(s.AdminToken, assigned.DeliveryId, assigned.OrderId),
+            await SnapshotAsync(s.AdminToken, unassigned.DeliveryId, unassigned.OrderId),
+        };
+
+        var admin = _f.Authed(s.AdminToken);
+        foreach (var id in new[] { assigned.DeliveryId, unassigned.DeliveryId })
+            foreach (var action in new[] { "pick-up", "delivered" })
+                (await admin.PostAsync($"/api/delivery/{id}/{action}", null)).StatusCode
+                    .Should().Be(HttpStatusCode.Forbidden, "admin nie jest przypisanym kierowcą ({0} {1})", action, id);
+
+        await DeliveryScenario.FlushOutboxAsync(_f);
+        (await SnapshotAsync(s.AdminToken, assigned.DeliveryId, assigned.OrderId)).Should().Be(before[0],
+            "dostawa innego kierowcy: bez zmiany stanu, historii, zdarzeń i statusu zamówienia");
+        (await SnapshotAsync(s.AdminToken, unassigned.DeliveryId, unassigned.OrderId)).Should().Be(before[1],
+            "dostawa nieprzypisana: bez zmian");
+        before[0].Status.Should().Be("InTransit");
+        before[1].Status.Should().Be("AvailableForPickup");
+    }
+
+    [Fact]
+    public async Task Admin_emergency_override_is_separate_requires_reason_is_audited_and_emits_once()
+    {
+        var s = await OrderScenario.StoreWithSlotAsync(_f);
+        var ready = await DeliveryScenario.ReadyOrderAsync(_f, s);
+        var idle = await DeliveryScenario.ReadyOrderAsync(_f, s);
+        var driver = await _f.CreateStaffAsync(s.AdminToken, s.StoreId.ToString(), "Driver");
+        var employee = await _f.CreateEmployeeAsync(s.AdminToken, s.StoreId.ToString());
+        (await DeliveryScenario.AssignAsync(_f, s.AdminToken, s.StoreId, ready.DeliveryId, Guid.Parse(driver.user.id))).EnsureSuccessStatusCode();
+        (await _f.Authed(driver.accessToken).PostAsync($"/api/delivery/{ready.DeliveryId}/pick-up", null)).EnsureSuccessStatusCode();
+        var version = (await BoardAsync(s.AdminToken, s.StoreId)).deliveries.Single(d => d.id == ready.DeliveryId).version;
+        const string reason = "Telefon kierowcy rozładowany — odbiór potwierdzony telefonicznie przez sklep";
+        Task<HttpResponseMessage> Override(string token, Guid id, string action, string why, int ver) =>
+            _f.Authed(token).PostAsJsonAsync($"/api/delivery/admin/deliveries/{id}/override",
+                new { action, reason = why, expectedVersion = ver });
+
+        (await Override(employee.accessToken, ready.DeliveryId, "delivered", reason, version)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await Override(driver.accessToken, ready.DeliveryId, "delivered", reason, version)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await Override(s.AdminToken, ready.DeliveryId, "delivered", "", version)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await Override(s.AdminToken, ready.DeliveryId, "delivered", "bo tak", version)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await Override(s.AdminToken, ready.DeliveryId, "delivered", reason, version - 1)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await DeliveryScenario.DeliveryEventsAsync(_f, "OrderDelivered", ready.OrderId)).Should().Be(0);
+
+        (await Override(s.AdminToken, ready.DeliveryId, "delivered", reason, version)).EnsureSuccessStatusCode();
+        (await Override(s.AdminToken, ready.DeliveryId, "delivered", reason, version + 1)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await DeliveryScenario.DeliveryEventsAsync(_f, "OrderDelivered", ready.OrderId)).Should().Be(1);
+        var history = (await _f.Authed(s.AdminToken).GetFromJsonAsync<List<ChangeWithReason>>(
+            $"/api/delivery/stores/{s.StoreId}/deliveries/{ready.DeliveryId}/history"))!;
+        var last = history.Last();
+        (last.action, last.toStatus, last.reason, last.actor).Should().Be(("override_delivered", "Delivered", reason, "admin@zipzap.local"));
+        history.Take(history.Count - 1).Should().OnlyContain(h => h.reason == null);
+
+        // Nie da się awaryjnie przeskoczyć przypisania: dostawa nieprzypisana → 409, bez zdarzeń.
+        var idleVersion = (await BoardAsync(s.AdminToken, s.StoreId)).deliveries.Single(d => d.id == idle.DeliveryId).version;
+        (await Override(s.AdminToken, idle.DeliveryId, "picked_up", reason, idleVersion)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await DeliveryScenario.DeliveryEventsAsync(_f, "OrderPickedUp", idle.OrderId)).Should().Be(0);
+    }
+
+    private sealed record ChangeWithReason(string action, string toStatus, string? actor, string? reason);
+
     [Fact]
     public async Task Driver_cannot_self_accept_from_the_pool_anymore()
     {
