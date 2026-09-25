@@ -78,4 +78,37 @@ public sealed class PilotTestOrderTests
         over.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await over.Content.ReadAsStringAsync()).Should().Contain("limit");
     }
+
+    [Fact]
+    public async Task Parallel_checkouts_of_one_tester_never_exceed_the_daily_cap()
+    {
+        const int attempts = 8;
+        var s = await OrderScenario.StoreWithSlotAsync(_f);
+        var tester = await OrderScenario.CustomerWithRoleAsync(_f, s.AdminToken, "Tester");
+        // Każdy checkout na INNYM terminie dostawy — inaczej współbieżność slotu (xmin) sama serializuje
+        // żądania i test nie sprawdzałby limitu testera.
+        var date = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(3));
+        var work = new List<(OrderScenario.PreparedCart cart, Guid slot)>();
+        for (var i = 0; i < attempts; i++)
+            work.Add((await OrderScenario.PrepareCartAsync(_f, s, tester.accessToken),
+                await OrderScenario.AddSlotAsync(_f, s, date, $"{8 + i:00}:00:00", $"{9 + i:00}:00:00")));
+
+        // Wszystkie checkouty (różne koszyki, bez klucza idempotencji) startują jednocześnie.
+        using var go = new SemaphoreSlim(0);
+        var tasks = work.Select(async w =>
+        {
+            await go.WaitAsync();
+            return await OrderScenario.CheckoutCartAsync(_f, s, tester.accessToken, w.cart, w.slot);
+        }).ToList();
+        go.Release(attempts);
+        var responses = await Task.WhenAll(tasks);
+
+        responses.Count(r => r.IsSuccessStatusCode).Should().Be(TestModeApiFactory.DailyCap);
+        responses.Where(r => !r.IsSuccessStatusCode).Should().OnlyContain(r => r.StatusCode == HttpStatusCode.Conflict);
+
+        using var scope = _f.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+        var testerId = Guid.Parse(tester.user.id);
+        (await db.Orders.CountAsync(o => o.CustomerId == testerId)).Should().Be(TestModeApiFactory.DailyCap);
+    }
 }

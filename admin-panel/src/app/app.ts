@@ -57,7 +57,7 @@ import { PANEL_MODULES } from './modules';
                   <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
                   <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
                   @if (error) { <p class="error">{{ error }}</p> }
-                  <p class="hint">Domyślny admin (dev): admin&#64;zipzap.local / Admin123!</p>
+                  @if (isLocalDev) { <p class="hint">Domyślny admin (tylko lokalny dev): admin&#64;zipzap.local / Admin123!</p> }
                 </form>
               }
             }
@@ -135,6 +135,7 @@ import { PANEL_MODULES } from './modules';
                 @case ('start') { <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/> }
                 @case ('dashboard') { <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/> }
                 @case ('orders') { <path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6M8 13h8M8 17h6"/> }
+                @case ('rounds') { <path d="M6 7h12l-1 14H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/><path d="M9.5 13.5l2 2 3.5-3.5"/> }
                 @case ('deliveries') { <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/> }
                 @case ('catalog') { <path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/> }
                 @case ('integrations') { <path d="M9 7H6a3 3 0 0 0 0 6h3M15 7h3a3 3 0 0 1 0 6h-3M8 10h8"/> }
@@ -166,7 +167,7 @@ import { PANEL_MODULES } from './modules';
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
             <input placeholder="Szukaj zamówień (numer, klient)…" [ngModel]="search" (ngModelChange)="onSearchChange($event)" />
           </div>
-          @if (!api.isAdmin() || api.isStoreAdmin()) {
+          @if (!api.isAdmin() || api.isStoreAdmin() || adminOnStoreSection()) {
             <div class="store-select">
               <select [ngModel]="selectedStoreId" (ngModelChange)="onStoreChange($event)">
                 @for (s of stores; track s.id) { <option [value]="s.id">{{ s.name }} — {{ s.city }}</option> }
@@ -195,8 +196,11 @@ export class App {
   protected api = inject(Api);
   private router = inject(Router);
 
-  email = 'admin@zipzap.local';
-  password = 'Admin123!';
+  // Podpowiedź i wstępne wypełnienie domyślnym kontem TYLKO na lokalnym dev (nigdy na wdrożonym panelu).
+  readonly isLocalDev = typeof location !== 'undefined'
+    && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  email = this.isLocalDev ? 'admin@zipzap.local' : '';
+  password = this.isLocalDev ? 'Admin123!' : '';
   error = '';
   loading = false;
   search = '';
@@ -228,6 +232,12 @@ export class App {
 
   private defaultRoute(): string { return '/' + (this.visibleModules()[0]?.id ?? 'dashboard'); }
 
+  /// Admin serwisu na sekcji per-sklep (np. rundy zakupowe) — potrzebuje przełącznika sklepu.
+  adminOnStoreSection(): boolean {
+    const path = this.router.url.split('?')[0].replace(/^\//, '');
+    return PANEL_MODULES.some(m => m.id === path && m.storeScoped && m.roles.includes('Admin'));
+  }
+
   login() {
     this.loading = true;
     this.error = '';
@@ -256,7 +266,7 @@ export class App {
     this.driverDone = false;
     this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = ''; this.nip = ''; this.confirmPassword = '';
     this.twoFaToken = ''; this.twoFaCode = '';
-    if (m === 'login') { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
+    if (m === 'login' && this.isLocalDev) { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
     else { this.email = ''; this.password = ''; }
   }
 

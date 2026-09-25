@@ -592,16 +592,21 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
                 style: TextStyle(
                     color: bold ? context.zz.text : context.zz.textMuted,
                     fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
                     fontSize: bold ? 17 : 14)),
-            Text(value,
-                style: TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: bold ? 17 : 14)),
+            const SizedBox(width: 12),
+            // Długa wartość (np. „bez opłaty — zamówienie testowe") zawija się zamiast wychodzić poza ekran.
+            Expanded(
+              child: Text(value,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: bold ? 17 : 14)),
+            ),
           ],
         ),
       );

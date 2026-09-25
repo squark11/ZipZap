@@ -24,6 +24,8 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<PurchasingSchedule> PurchasingSchedules => Set<PurchasingSchedule>();
     public DbSet<PurchasingRound> PurchasingRounds => Set<PurchasingRound>();
+    public DbSet<OrderItemPick> OrderItemPicks => Set<OrderItemPick>();
+    public DbSet<OrderItemPickChange> OrderItemPickChanges => Set<OrderItemPickChange>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -57,6 +59,37 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(r => r.TimeZoneId).IsRequired().HasMaxLength(64);
             e.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
             e.HasIndex(r => new { r.StoreId, r.StartsAtUtc }).IsUnique();
+        });
+
+        // ---- Kompletacja pozycji w rundzie (1:1 z order_items; oryginalna pozycja bez zmian) ----
+        b.Entity<OrderItemPick>(e =>
+        {
+            e.ToTable("order_item_picks");
+            e.HasKey(p => p.Id);
+            e.HasOne<OrderItem>().WithOne().HasForeignKey<OrderItemPick>(p => p.Id).OnDelete(DeleteBehavior.Restrict);
+            e.Property(p => p.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(p => p.SubstituteProductName).HasMaxLength(200);
+            e.Property(p => p.SubstituteUnit).HasMaxLength(16);
+            e.Property(p => p.Note).HasMaxLength(OrderItemPick.MaxNoteLength);
+            e.Property(p => p.UpdatedByLabel).HasMaxLength(256);
+            // Optymistyczna współbieżność: UPDATE ... WHERE Version = <odczytana> — nowsza zmiana nie zostanie nadpisana.
+            e.Property(p => p.Version).IsConcurrencyToken();
+            e.HasIndex(p => p.PurchasingRoundId);
+            e.Ignore(p => p.Current);
+        });
+
+        b.Entity<OrderItemPickChange>(e =>
+        {
+            e.ToTable("order_item_pick_history");
+            e.HasKey(h => h.Id);
+            e.Property(h => h.FromStatus).HasConversion<string>().HasMaxLength(16);
+            e.Property(h => h.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(h => h.SubstituteProductName).HasMaxLength(200);
+            e.Property(h => h.SubstituteUnit).HasMaxLength(16);
+            e.Property(h => h.Note).HasMaxLength(OrderItemPick.MaxNoteLength);
+            e.Property(h => h.ChangedByLabel).HasMaxLength(256);
+            e.HasIndex(h => new { h.OrderItemId, h.Version }).IsUnique();
+            e.HasIndex(h => h.PurchasingRoundId);
         });
 
         // ---- Read-model ----

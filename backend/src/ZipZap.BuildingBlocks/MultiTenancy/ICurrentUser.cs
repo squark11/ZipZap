@@ -17,6 +17,9 @@ public interface ICurrentUser
     IReadOnlyCollection<string> Roles { get; }
     bool IsAuthenticated { get; }
 
+    /// <summary>E-mail z tokenu — tylko do opisania autora zmian w śladzie audytowym (np. kompletacja).</summary>
+    string? Email => null;
+
     /// <summary>Czy może zarządzać danym sklepem: Admin lub pracownik TEGO sklepu (także jednej z wielu lokalizacji).</summary>
     bool ManagesStore(Guid storeId) => Roles.Contains("Admin") || StoreIds.Contains(storeId);
 

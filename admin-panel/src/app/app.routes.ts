@@ -13,6 +13,7 @@ const loaders: Record<string, () => Promise<any>> = {
   'driver-home': () => import('./driver-home').then(m => m.DriverHomeComponent),
   dashboard:    () => import('./dashboard').then(m => m.DashboardComponent),
   orders:       () => import('./orders').then(m => m.OrdersComponent),
+  rounds:       () => import('./rounds').then(m => m.RoundsComponent),
   deliveries:   () => import('./deliveries').then(m => m.DeliveriesComponent),
   catalog:      () => import('./catalog').then(m => m.CatalogComponent),
   integrations: () => import('./integrations').then(m => m.IntegrationsComponent),

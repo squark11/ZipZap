@@ -11,7 +11,7 @@
 export type PanelRole = 'Admin' | 'StoreEmployee' | 'Driver' | 'Customer';
 
 export type PanelTab =
-  | 'onboarding' | 'dashboard' | 'orders' | 'deliveries' | 'catalog'
+  | 'onboarding' | 'dashboard' | 'orders' | 'rounds' | 'deliveries' | 'catalog'
   | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings'
   | 'admin-home' | 'users' | 'invoices' | 'support' | 'compliance';
 
@@ -42,6 +42,8 @@ export const PANEL_MODULES: readonly PanelModule[] = [
   { id: 'onboarding',   label: 'Start',        icon: 'start',        roles: ['StoreEmployee'],    storeScoped: true },
   { id: 'dashboard',    label: 'Pulpit',       icon: 'dashboard',    roles: ['StoreEmployee'],    storeScoped: true },
   { id: 'orders',       label: 'Zamówienia',   icon: 'orders',       roles: ['StoreEmployee'],    storeScoped: true },
+  // Rundy zakupowe: lista zakupów + kompletacja. Admin serwisu też (z przełącznikiem sklepu); kierowca — nie.
+  { id: 'rounds',       label: 'Zakupy (rundy)', icon: 'rounds',     roles: ['StoreEmployee', 'Admin'], storeScoped: true },
   { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['StoreEmployee'],    storeScoped: true },
   { id: 'catalog',      label: 'Oferta',       icon: 'catalog',      roles: ['StoreEmployee'],    storeScoped: true },
   { id: 'integrations', label: 'Integracje',   icon: 'integrations', roles: ['StoreEmployee'],    storeScoped: true },

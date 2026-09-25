@@ -200,17 +200,22 @@ public sealed class OrderingService
         if (string.IsNullOrWhiteSpace(deliveryAddress)) return Error.Validation("Adres dostawy jest wymagany.");
         if (string.IsNullOrWhiteSpace(contactPhone)) return Error.Validation("Telefon kontaktowy jest wymagany.");
 
+        // Limit W1 jest ścisły także przy równoległych checkoutach tego samego testera: transakcja + blokada
+        // doradcza Postgresa per tester (zwalniana przy commit/rollback). Liczenie i zapis zamówienia dzieją się
+        // pod blokadą, więc drugi checkout widzi zatwierdzone zamówienie pierwszego. Zwykły tryb — bez zmian.
+        var enforceCap = paymentMode == PaymentModes.Test && !isAdmin && _pilot.TestOrdersPerTesterPerDay > 0;
+        await using var capTx = enforceCap ? await _db.Database.BeginTransactionAsync(ct) : null;
+        if (enforceCap)
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtextextended({"w1-cap:" + customerId}, 0))", ct);
+
         // Idempotencja: ten sam klucz od tego samego klienta zwraca istniejące zamówienie (bez duplikatu).
-        if (!string.IsNullOrWhiteSpace(idempotencyKey))
-        {
-            var existing = await _db.Orders.AsNoTracking().Include(o => o.Items).Include(o => o.History)
-                .FirstOrDefaultAsync(o => o.CustomerId == customerId && o.IdempotencyKey == idempotencyKey, ct);
-            if (existing is not null)
-                return OrderDto.From(existing, round: await _rounds.InfoAsync(existing.PurchasingRoundId, ct));
-        }
+        if (!string.IsNullOrWhiteSpace(idempotencyKey)
+            && await ExistingByIdempotencyKeyAsync(customerId, idempotencyKey, ct) is OrderDto existing)
+            return existing;
 
         // Limit kosztu W1: każde zamówienie testowe to towar kupiony przez operatora.
-        if (paymentMode == PaymentModes.Test && !isAdmin && _pilot.TestOrdersPerTesterPerDay > 0)
+        if (enforceCap)
         {
             var since = DateTime.UtcNow.AddHours(-24);
             var recent = await _db.Orders.CountAsync(o => o.CustomerId == customerId
@@ -298,13 +303,29 @@ public sealed class OrderingService
         try
         {
             await _db.SaveChangesAsync(ct);
+            if (capTx is not null) await capTx.CommitAsync(ct);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateException ex)
         {
-            return Error.Conflict("Wybrany slot został właśnie zapełniony. Wybierz inny termin.");
+            // Równoległe powtórzenie tego samego żądania (ten sam klucz) przegrywa na unikalnym kluczu albo na
+            // tokenie slotu — oddajemy zamówienie zwycięzcy zamiast błędu.
+            if (!string.IsNullOrWhiteSpace(idempotencyKey)
+                && await ExistingByIdempotencyKeyAsync(customerId, idempotencyKey, ct) is OrderDto winner)
+                return winner;
+            if (ex is DbUpdateConcurrencyException)
+                return Error.Conflict("Wybrany slot został właśnie zapełniony. Wybierz inny termin.");
+            throw;
         }
 
         return OrderDto.From(order, slot, PurchasingRoundService.ToInfo(roundEntity));
+    }
+
+    private async Task<OrderDto?> ExistingByIdempotencyKeyAsync(Guid customerId, string idempotencyKey, CancellationToken ct)
+    {
+        var existing = await _db.Orders.AsNoTracking().Include(o => o.Items).Include(o => o.History)
+            .FirstOrDefaultAsync(o => o.CustomerId == customerId && o.IdempotencyKey == idempotencyKey, ct);
+        return existing is null ? null
+            : OrderDto.From(existing, round: await _rounds.InfoAsync(existing.PurchasingRoundId, ct));
     }
 
     public async Task<Result<OrderDto>> GetOrderAsync(Guid orderId, CancellationToken ct)

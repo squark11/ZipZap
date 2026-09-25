@@ -113,8 +113,14 @@ wykonują się automatycznie przy starcie.
 > Branch pilotażowy zawiera migracje, które **nie zostały jeszcze zastosowane na produkcji**:
 > `Ordering_PaymentMode` (kolumna `orders.PaymentMode`, domyślnie `online`) i
 > `Ordering_PurchasingRounds` (tabele `purchasing_schedule` z wierszem startowym i `purchasing_rounds`,
-> kolumny rundy w `orders` — wszystkie nullable). Obie są addytywne (bez usuwania danych). Przed
+> kolumny rundy w `orders` — wszystkie nullable) oraz `Ordering_RoundPicking` (nowe tabele
+> `order_item_picks` i `order_item_pick_history`). Wszystkie są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
+
+> ⚠ **Panel logowania (wersja obecnie wdrożona)** wypełniał formularz i pokazywał podpowiedź z domyślnym
+> kontem admina (`admin@zipzap.local` / `Admin123!`) także na produkcji. Na branchu pilotażowym jest to
+> ograniczone do `localhost`, ale **do czasu wdrożenia poprawki** jedyną ochroną jest zmiana hasła admina
+> produkcji — zrób to niezależnie od wdrożenia.
 
 ### Rundy zakupowe
 Harmonogram rund (12:00/16:00, cutoff 30 min, pon–sob, dostawa ≥ 60 min po rundzie — **wartości

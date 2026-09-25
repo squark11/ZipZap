@@ -38,4 +38,6 @@ public sealed class HttpContextCurrentUser : ICurrentUser
         Principal?.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToArray() ?? Array.Empty<string>();
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated ?? false;
+
+    public string? Email => Principal?.FindFirstValue("email") ?? Principal?.FindFirstValue(ClaimTypes.Email);
 }

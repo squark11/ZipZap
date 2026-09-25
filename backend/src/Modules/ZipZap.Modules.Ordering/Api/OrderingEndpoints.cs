@@ -68,6 +68,40 @@ public static class OrderingEndpoints
             .RequireAuthorization("Admin")
             .WithSummary("Zmiana harmonogramu rund (godziny lokalne, cutoff, dni, czas do dostawy).");
 
+        // ---------- Rundy: lista zakupów i kompletacja (admin + pracownik sklepu; kierowca — brak dostępu) ----------
+
+        group.MapGet("/stores/{storeId:guid}/purchasing-rounds", async (Guid storeId, int? pastDays,
+            RoundPickingService picking, CancellationToken ct) =>
+            Respond(await picking.ListRoundsAsync(storeId, pastDays ?? 3, ct)))
+            .RequireAuthorization("StoreEmployee")
+            .WithSummary("Bieżące i nadchodzące rundy sklepu (+ ostatnie dni) ze stanem i postępem kompletacji.");
+
+        group.MapGet("/stores/{storeId:guid}/purchasing-rounds/{roundId:guid}", async (Guid storeId, Guid roundId,
+            RoundPickingService picking, CancellationToken ct) =>
+            Respond(await picking.GetRoundAsync(storeId, roundId, ct)))
+            .RequireAuthorization("StoreEmployee")
+            .WithSummary("Runda: lista zakupów (suma + rozbicie na zamówienia) i zamówienia z kompletacją.");
+
+        group.MapPut("/stores/{storeId:guid}/purchasing-rounds/{roundId:guid}/items/{orderItemId:guid}/pick",
+            async (Guid storeId, Guid roundId, Guid orderItemId, PickUpdateInput req, RoundPickingService picking,
+                IAuditLogger audit, CancellationToken ct) =>
+        {
+            var result = await picking.UpdatePickAsync(storeId, roundId, orderItemId, req, ct);
+            // Pełny ślad (z notatką) jest w historii kompletacji; do audytu idzie skrót bez treści notatki.
+            if (result.IsSuccess)
+                await audit.LogAsync("round.item.picked", "order_item", orderItemId.ToString(), storeId,
+                    new { roundId, result.Value.Status, result.Value.PickedQuantity, result.Value.SubstituteProductName,
+                          result.Value.SubstituteQuantity, result.Value.Version }, ct);
+            return Respond(result);
+        })
+            .RequireAuthorization("StoreEmployee")
+            .WithSummary("Kompletacja pozycji: oczekuje / kupiono / niedostępne / zastąpiono (z wersją — bez nadpisywania nowszej zmiany).");
+
+        group.MapGet("/stores/{storeId:guid}/purchasing-rounds/{roundId:guid}/items/{orderItemId:guid}/pick-history",
+            async (Guid storeId, Guid roundId, Guid orderItemId, RoundPickingService picking, CancellationToken ct) =>
+            Respond(await picking.GetPickHistoryAsync(storeId, roundId, orderItemId, ct)))
+            .RequireAuthorization("StoreEmployee");
+
         // ---------- Zamówienia ----------
 
         group.MapPost("/carts/{cartId:guid}/checkout", async (Guid cartId, PlaceOrderRequest req, HttpContext http,

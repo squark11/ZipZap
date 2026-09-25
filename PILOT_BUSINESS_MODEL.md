@@ -39,6 +39,30 @@ kiedy klient *dostaje*. Klient musi widzieć oba oraz **nie wolno obiecywać dos
   czytelny komunikat i brak możliwości złożenia zamówienia.
 - Rundy są **niezależne** od terminów dostaw (`time_slots`) i od „fal dostaw” w ustawieniach platformy.
 
+### 1.2. Lista zakupów i kompletacja (S1b — zaimplementowane lokalnie, niewdrożone)
+
+- Panel → **Zakupy (rundy)**: dostęp ma **admin** i **pracownik przypisanego sklepu**; kierowca i klient — brak
+  dostępu (odmowa na poziomie polityki i sklepu). Widok: bieżące/nadchodzące rundy (+3 ostatnie dni), stan rundy
+  (przyjmuje zamówienia / zamknięta — czeka na zakupy / zakupy w toku / skompletowana / brak zamówień), postęp.
+- **Lista zakupów** sumuje ten sam produkt (i jednostkę) z wielu zamówień, ale każda suma rozwija się na
+  zamówienia i klientów — agregacja niczego nie zaciera. Klient jest widoczny **tylko jako kod** (np. `K-3F2A91`)
+  i kod zamówienia; w widoku kompletacji nie ma imienia, telefonu ani adresu (to dane dostawy — S1c).
+- **Kompletacja pozycji:** oczekuje / kupiono (z faktyczną ilością) / niedostępne / zastąpiono (produkt
+  zastępczy z katalogu sklepu + ilość + notatka). Oryginalna pozycja zamówienia **nie jest zmieniana**; stan
+  kompletacji i pełna historia zmian (kto, kiedy, co) są w osobnych tabelach. Poprawki są możliwe do przekazania
+  zamówienia kierowcy (później stan jest tylko do podglądu).
+- **Bez nadpisywania:** każda zmiana niesie wersję, którą operator widział; nowsza zmiana innej osoby nie
+  zostanie nadpisana (konflikt → odświeżenie), a podwójne kliknięcie tej samej zmiany nie tworzy duplikatu.
+- **Kompletacja nie zmienia statusu zamówienia, cen, kwot ani rozliczeń** i nie wysyła zdarzeń dostawy
+  (w tym `OrderDelivered`). Statusy zamówienia zmienia się jak dotąd — przyciskami w „Zamówieniach”.
+- **Które zamówienia trafiają na listę zakupów:** testowe (W1) od złożenia; płatne dopiero po potwierdzeniu
+  płatności. Anulowane i nieopłacone są widoczne z powodem, ale poza sumami.
+
+**Decyzje do podjęcia (nie wymyślono reguł):**
+1. **Zamienniki** — czy wymagają zgody klienta przed zakupem (i jak ją zbierać), jaka cena obowiązuje, kto
+   pokrywa różnicę. Dziś system zapisuje zamianę + notatkę dla operatora i **nie zmienia kwot**.
+2. **Częściowe ilości / braki** w trybie płatnym — korekta kwoty lub zwrot (W2/W3). W W1 bez znaczenia (bez opłat).
+
 Docelowo produkt to **marketplace lokalnych sklepów** — każdy sklep prowadzi własny katalog i
 ofertę. Pilotaż nie może przekształcić platformy w jeden centralny sklep Dowózka.pl ani przenieść
 własności asortymentu na platformę.

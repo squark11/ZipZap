@@ -31,6 +31,7 @@ public static class OrderingModule
         // Czas bieżący przez TimeProvider — rundy liczone deterministycznie w testach (stały zegar).
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<PurchasingRoundService>();
+        services.AddScoped<RoundPickingService>();
         services.AddScoped<OrderingService>();
 
         // Domyślnie brak polityki prawnej sklepu; host nadpisuje adapterem nad magazynem dokumentów.

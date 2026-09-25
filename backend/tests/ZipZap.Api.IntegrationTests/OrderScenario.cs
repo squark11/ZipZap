@@ -49,6 +49,20 @@ internal static class OrderScenario
         return new Setup(admin.accessToken, storeId, zone.id, slotId, productId);
     }
 
+    /// <summary>Dodatkowy produkt w read-modelu katalogu sklepu (np. drugi produkt w koszyku, zamiennik).</summary>
+    public static async Task<Guid> AddProductAsync(ApiFactory f, Guid storeId, string name, decimal price = 5.00m, string unit = "szt")
+    {
+        var id = Guid.NewGuid();
+        using var scope = f.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+        db.CatalogProducts.Add(new CatalogProductView
+        {
+            Id = id, StoreId = storeId, Name = name, Price = price, Unit = unit, IsAvailable = true,
+        });
+        await db.SaveChangesAsync();
+        return id;
+    }
+
     /// <summary>Dodatkowy termin dostawy dla istniejącego sklepu/strefy.</summary>
     public static async Task<Guid> AddSlotAsync(ApiFactory f, Setup s, DateOnly date, string startTime, string endTime)
     {
@@ -60,22 +74,41 @@ internal static class OrderScenario
         return (await resp.Content.ReadFromJsonAsync<IdDto>())!.id;
     }
 
-    /// <summary>Nowy koszyk z jednym produktem i próba złożenia zamówienia (zwraca surową odpowiedź).</summary>
-    public static async Task<HttpResponseMessage> CheckoutAsync(ApiFactory f, Setup s, string customerToken,
-        Guid? slotId = null, DateTime? expectedRoundStartsAtUtc = null)
+    public sealed record PreparedCart(Guid Id, string Token);
+
+    /// <summary>Nowy koszyk klienta z produktami (domyślnie 1 × produkt scenariusza).</summary>
+    public static async Task<PreparedCart> PrepareCartAsync(ApiFactory f, Setup s, string customerToken,
+        params (Guid productId, int quantity)[] items)
     {
         var cc = f.Authed(customerToken);
         var cart = (await (await cc.PostAsJsonAsync("/api/ordering/carts", new { storeId = s.StoreId }))
             .Content.ReadFromJsonAsync<CartDto>())!;
-        (await cc.PostAsJsonAsync($"/api/ordering/carts/{cart.id}/items?token={cart.cartToken}",
-            new { productId = s.ProductId, quantity = 1 })).EnsureSuccessStatusCode();
-        return await cc.PostAsJsonAsync($"/api/ordering/carts/{cart.id}/checkout", new
+        if (items.Length == 0) items = new[] { (s.ProductId, 1) };
+        foreach (var (productId, quantity) in items)
+            (await cc.PostAsJsonAsync($"/api/ordering/carts/{cart.id}/items?token={cart.cartToken}",
+                new { productId, quantity })).EnsureSuccessStatusCode();
+        return new PreparedCart(cart.id, cart.cartToken);
+    }
+
+    /// <summary>Złożenie zamówienia z przygotowanego koszyka (zwraca surową odpowiedź).</summary>
+    public static Task<HttpResponseMessage> CheckoutCartAsync(ApiFactory f, Setup s, string customerToken,
+        PreparedCart cart, Guid? slotId = null, DateTime? expectedRoundStartsAtUtc = null, string? idempotencyKey = null)
+    {
+        var c = f.Authed(customerToken);
+        if (idempotencyKey is not null) c.DefaultRequestHeaders.Add("Idempotency-Key", idempotencyKey);
+        return c.PostAsJsonAsync($"/api/ordering/carts/{cart.Id}/checkout", new
         {
-            token = cart.cartToken, deliveryZoneId = s.ZoneId, timeSlotId = slotId ?? s.SlotId,
+            token = cart.Token, deliveryZoneId = s.ZoneId, timeSlotId = slotId ?? s.SlotId,
             deliveryAddress = "ul. Testowa 1, 30-001 Kraków", contactPhone = "600100200", consentAccepted = true,
             expectedRoundStartsAtUtc,
         });
     }
+
+    /// <summary>Nowy koszyk z jednym produktem i próba złożenia zamówienia (zwraca surową odpowiedź).</summary>
+    public static async Task<HttpResponseMessage> CheckoutAsync(ApiFactory f, Setup s, string customerToken,
+        Guid? slotId = null, DateTime? expectedRoundStartsAtUtc = null)
+        => await CheckoutCartAsync(f, s, customerToken, await PrepareCartAsync(f, s, customerToken),
+            slotId, expectedRoundStartsAtUtc);
 
     /// <summary>Rejestruje klienta i nadaje mu rolę (np. Tester); zwraca świeży token z nową rolą.</summary>
     public static async Task<AuthDto> CustomerWithRoleAsync(ApiFactory f, string adminToken, string role)
