@@ -113,8 +113,11 @@ wykonują się automatycznie przy starcie.
 > Branch pilotażowy zawiera migracje, które **nie zostały jeszcze zastosowane na produkcji**:
 > `Ordering_PaymentMode` (kolumna `orders.PaymentMode`, domyślnie `online`) i
 > `Ordering_PurchasingRounds` (tabele `purchasing_schedule` z wierszem startowym i `purchasing_rounds`,
-> kolumny rundy w `orders` — wszystkie nullable) oraz `Ordering_RoundPicking` (nowe tabele
-> `order_item_picks` i `order_item_pick_history`). Wszystkie są addytywne (bez usuwania danych). Przed
+> kolumny rundy w `orders` — wszystkie nullable), `Ordering_RoundPicking` (nowe tabele
+> `order_item_picks` i `order_item_pick_history`) oraz `Delivery_Dispatch` (kolumny okna/kolejności/wersji w
+> `delivery.deliveries` — nullable lub z wartością domyślną — i tabela `delivery_history`). Zdarzenie
+> `OrderReadyForPickup` ma nowe pola opcjonalne (okno dostawy) — starsze wiadomości w outboxie są zgodne.
+> Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
 
 > ⚠ **Panel logowania (wersja obecnie wdrożona)** wypełniał formularz i pokazywał podpowiedź z domyślnym

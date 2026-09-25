@@ -88,7 +88,7 @@ public sealed class SecurityIsolationTests
         using var scope = _f.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DeliveryDbContext>();
         var d = new DeliveryEntity(orderId, storeId);
-        if (acceptedBy is Guid driver) d.Accept(driver);
+        if (acceptedBy is Guid driver) d.AssignTo(driver, 1, driver, null, DateTime.UtcNow);
         db.Deliveries.Add(d);
         db.SaveChanges();
         return d.Id;
@@ -138,10 +138,12 @@ public sealed class SecurityIsolationTests
         state.Events.Should().Be(0);
         (await OrderStatus(oB.AdminToken, oB.OrderId)).Should().Be("Placed");
 
-        // 4) Kontrola pozytywna: kierowca sklepu B może przyjąć tę dostawę.
+        // 4) Kontrola pozytywna (S1c): dostawy przydziela operator — kierowcy sklepu B można ją przypisać.
         var driverB = await _f.CreateStaffAsync(oB.AdminToken, oB.StoreId.ToString(), "Driver");
-        (await _f.Authed(driverB.accessToken).PostAsync($"/api/delivery/{deliveryB}/accept", null))
-            .EnsureSuccessStatusCode();
+        (await _f.Authed(oB.AdminToken).PostAsJsonAsync($"/api/delivery/stores/{oB.StoreId}/deliveries/{deliveryB}/assign",
+            new { driverId = driverB.user.id, expectedVersion = 0 })).EnsureSuccessStatusCode();
+        // …a kierowca sklepu A nadal nie może jej odebrać.
+        (await dac.PostAsync($"/api/delivery/{deliveryB}/pick-up", null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -198,8 +200,12 @@ public sealed class SecurityIsolationTests
         var deliveryId = SeedDelivery(o.OrderId, o.StoreId);
         (await d1c.GetAsync($"/api/delivery/orders/{o.OrderId}")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        // Po przyjęciu: przypisany kierowca widzi SWOJĄ dostawę, inny kierowca nadal nie.
-        (await d1c.PostAsync($"/api/delivery/{deliveryId}/accept", null)).EnsureSuccessStatusCode();
+        // Samodzielne przyjęcie z puli jest wyłączone (S1c) — przydziela operator.
+        (await d1c.PostAsync($"/api/delivery/{deliveryId}/accept", null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        // Po przypisaniu przez operatora: przypisany kierowca widzi SWOJĄ dostawę, inny kierowca nadal nie.
+        (await _f.Authed(o.AdminToken).PostAsJsonAsync($"/api/delivery/stores/{o.StoreId}/deliveries/{deliveryId}/assign",
+            new { driverId = d1.user.id, expectedVersion = 0 })).EnsureSuccessStatusCode();
         (await d1c.GetAsync($"/api/delivery/orders/{o.OrderId}")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await _f.Authed(d2.accessToken).GetAsync($"/api/delivery/orders/{o.OrderId}"))
             .StatusCode.Should().Be(HttpStatusCode.Forbidden);

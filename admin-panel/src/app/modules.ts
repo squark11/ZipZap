@@ -44,7 +44,8 @@ export const PANEL_MODULES: readonly PanelModule[] = [
   { id: 'orders',       label: 'Zamówienia',   icon: 'orders',       roles: ['StoreEmployee'],    storeScoped: true },
   // Rundy zakupowe: lista zakupów + kompletacja. Admin serwisu też (z przełącznikiem sklepu); kierowca — nie.
   { id: 'rounds',       label: 'Zakupy (rundy)', icon: 'rounds',     roles: ['StoreEmployee', 'Admin'], storeScoped: true },
-  { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['StoreEmployee'],    storeScoped: true },
+  // Dostawy: przydział kierowców i kolejność tras (operator sklepu; admin — z przełącznikiem sklepu).
+  { id: 'deliveries',   label: 'Dostawy',      icon: 'deliveries',   roles: ['StoreEmployee', 'Admin'], storeScoped: true },
   { id: 'catalog',      label: 'Oferta',       icon: 'catalog',      roles: ['StoreEmployee'],    storeScoped: true },
   { id: 'integrations', label: 'Integracje',   icon: 'integrations', roles: ['StoreEmployee'],    storeScoped: true },
   { id: 'finance',      label: 'Rozliczenia',  icon: 'finance',      roles: ['StoreEmployee'],    storeScoped: true },

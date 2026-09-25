@@ -19,7 +19,8 @@ public sealed class DeliveryEventHandlers : IIntegrationEventHandler<OrderReadyF
     public async Task HandleAsync(OrderReadyForPickup e, CancellationToken ct = default)
     {
         if (await _db.Deliveries.AnyAsync(d => d.OrderId == e.OrderId, ct)) return; // idempotencja
-        _db.Deliveries.Add(new Domain.Delivery(e.OrderId, e.StoreId));
+        // Okno dostawy wybrane przez klienta — migawka do planowania (nie zmieniamy jej tutaj).
+        _db.Deliveries.Add(new Domain.Delivery(e.OrderId, e.StoreId, e.DeliveryDate, e.WindowStart, e.WindowEnd));
         await _db.SaveChangesAsync(ct);
     }
 }

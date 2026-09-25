@@ -426,6 +426,19 @@ public sealed class IdentityService
         return Result.Success();
     }
 
+    /// <summary>Aktywni kierowcy przypisani do sklepu (stan z bazy, nie z tokenu) — do przydziału dostaw.</summary>
+    public async Task<IReadOnlyList<DriverRef>> ListActiveStoreDriversAsync(Guid storeId, CancellationToken ct)
+        => await _db.Users.AsNoTracking()
+            .Where(u => u.IsActive && u.Roles.Any(r => r.Role == Role.Driver && r.StoreId == storeId))
+            .OrderBy(u => u.FullName)
+            .Select(u => new DriverRef(u.Id, u.FullName))
+            .ToListAsync(ct);
+
+    /// <summary>Czy użytkownik jest TERAZ aktywnym kierowcą sklepu (konto aktywne + przypisanie do sklepu).</summary>
+    public Task<bool> IsActiveDriverOfStoreAsync(Guid userId, Guid storeId, CancellationToken ct)
+        => _db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive
+            && u.Roles.Any(r => r.Role == Role.Driver && r.StoreId == storeId), ct);
+
     /// <summary>Zespół sklepu: pracownicy i kierowcy przypisani do danego sklepu.</summary>
     public async Task<IReadOnlyList<TeamMemberDto>> ListStoreTeamAsync(Guid storeId, CancellationToken ct)
     {

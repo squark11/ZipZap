@@ -105,6 +105,9 @@ builder.Services.AddSingleton<StoreBillingStore>();
 builder.Services.AddSingleton<StoreLegalStore>();
 // Nadpisz domyślny (null) provider polityki prawnej sklepu adapterem nad magazynem dokumentów.
 builder.Services.AddSingleton<ZipZap.Modules.Ordering.Application.IStoreLegalPolicyProvider, StoreLegalPolicyAdapter>();
+// Moduł dostaw: kierowcy (stan z tożsamości) i dane dostawy zamówień — nadpisują domyślne „zamknięte" porty.
+builder.Services.AddScoped<ZipZap.Modules.Delivery.Application.IDriverDirectory, DriverDirectoryAdapter>();
+builder.Services.AddScoped<ZipZap.Modules.Delivery.Application.IOrderContactProvider, OrderContactAdapter>();
 builder.Services.AddSingleton<PlatformIntegrationsStore>();
 // Realny sender e-mail. Priorytet: HTTP API dostawcy (Resend/Brevo, port 443 — Render blokuje SMTP),
 // z fallbackiem na SMTP/MailKit (lokalnie / hosting bez blokady portów). Nadpisuje mock LoggingEmailSender.

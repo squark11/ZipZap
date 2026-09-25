@@ -60,6 +60,28 @@ kiedy klient *dostaje*. Klient musi widzieć oba oraz **nie wolno obiecywać dos
 - **Które zamówienia trafiają na listę zakupów:** testowe (W1) od złożenia; płatne dopiero po potwierdzeniu
   płatności. Anulowane i nieopłacone są widoczne z powodem, ale poza sumami.
 
+### 1.3. Przygotowanie dostaw i przekazanie kierowcy (S1c — zaimplementowane lokalnie, niewdrożone)
+
+- **Kiedy powstaje dostawa:** gdy sklep oznaczy zamówienie jako „gotowe do odbioru” (Potwierdzone → Kompletowane →
+  Gotowe). Dostawa niesie okno dostawy wybrane przez klienta (data + godziny) — system go nie zmienia.
+- **Panel → Dostawy** (pracownik sklepu; admin z przełącznikiem sklepu): filtr dnia i statusu, nieprzypisane dostawy
+  z wyborem **aktywnego kierowcy tego sklepu**, trasa każdego kierowcy w oknie z **ręczną kolejnością** (↑/↓ + zapis),
+  link „Otwórz trasę w Mapach Google” (przystanki w ustalonej kolejności), historia zmian (kto, kiedy).
+  Bez automatycznej optymalizacji tras i bez płatnych API map.
+- **Kierowca → Moje dostawy:** adres i telefon **wyłącznie** dla dostaw przypisanych jemu i w realizacji
+  (przypisana / w drodze), po sprawdzeniu **w bazie** przy każdym żądaniu: konto aktywne + przypisanie do sklepu
+  dostawy (token wydany przed dezaktywacją/odpięciem nie wystarcza). Po dostarczeniu adres znika.
+  Samodzielne branie dostaw z puli jest **wyłączone** — przydziela operator (inaczej kierowca mógłby „zbierać”
+  adresy wszystkich klientów sklepu).
+- **Statusy:** nieprzypisana → przypisana → w drodze → dostarczona. `OrderDelivered` powstaje wyłącznie przy
+  poprawnym zakończeniu przypisanej dostawy (dokładnie raz, także przy wielokrotnym kliknięciu); bezpośrednie
+  oznaczanie zamówienia jako dostarczone w module zamówień jest zablokowane.
+- **Równoległe zmiany:** dwa przypisania tej samej dostawy → wygrywa jedno (drugie 409); kolejność trasy zapisuje się
+  w całości albo wcale (wersje przystanków + blokada trasy).
+- **Prywatność:** link do map budowany w przeglądarce i otwierany z `noreferrer` (adresy trafiają tylko do aplikacji
+  map, nie do naszego serwera, logów ani analityki — panel nie ma analityki). Historia i audyt dostaw nie zawierają
+  adresów ani telefonów.
+
 **Decyzje do podjęcia (nie wymyślono reguł):**
 1. **Zamienniki** — czy wymagają zgody klienta przed zakupem (i jak ją zbierać), jaka cena obowiązuje, kto
    pokrywa różnicę. Dziś system zapisuje zamianę + notatkę dla operatora i **nie zmienia kwot**.

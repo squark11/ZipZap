@@ -23,6 +23,9 @@ public static class DeliveryModule
         services.AddScoped<IOutboxProcessor, OutboxProcessor<DeliveryDbContext>>();
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<DeliveryDbContext>>();
         services.AddScoped<DeliveryService>();
+        // Porty do innych modułów — domyślnie „zamknięte" (brak kierowców, brak danych klienta); host podmienia adaptery.
+        services.AddScoped<IDriverDirectory, NullDriverDirectory>();
+        services.AddScoped<IOrderContactProvider, NullOrderContactProvider>();
 
         // Konsumuje: gotowość do odbioru → utworzenie dostawy w puli.
         services.AddScoped<DeliveryEventHandlers>();

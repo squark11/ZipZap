@@ -80,6 +80,34 @@ public sealed class PilotTestOrderTests
     }
 
     [Fact]
+    public async Task Delivered_W1_test_order_creates_no_payment_and_no_commission()
+    {
+        var s = await OrderScenario.StoreWithSlotAsync(_f);
+        var tester = await OrderScenario.CustomerWithRoleAsync(_f, s.AdminToken, "Tester");
+        var ready = await DeliveryScenario.ReadyOrderAsync(_f, s, tester);
+        var driver = await _f.CreateStaffAsync(s.AdminToken, s.StoreId.ToString(), "Driver");
+        var dc = _f.Authed(driver.accessToken);
+
+        (await DeliveryScenario.AssignAsync(_f, s.AdminToken, s.StoreId, ready.DeliveryId, Guid.Parse(driver.user.id))).EnsureSuccessStatusCode();
+        (await dc.PostAsync($"/api/delivery/{ready.DeliveryId}/pick-up", null)).EnsureSuccessStatusCode();
+        (await dc.PostAsync($"/api/delivery/{ready.DeliveryId}/delivered", null)).EnsureSuccessStatusCode();
+
+        string status = "";
+        for (var i = 0; i < 40 && status != "Delivered"; i++)
+        {
+            await DeliveryScenario.FlushOutboxAsync(_f);
+            status = (await _f.Authed(s.AdminToken).GetFromJsonAsync<OrderDto>($"/api/ordering/orders/{ready.OrderId}"))!.status;
+            if (status != "Delivered") await Task.Delay(100);
+        }
+        status.Should().Be("Delivered", "OrderDelivered przeszło przez moduły");
+
+        using var scope = _f.Services.CreateScope();
+        var payments = scope.ServiceProvider.GetRequiredService<ZipZap.Modules.Payments.Infrastructure.PaymentsDbContext>();
+        (await payments.Payments.CountAsync(p => p.OrderId == ready.OrderId)).Should().Be(0, "W1: bez płatności");
+        (await payments.CommissionLedger.CountAsync(c => c.OrderId == ready.OrderId)).Should().Be(0, "W1: bez księgowania prowizji");
+    }
+
+    [Fact]
     public async Task Parallel_checkouts_of_one_tester_never_exceed_the_daily_cap()
     {
         const int attempts = 8;

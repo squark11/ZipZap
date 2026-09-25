@@ -32,6 +32,7 @@ public static class OrderingModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<PurchasingRoundService>();
         services.AddScoped<RoundPickingService>();
+        services.AddScoped<OrderDeliveryInfoQuery>(); // tylko dla adaptera portu modułu dostaw (host)
         services.AddScoped<OrderingService>();
 
         // Domyślnie brak polityki prawnej sklepu; host nadpisuje adapterem nad magazynem dokumentów.

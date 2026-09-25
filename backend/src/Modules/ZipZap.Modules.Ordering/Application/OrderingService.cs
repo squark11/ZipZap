@@ -590,7 +590,11 @@ public sealed class OrderingService
             return Error.Conflict(ex.Message);
         }
 
-        PublishStatusEvent(order, action);
+        // Gotowe do wydania: okno dostawy wybrane przez klienta idzie do modułu dostaw (bez danych osobowych).
+        TimeSlot? slot = action == OrderAction.Ready
+            ? await _db.TimeSlots.AsNoTracking().FirstOrDefaultAsync(s => s.Id == order.TimeSlotId, ct)
+            : null;
+        PublishStatusEvent(order, action, slot);
         await _db.SaveChangesAsync(ct);
         return OrderDto.From(order);
     }
@@ -615,22 +619,23 @@ public sealed class OrderingService
     {
         var isAdmin = _user.Roles.Contains("Admin");
         var isStoreStaff = _user.Roles.Contains("StoreEmployee") && _user.StoreIds.Contains(order.StoreId);
-        var isDriver = _user.Roles.Contains("Driver");
 
-        var allowed = action switch
-        {
-            OrderAction.PickUp or OrderAction.Delivered => isAdmin || isDriver,
-            _ => isAdmin || isStoreStaff, // Confirm, StartPicking, Ready, Complete, Cancel
-        };
+        // Odbiór i dostarczenie prowadzi WYŁĄCZNIE moduł dostaw (przypisany kierowca → OrderPickedUp/OrderDelivered);
+        // bezpośrednia zmiana tych statusów tutaj ominęłaby sprawdzenie przypisania dostawy.
+        if (action is OrderAction.PickUp or OrderAction.Delivered)
+            return Result.Failure(Error.Forbidden("Odbiór i dostarczenie potwierdza przypisany kierowca w module dostaw."));
+
+        var allowed = isAdmin || isStoreStaff; // Confirm, StartPicking, Ready, Complete, Cancel
         return allowed ? Result.Success() : Result.Failure(Error.Forbidden("Brak uprawnień do tej operacji."));
     }
 
-    private void PublishStatusEvent(Order order, OrderAction action)
+    private void PublishStatusEvent(Order order, OrderAction action, TimeSlot? slot)
     {
         switch (action)
         {
             case OrderAction.Ready:
-                _db.AddOutboxMessage(new OrderReadyForPickup(order.Id, order.StoreId), _events);
+                _db.AddOutboxMessage(new OrderReadyForPickup(order.Id, order.StoreId,
+                    slot?.Date, slot?.StartTime, slot?.EndTime), _events);
                 break;
             case OrderAction.PickUp:
                 _db.AddOutboxMessage(new OrderPickedUp(order.Id, order.StoreId), _events);

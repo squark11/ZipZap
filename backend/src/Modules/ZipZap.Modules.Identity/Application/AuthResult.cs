@@ -38,6 +38,9 @@ public sealed record TeamMemberDto(
     Guid Id, string Email, string FullName, string? Phone,
     bool IsActive, bool IsEmailVerified, string Role, Guid StoreId);
 
+/// <summary>Kierowca do przydziału dostaw — tylko identyfikator i imię/nazwisko (bez kontaktu).</summary>
+public sealed record DriverRef(Guid Id, string FullName);
+
 /// <summary>Użytkownik platformy — tabela w panelu administratora serwisu.</summary>
 public sealed record AdminUserDto(
     Guid Id, string Email, string FullName, string? Phone,
