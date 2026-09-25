@@ -110,6 +110,15 @@ internal static class OrderScenario
         => await CheckoutCartAsync(f, s, customerToken, await PrepareCartAsync(f, s, customerToken),
             slotId, expectedRoundStartsAtUtc);
 
+    /// <summary>Uruchamia wszystkie wywołania jednocześnie (start po wspólnym sygnale) — testy współbieżności.</summary>
+    public static async Task<HttpResponseMessage[]> FireTogetherAsync(IReadOnlyList<Func<Task<HttpResponseMessage>>> calls)
+    {
+        using var go = new SemaphoreSlim(0);
+        var tasks = calls.Select(async call => { await go.WaitAsync(); return await call(); }).ToList();
+        go.Release(calls.Count);
+        return await Task.WhenAll(tasks);
+    }
+
     /// <summary>Rejestruje klienta i nadaje mu rolę (np. Tester); zwraca świeży token z nową rolą.</summary>
     public static async Task<AuthDto> CustomerWithRoleAsync(ApiFactory f, string adminToken, string role)
     {

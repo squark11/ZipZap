@@ -230,7 +230,7 @@ public sealed class RoundPickingTests
             new { status = "Substituted", substituteProductId = w.Substitute, substituteQuantity = 1, expectedVersion = 0 },
         };
 
-        var responses = await FireTogetherAsync(bodies.Select(b => (Func<Task<HttpResponseMessage>>)(
+        var responses = await OrderScenario.FireTogetherAsync(bodies.Select(b => (Func<Task<HttpResponseMessage>>)(
             () => PickAsync(w, w.Employee.accessToken, item, b))).ToList());
 
         responses.Count(r => r.IsSuccessStatusCode).Should().Be(1);
@@ -239,7 +239,7 @@ public sealed class RoundPickingTests
 
         // Równoległe powtórzenia TEJ SAMEJ zmiany — wszystkie OK, jeden wpis historii.
         var same = new { status = "Unavailable", note = "ostatecznie brak", expectedVersion = 1 };
-        var repeats = await FireTogetherAsync(Enumerable.Range(0, 4).Select(_ => (Func<Task<HttpResponseMessage>>)(
+        var repeats = await OrderScenario.FireTogetherAsync(Enumerable.Range(0, 4).Select(_ => (Func<Task<HttpResponseMessage>>)(
             () => PickAsync(w, w.Employee.accessToken, item, same))).ToList());
         repeats.Should().OnlyContain(r => r.IsSuccessStatusCode);
         (await HistoryAsync(w, item)).Select(h => h.version).Should().Equal(1, 2);
@@ -357,13 +357,5 @@ public sealed class RoundPickingTests
         _f.Clock.Set(Utc(9, 45));
         var round = (await ListAsync(admin, s.StoreId)).Single(r => r.id is not null);
         (round.state, round.orderCount, round.excludedOrderCount).Should().Be(("empty", 0, 1));
-    }
-
-    private static async Task<HttpResponseMessage[]> FireTogetherAsync(IReadOnlyList<Func<Task<HttpResponseMessage>>> calls)
-    {
-        using var go = new SemaphoreSlim(0);
-        var tasks = calls.Select(async call => { await go.WaitAsync(); return await call(); }).ToList();
-        go.Release(calls.Count);
-        return await Task.WhenAll(tasks);
     }
 }

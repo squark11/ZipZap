@@ -45,8 +45,10 @@ kiedy klient *dostaje*. Klient musi widzieć oba oraz **nie wolno obiecywać dos
   dostępu (odmowa na poziomie polityki i sklepu). Widok: bieżące/nadchodzące rundy (+3 ostatnie dni), stan rundy
   (przyjmuje zamówienia / zamknięta — czeka na zakupy / zakupy w toku / skompletowana / brak zamówień), postęp.
 - **Lista zakupów** sumuje ten sam produkt (i jednostkę) z wielu zamówień, ale każda suma rozwija się na
-  zamówienia i klientów — agregacja niczego nie zaciera. Klient jest widoczny **tylko jako kod** (np. `K-3F2A91`)
-  i kod zamówienia; w widoku kompletacji nie ma imienia, telefonu ani adresu (to dane dostawy — S1c).
+  zamówienia i klientów — agregacja niczego nie zaciera. Klient jest widoczny jako **pseudonimowy identyfikator**
+  (np. `K-3F2A91`) obok kodu zamówienia; w widoku kompletacji nie ma imienia, telefonu ani adresu (to dane
+  dostawy — S1c). To **pseudonimizacja, nie anonimizacja**: w powiązaniu z zamówieniem identyfikator nadal może
+  być daną osobową (RODO), więc obowiązują te same zasady dostępu i poufności co dla danych zamówienia.
 - **Kompletacja pozycji:** oczekuje / kupiono (z faktyczną ilością) / niedostępne / zastąpiono (produkt
   zastępczy z katalogu sklepu + ilość + notatka). Oryginalna pozycja zamówienia **nie jest zmieniana**; stan
   kompletacji i pełna historia zmian (kto, kiedy, co) są w osobnych tabelach. Poprawki są możliwe do przekazania

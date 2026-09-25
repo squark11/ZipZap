@@ -200,11 +200,14 @@ public sealed class OrderingService
         if (string.IsNullOrWhiteSpace(deliveryAddress)) return Error.Validation("Adres dostawy jest wymagany.");
         if (string.IsNullOrWhiteSpace(contactPhone)) return Error.Validation("Telefon kontaktowy jest wymagany.");
 
-        // Limit W1 jest ścisły także przy równoległych checkoutach tego samego testera: transakcja + blokada
-        // doradcza Postgresa per tester (zwalniana przy commit/rollback). Liczenie i zapis zamówienia dzieją się
-        // pod blokadą, więc drugi checkout widzi zatwierdzone zamówienie pierwszego. Zwykły tryb — bez zmian.
+        // Cały checkout w jednej transakcji: przejęcie koszyka, rezerwacja slotu i zamówienie zapisują się razem
+        // albo wcale (wczesny zwrot = rollback).
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        // Limit W1 jest ścisły także przy równoległych checkoutach tego samego testera: blokada doradcza Postgresa
+        // per tester (zwalniana przy commit/rollback). Liczenie i zapis zamówienia dzieją się pod blokadą, więc
+        // drugi checkout widzi zatwierdzone zamówienie pierwszego.
         var enforceCap = paymentMode == PaymentModes.Test && !isAdmin && _pilot.TestOrdersPerTesterPerDay > 0;
-        await using var capTx = enforceCap ? await _db.Database.BeginTransactionAsync(ct) : null;
         if (enforceCap)
             await _db.Database.ExecuteSqlInterpolatedAsync(
                 $"SELECT pg_advisory_xact_lock(hashtextextended({"w1-cap:" + customerId}, 0))", ct);
@@ -277,12 +280,24 @@ public sealed class OrderingService
                 $"o {occ.LocalTime:HH:mm}. Wybierz termin rozpoczynający się od {earliest:dd.MM HH:mm}.");
         }
 
-        // Utrwalenie rundy PRZED zmianami koszyka/slotu (osobny zapis — nie wypycha połowicznego checkoutu).
+        // Utrwalenie rundy PRZED zmianami koszyka/slotu (osobny zapis w tej samej transakcji).
         var roundEntity = await _rounds.EnsureRoundAsync(cart.StoreId, round, ct);
 
-        // Rezerwacja slotu (limit).
-        try { slot.Reserve(); }
-        catch (OrderingDomainException ex) { return Error.Conflict(ex.Message); }
+        // Atomowe przejęcie koszyka: równoległy checkout TEGO SAMEGO koszyka czeka na blokadę wiersza, a potem
+        // widzi, że koszyk jest już złożony (0 wierszy) — jeden koszyk = jedno zamówienie.
+        var claimed = await _db.Carts.Where(c => c.Id == cart.Id && c.Status == CartStatus.Active)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.Status, CartStatus.CheckedOut), ct);
+        if (claimed == 0)
+        {
+            if (!string.IsNullOrWhiteSpace(idempotencyKey)
+                && await ExistingByIdempotencyKeyAsync(customerId, idempotencyKey, ct) is OrderDto sameRequest)
+                return sameRequest;
+            return Error.Conflict("Ten koszyk został już złożony jako zamówienie.");
+        }
+
+        // Rezerwacja slotu (limit). Odczyt mógł być nieaktualny — „pełny" sprawdzamy jeszcze pod blokadą wiersza.
+        if (slot.HasCapacity) slot.Reserve();
+        else if (await ReserveSlotLockedAsync(slot, ct) is Error full) return full;
 
         var lines = cart.Items
             .Select(i => new OrderLine(i.ProductId, i.ProductName, i.UnitPrice, i.Unit, i.Quantity))
@@ -300,24 +315,56 @@ public sealed class OrderingService
         _db.AddOutboxMessage(new OrderPlaced(order.Id, order.StoreId, customerId,
             order.Subtotal, order.CommissionAmount, order.DeliveryFee, order.Total, timeSlotId, paymentMode), _events);
 
-        try
+        for (var attempt = 1; ; attempt++)
         {
-            await _db.SaveChangesAsync(ct);
-            if (capTx is not null) await capTx.CommitAsync(ct);
-        }
-        catch (DbUpdateException ex)
-        {
-            // Równoległe powtórzenie tego samego żądania (ten sam klucz) przegrywa na unikalnym kluczu albo na
-            // tokenie slotu — oddajemy zamówienie zwycięzcy zamiast błędu.
-            if (!string.IsNullOrWhiteSpace(idempotencyKey)
-                && await ExistingByIdempotencyKeyAsync(customerId, idempotencyKey, ct) is OrderDto winner)
-                return winner;
-            if (ex is DbUpdateConcurrencyException)
-                return Error.Conflict("Wybrany slot został właśnie zapełniony. Wybierz inny termin.");
-            throw;
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+                break;
+            }
+            catch (DbUpdateConcurrencyException ex) when (attempt < 3 && ex.Entries.All(e => e.Entity is TimeSlot))
+            {
+                // Inny checkout zmienił slot w międzyczasie (token xmin). Blokujemy wiersz slotu, czytamy aktualny
+                // licznik i rezerwujemy ponownie, jeśli jest miejsce — 409 tylko przy faktycznie pełnym slocie.
+                // (Nieudany zapis w transakcji cofa się do punktu zapisu EF, więc zamówienie zapisze się raz.)
+                if (await ReserveSlotLockedAsync(slot, ct) is Error full) return full;
+            }
+            catch (DbUpdateException ex)
+            {
+                // Równoległe powtórzenie tego samego żądania (ten sam klucz) — oddajemy zamówienie zwycięzcy.
+                if (!string.IsNullOrWhiteSpace(idempotencyKey)
+                    && await ExistingByIdempotencyKeyAsync(customerId, idempotencyKey, ct) is OrderDto winner)
+                    return winner;
+                if (ex is DbUpdateConcurrencyException)
+                    return Error.Conflict("Nie udało się zarezerwować terminu przy dużym ruchu — spróbuj ponownie.");
+                throw;
+            }
         }
 
         return OrderDto.From(order, slot, PurchasingRoundService.ToInfo(roundEntity));
+    }
+
+    /// <summary>
+    /// Rezerwacja miejsca pod blokadą wiersza slotu (<c>FOR UPDATE</c>, do końca transakcji): stan i token xmin
+    /// z bazy, potem rezerwacja. Pod blokadą nikt inny nie zmieni slotu, więc kolejny zapis nie trafi na konflikt.
+    /// </summary>
+    private async Task<Error?> ReserveSlotLockedAsync(TimeSlot slot, CancellationToken ct)
+    {
+        // Tabela zgodnie z mapowaniem w OrderingDbContext (schemat „ordering", tabela „time_slots"); Id jako parametr.
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM ordering.time_slots WHERE \"Id\" = {slot.Id} FOR UPDATE", ct);
+        var entry = _db.Entry(slot);
+        var current = await entry.GetDatabaseValuesAsync(ct);
+        if (current is null) return Error.NotFound("Slot dostawy nie istnieje.");
+        entry.OriginalValues.SetValues(current);
+        entry.CurrentValues.SetValues(current);
+        try
+        {
+            slot.Reserve();
+            return null;
+        }
+        catch (OrderingDomainException ex) { return Error.Conflict(ex.Message); }
     }
 
     private async Task<OrderDto?> ExistingByIdempotencyKeyAsync(Guid customerId, string idempotencyKey, CancellationToken ct)

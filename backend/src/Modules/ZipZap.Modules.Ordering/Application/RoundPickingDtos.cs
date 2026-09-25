@@ -17,8 +17,8 @@ public sealed record PickDto(
 }
 
 /// <summary>
-/// Pozycja zamówienia w rundzie z przypisaniem do zamówienia i klienta. Klient jest opisany TYLKO kodem
-/// (bez imienia, telefonu i adresu) — do kompletacji wystarczy oznaczyć torbę kodem zamówienia.
+/// Pozycja zamówienia w rundzie z przypisaniem do zamówienia i klienta. Klient jest opisany pseudonimowym
+/// identyfikatorem (bez imienia, telefonu i adresu) — do kompletacji wystarczy oznaczyć torbę kodem zamówienia.
 /// </summary>
 public sealed record PickLineDto(
     Guid OrderId, string OrderCode, string CustomerCode, Guid OrderItemId,
@@ -97,6 +97,9 @@ public static class ShoppingListBuilder
     /// <summary>Kod zamówienia jak w panelu zamówień (8 pierwszych znaków identyfikatora).</summary>
     public static string OrderCode(Guid orderId) => orderId.ToString("N")[..8];
 
-    /// <summary>Pseudonimowy kod klienta — pozwala rozróżnić klientów bez danych osobowych.</summary>
+    /// <summary>
+    /// Pseudonimowy identyfikator klienta (K-XXXXXX) — rozróżnia klientów w rundzie bez imienia, telefonu i adresu.
+    /// To pseudonimizacja, nie anonimizacja: w kontekście zamówienia nadal może być daną osobową.
+    /// </summary>
     public static string CustomerCode(Guid customerId) => "K-" + customerId.ToString("N")[..6].ToUpperInvariant();
 }
