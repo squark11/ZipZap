@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace ZipZap.BuildingBlocks.Inbox;
 
 /// <summary>
 /// Inbox konsumenta: pozwala pominąć zdarzenie już przetworzone (deduplikacja
-/// przy redostarczeniu / at-least-once). Kluczem jest Id zdarzenia integracyjnego.
+/// przy redostarczeniu / at-least-once). Kluczem jest Id zdarzenia integracyjnego
+/// (albo — w dyspozytorze — para zdarzenie + handler).
+/// To NIE jest „dokładnie raz": jeśli handler wykonał skutek (np. wysłał powiadomienie), a zapis znacznika się
+/// nie udał, błąd jest zgłaszany, zdarzenie wraca do ponowienia i handler może wykonać skutek drugi raz.
 /// </summary>
 public interface IInboxStore
 {
@@ -28,10 +32,20 @@ public sealed class EfInboxStore : IInboxStore
         {
             await _db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (IsDuplicateKey(ex))
         {
-            // Wyścig: inny wątek zdążył zapisać ten sam Id — traktuj jako już przetworzone.
+            // Wyścig: inny wątek/instancja zdążyła zapisać ten sam klucz — to jest oczekiwany duplikat.
             _db.ChangeTracker.Clear();
         }
+        catch
+        {
+            // Każdy inny błąd bazy to awaria zapisu znacznika — NIE udajemy duplikatu; wywołujący musi go zobaczyć.
+            _db.ChangeTracker.Clear();
+            throw;
+        }
     }
+
+    /// <summary>Tylko naruszenie klucza unikalnego (23505) jest „już zapisane"; brak połączenia, limit długości itp. — nie.</summary>
+    public static bool IsDuplicateKey(DbUpdateException ex)
+        => ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 }

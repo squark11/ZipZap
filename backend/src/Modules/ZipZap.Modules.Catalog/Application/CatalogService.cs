@@ -101,7 +101,8 @@ public sealed class CatalogService
             do { code = GenerateSupportCode(); }
             while (await _db.Stores.IgnoreQueryFilters().AnyAsync(s => s.SupportCode == code, ct));
             store.SetSupportCode(code);
-            await _db.SaveChangesAsync(ct);
+            var saved = await SaveVersionedAsync(ct);
+            if (saved.IsFailure) return saved.Error;
         }
         return store.SupportCode!;
     }
@@ -216,7 +217,8 @@ public sealed class CatalogService
         }
 
         PublishStoreState(store, isRegistration: false);
-        await _db.SaveChangesAsync(ct);
+        var saved = await SaveVersionedAsync(ct);
+        if (saved.IsFailure) return saved.Error;
         return StoreDto.From(store);
     }
 
@@ -228,21 +230,44 @@ public sealed class CatalogService
     /// </summary>
     public async Task<Result<int>> ResyncStoreProjectionsAsync(CancellationToken ct)
     {
-        var stores = await _db.Stores.AsNoTracking().IgnoreQueryFilters().ToListAsync(ct);
+        // Śledzone (nie AsNoTracking): każde re-emitowane zdarzenie niesie NOWĄ wersję sklepu, więc konsument
+        // je zastosuje (starsza lub równa wersja byłaby pominięta jako przeterminowana).
+        var stores = await _db.Stores.IgnoreQueryFilters().ToListAsync(ct);
         foreach (var store in stores)
             PublishStoreState(store, isRegistration: false);
-        await _db.SaveChangesAsync(ct);
+        var saved = await SaveVersionedAsync(ct);
+        if (saved.IsFailure) return saved.Error;
         return stores.Count;
     }
 
+    /// <summary>Publikuje stan sklepu z nową wersją agregatu (konsumenci stosują tylko wersje nowsze od znanej).</summary>
     private void PublishStoreState(Store store, bool isRegistration)
     {
+        var version = store.NextVersion();
         if (isRegistration)
             _db.AddOutboxMessage(new StoreRegistered(store.Id, store.Name, store.Slug, store.CommissionRate,
-                store.City, store.IsActive, store.Status.ToString(), store.MinimumOrderValue), _events);
+                store.City, store.IsActive, store.Status.ToString(), store.MinimumOrderValue, version), _events);
         else
             _db.AddOutboxMessage(new StoreUpdated(store.Id, store.CommissionRate, store.IsActive,
-                store.Status.ToString(), store.MinimumOrderValue), _events);
+                store.Status.ToString(), store.MinimumOrderValue, version), _events);
+    }
+
+    /// <summary>
+    /// Zapis z ochroną wersji sklepu/produktu: równoległa zmiana tych samych danych (inna osoba, druga karta) kończy
+    /// się konfliktem 409 i niczego nie zapisuje (także zdarzeń) — zamiast cichego nadpisania albo błędu 500.
+    /// </summary>
+    private async Task<Result> SaveVersionedAsync(CancellationToken ct)
+    {
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+            return Result.Success();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _db.ChangeTracker.Clear();
+            return Result.Failure(Error.Conflict("Te dane zmieniły się w międzyczasie — odśwież i spróbuj ponownie."));
+        }
     }
 
     public async Task<Result<CategoryDto>> CreateCategoryAsync(
@@ -280,7 +305,7 @@ public sealed class CatalogService
         _db.Products.Add(product);
         _db.AddOutboxMessage(
             new ProductPublished(product.Id, product.StoreId, product.Name, product.Price,
-                product.Currency, product.Unit, product.IsAvailable, product.UnitOptionsJson),
+                product.Currency, product.Unit, product.IsAvailable, product.UnitOptionsJson, product.NextVersion()),
             _events);
 
         await _db.SaveChangesAsync(ct);
@@ -308,10 +333,11 @@ public sealed class CatalogService
         }
         _db.AddOutboxMessage(
             new ProductUpdated(product.Id, product.StoreId, product.Name, product.Price,
-                product.Currency, product.Unit, product.IsAvailable, product.UnitOptionsJson),
+                product.Currency, product.Unit, product.IsAvailable, product.UnitOptionsJson, product.NextVersion()),
             _events);
 
-        await _db.SaveChangesAsync(ct);
+        var saved = await SaveVersionedAsync(ct);
+        if (saved.IsFailure) return saved.Error;
         return ProductDto.From(product);
     }
 
@@ -408,8 +434,10 @@ public sealed class CatalogService
                 if (commit)
                 {
                     existing.Update(name, price, isAvailable, category?.Id, null, null, null);
+                    // Pełny stan produktu (także jednostki) — zdarzenie z wersją jest migawką, nie różnicą.
                     _db.AddOutboxMessage(new ProductUpdated(existing.Id, existing.StoreId, existing.Name,
-                        existing.Price, existing.Currency, existing.Unit, existing.IsAvailable), _events);
+                        existing.Price, existing.Currency, existing.Unit, existing.IsAvailable,
+                        existing.UnitOptionsJson, existing.NextVersion()), _events);
                 }
                 results.Add(new(rowNo, name, "aktualizacja", null)); updated++;
             }
@@ -421,13 +449,18 @@ public sealed class CatalogService
                     if (!isAvailable) product.Update(null, null, false, null, null, null, null);
                     _db.Products.Add(product);
                     _db.AddOutboxMessage(new ProductPublished(product.Id, product.StoreId, product.Name,
-                        product.Price, product.Currency, product.Unit, product.IsAvailable), _events);
+                        product.Price, product.Currency, product.Unit, product.IsAvailable,
+                        product.UnitOptionsJson, product.NextVersion()), _events);
                 }
                 results.Add(new(rowNo, name, "nowy", null)); created++;
             }
         }
 
-        if (commit) await _db.SaveChangesAsync(ct);
+        if (commit)
+        {
+            var saved = await SaveVersionedAsync(ct);
+            if (saved.IsFailure) return saved.Error;
+        }
         return new ImportReport(commit, results.Count, created, updated, failed, results);
     }
 

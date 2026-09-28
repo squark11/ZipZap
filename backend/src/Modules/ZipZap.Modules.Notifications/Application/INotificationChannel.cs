@@ -21,8 +21,9 @@ public sealed class LoggingNotificationChannel : INotificationChannel
 
     public Task SendAsync(Notification notification, CancellationToken ct = default)
     {
-        _logger.LogInformation("[NOTIFY:{Template}] recipient={Recipient} payload={Payload}",
-            notification.Template, notification.RecipientUserId, notification.Payload);
+        // Bez ładunku: bywa w nim e-mail i imię klienta (np. customer.welcome) — w logu tylko szablon i id odbiorcy.
+        _logger.LogInformation("[NOTIFY:{Template}] recipient={Recipient} notification={NotificationId}",
+            notification.Template, notification.RecipientUserId, notification.Id);
         return Task.CompletedTask;
     }
 }

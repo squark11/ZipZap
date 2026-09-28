@@ -43,6 +43,16 @@ public sealed class Store : AggregateRoot
 
     public DateTime CreatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Wersja agregatu: rośnie przy każdej zmianie publikowanej innym modułom (StoreRegistered/StoreUpdated niosą ją
+    /// jako AggregateVersion). Token współbieżności — równoległa edycja tego samego sklepu kończy się konfliktem,
+    /// a nie cichym nadpisaniem, więc kolejność wersji = kolejność zatwierdzonych zmian.
+    /// </summary>
+    public int Version { get; private set; }
+
+    /// <summary>Podbija wersję przed publikacją stanu; zwraca nową wersję.</summary>
+    public int NextVersion() => ++Version;
+
     /// <summary>Sklep przyjmuje zamówienia tylko gdy aktywny i otwarty.</summary>
     public bool IsAcceptingOrders => IsActive && Status == StoreStatus.Open;
 

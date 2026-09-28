@@ -49,7 +49,8 @@ public sealed class RabbitMqConnection : IDisposable
                 }
                 catch (Exception ex) when (attempt <= 15)
                 {
-                    _logger.LogWarning("RabbitMQ niedostępny (próba {Attempt}): {Message}", attempt, ex.Message);
+                    // Bez treści wyjątku (może zawierać adres/użytkownika brokera) — tylko typ.
+                    _logger.LogWarning("RabbitMQ niedostępny (próba {Attempt}, {ExceptionType}).", attempt, ex.GetType().Name);
                     Thread.Sleep(TimeSpan.FromSeconds(3));
                 }
             }

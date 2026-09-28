@@ -19,6 +19,15 @@ public sealed class Product : AggregateRoot
     public string? ImageUrl { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Wersja agregatu: rośnie przy każdej zmianie publikowanej innym modułom (ProductPublished/ProductUpdated niosą ją
+    /// jako AggregateVersion). Token współbieżności — równoległa edycja tego samego produktu kończy się konfliktem.
+    /// </summary>
+    public int Version { get; private set; }
+
+    /// <summary>Podbija wersję przed publikacją stanu; zwraca nową wersję.</summary>
+    public int NextVersion() => ++Version;
+
     private Product() { } // EF
 
     private Product(Guid id, Guid storeId, Guid? categoryId, string name, string? description,

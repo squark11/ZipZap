@@ -101,6 +101,9 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(s => s.CommissionRate).HasColumnType("numeric(5,4)");
             e.Property(s => s.MinimumOrderValue).HasColumnType("numeric(12,2)");
             e.Property(s => s.Status).HasMaxLength(24);
+            // Token współbieżności: dwa równoległe handlery tego samego sklepu nie nadpiszą nowszej wersji starszą
+            // (przegrany dostaje konflikt → ponowienie → widzi nowszą wersję i pomija swoje zdarzenie).
+            e.Property(s => s.SourceVersion).IsConcurrencyToken();
             e.Ignore(s => s.IsAcceptingOrders);
         });
 
@@ -112,6 +115,7 @@ public sealed class OrderingDbContext : DbContext, IOutboxDbContext
             e.Property(p => p.Price).HasColumnType("numeric(12,2)");
             e.Property(p => p.Currency).HasMaxLength(3);
             e.Property(p => p.Unit).HasMaxLength(16);
+            e.Property(p => p.SourceVersion).IsConcurrencyToken();
             e.HasIndex(p => p.StoreId);
         });
 

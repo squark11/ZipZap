@@ -22,6 +22,7 @@ public sealed record OutboxProbeEvent(string Tag) : IntegrationEvent;
 public sealed class OutboxProbeHandler : IIntegrationEventHandler<OutboxProbeEvent>
 {
     public const string SecretInExceptionMessage = "jan.kowalski@example.com";
+    public const string TokenInExceptionMessage = "SEKRET-TESTOWY-123";
 
     public static readonly ConcurrentDictionary<Guid, int> FailuresLeft = new();
     public static readonly ConcurrentDictionary<Guid, int> Handled = new();
@@ -29,17 +30,26 @@ public sealed class OutboxProbeHandler : IIntegrationEventHandler<OutboxProbeEve
     public static readonly ConcurrentDictionary<Guid, int> MaxConcurrent = new();
     public static readonly ConcurrentDictionary<Guid, int> DelayMs = new();
 
+    /// <summary>Bramka: obsługa zdarzenia sygnalizuje wejście i czeka, aż test ją zwolni (wymuszenie kolejności).</summary>
+    public static readonly ConcurrentDictionary<Guid, (TaskCompletionSource Entered, TaskCompletionSource Release)> Gates = new();
+
     public async Task HandleAsync(OutboxProbeEvent e, CancellationToken ct = default)
     {
         var now = Running.AddOrUpdate(e.Id, 1, (_, n) => n + 1);
         MaxConcurrent.AddOrUpdate(e.Id, now, (_, n) => Math.Max(n, now));
         try
         {
+            if (Gates.TryGetValue(e.Id, out var gate))
+            {
+                gate.Entered.TrySetResult();
+                await gate.Release.Task.WaitAsync(ct);
+            }
             if (DelayMs.TryGetValue(e.Id, out var delay)) await Task.Delay(delay, ct);
             if (FailuresLeft.TryGetValue(e.Id, out var left) && left > 0)
             {
                 FailuresLeft[e.Id] = left - 1;
-                throw new InvalidOperationException($"Symulowana awaria handlera dla {SecretInExceptionMessage}.");
+                throw new InvalidOperationException(
+                    $"Symulowana awaria handlera dla {SecretInExceptionMessage}, token={TokenInExceptionMessage}.");
             }
             Handled.AddOrUpdate(e.Id, 1, (_, n) => n + 1);
         }
@@ -325,16 +335,47 @@ internal static class OutboxTestData
         return ids.ToArray();
     }
 
-    public static async Task<Guid> AddMessageAsync(ApiFactory f, string type, string payload, DateTime occurredAtUtc,
+    public static Task<Guid> AddMessageAsync(ApiFactory f, string type, string payload, DateTime occurredAtUtc,
         Action<OutboxMessage>? tweak = null)
+        => AddMessageAsync<OrderingDbContext>(f, type, payload, occurredAtUtc, tweak);
+
+    /// <summary>Wiadomość w outboxie wskazanego modułu.</summary>
+    public static async Task<Guid> AddMessageAsync<TContext>(ApiFactory f, string type, string payload, DateTime occurredAtUtc,
+        Action<OutboxMessage>? tweak = null) where TContext : DbContext, IOutboxDbContext
     {
         using var scope = f.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<TContext>();
         var m = new OutboxMessage { Type = type, Payload = payload, OccurredAtUtc = occurredAtUtc };
         tweak?.Invoke(m);
         db.OutboxMessages.Add(m);
         await db.SaveChangesAsync();
         return m.Id;
+    }
+
+    /// <summary>Zdarzenie jako wiadomość outboxa modułu (Id wiadomości = Id zdarzenia, jak w produkcji).</summary>
+    public static Task<Guid> AddEventAsync<TContext>(ApiFactory f, IIntegrationEvent e) where TContext : DbContext, IOutboxDbContext
+    {
+        using var scope = f.Services.CreateScope();
+        var registry = scope.ServiceProvider.GetRequiredService<IIntegrationEventTypeRegistry>();
+        return AddMessageAsync<TContext>(f, registry.GetName(e.GetType()), JsonSerializer.Serialize(e, e.GetType()),
+            e.OccurredAtUtc, m => m.Id = e.Id);
+    }
+
+    /// <summary>Zdarzenie testowe w outboxie wskazanego modułu (np. Catalog — ta sama partia co zdarzenia Catalog).</summary>
+    public static async Task<Guid> AddProbeAsync<TContext>(ApiFactory f, DateTime oldest) where TContext : DbContext, IOutboxDbContext
+    {
+        var e = new OutboxProbeEvent("probe") { OccurredAtUtc = oldest };
+        var messageId = await AddEventAsync<TContext>(f, e);
+        ProbeEventIds[messageId] = e.Id;
+        return messageId;
+    }
+
+    public static async Task<List<OutboxMessage>> MessagesAsync<TContext>(ApiFactory f, params Guid[] ids)
+        where TContext : DbContext, IOutboxDbContext
+    {
+        using var scope = f.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TContext>();
+        return await db.OutboxMessages.AsNoTracking().Where(m => ids.Contains(m.Id)).ToListAsync();
     }
 
     public static async Task<List<OutboxMessage>> MessagesAsync(ApiFactory f, Guid[] ids)

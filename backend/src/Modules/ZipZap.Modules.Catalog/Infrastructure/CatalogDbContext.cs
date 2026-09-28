@@ -48,6 +48,8 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.Property(s => s.Status).HasConversion<string>().HasMaxLength(24);
             e.Property(s => s.IsActive);
             e.Property(s => s.CreatedAtUtc);
+            // Wersja agregatu (kolejność zdarzeń dla projekcji w innych modułach) + ochrona przed równoległą edycją.
+            e.Property(s => s.Version).IsConcurrencyToken();
             e.Ignore(s => s.DomainEvents);
             e.Ignore(s => s.IsAcceptingOrders);
         });
@@ -75,6 +77,7 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.Property(p => p.ImageUrl).HasMaxLength(500);
             e.Property(p => p.IsAvailable);
             e.Property(p => p.CreatedAtUtc);
+            e.Property(p => p.Version).IsConcurrencyToken();
             e.HasIndex(p => new { p.StoreId, p.CategoryId });
             e.Ignore(p => p.DomainEvents);
             e.HasQueryFilter(p => _tenant.StoreId == null || p.StoreId == _tenant.StoreId);

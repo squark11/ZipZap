@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Xunit;
+using ZipZap.BuildingBlocks.Inbox;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 
@@ -227,6 +229,9 @@ public class OutboxApiFactory : ApiFactory
 {
     private const string Database = "zipzap_it_outbox";
 
+    /// <summary>Wszystkie logi hosta (z obiektami wyjątków) — do sprawdzania, czy treść wyjątków/PII nie wycieka.</summary>
+    public CapturingLoggerProvider Logs { get; } = new();
+
     public OutboxApiFactory() => TestDatabases.Recreate(Database, owner: null);
 
     protected override string ConnectionString =>
@@ -241,6 +246,11 @@ public class OutboxApiFactory : ApiFactory
             s.RegisterIntegrationEventType<OutboxProbeEvent>();
             s.AddScoped<IIntegrationEventHandler<OutboxProbeEvent>, OutboxProbeCompanionHandler>();
             s.AddScoped<IIntegrationEventHandler<OutboxProbeEvent>, OutboxProbeHandler>();
+            // Inbox z możliwością wstrzyknięcia awarii zapisu znacznika (poza tym prawdziwy EfInboxStore).
+            s.Remove(s.Single(d => d.ServiceType == typeof(IInboxStore)));
+            s.AddScoped<EfInboxStore>();
+            s.AddScoped<IInboxStore>(sp => new FaultInjectingInboxStore(sp.GetRequiredService<EfInboxStore>()));
+            s.AddSingleton<ILoggerProvider>(Logs);
         });
 }
 

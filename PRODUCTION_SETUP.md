@@ -121,7 +121,9 @@ wykonują się automatycznie przy starcie.
 > Gałąź `pilot-outbox-deadletter` dodaje w KAŻDYM module (Catalog, Delivery, Identity, Ordering, Payments)
 > dwie migracje tabeli `outbox_messages`: `*_OutboxDeadLetter` (nullable `NextAttemptAtUtc`, `DeadLetteredAtUtc`)
 > i `*_OutboxLeaseAndManualRetry` (nullable `LockedUntilUtc`, `LastManualRetryAtUtc`, `LastManualRetryByUserId`)
-> — razem 10 migracji. Wszystkie zmiany są addytywne (bez usuwania danych). Przed
+> — razem 10 migracji — oraz `Catalog_AggregateVersion` (kolumna `Version int NOT NULL DEFAULT 0` w
+> `catalog.stores` i `catalog.products`) i `Ordering_CatalogProjectionVersion` (`SourceVersion int NOT NULL DEFAULT 0`
+> w `ordering.catalog_stores` i `ordering.catalog_products`). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
 
 ### Outbox: ponawianie i odłożone zdarzenia
@@ -132,38 +134,74 @@ Brak nowych zmiennych środowiskowych. Reguły (decyzja właściciela, 2026-09-2
   10 s → 20 s → … maks. co 30 min (`NextAttemptAtUtc`); nigdy automatycznie do odłożonych. Wiadomość czekająca na
   termin nie blokuje kolejnych.
 - Pole `Error` zawiera **wyłącznie kod kategorii** (`unknown_type`, `unreadable_payload`, `database`, `conflict`,
-  `external_service`, `timeout`, `handler_error`) — nigdy treść wyjątku ani ładunek. Logi: id i typ wiadomości,
-  kategoria i nazwa typu wyjątku (bez treści).
+  `external_service`, `timeout`, `handler_error`) — nigdy treść wyjątku ani ładunek.
+- **Logi** (procesor, pętla dispatchera, ścieżka RabbitMQ): wyłącznie identyfikator zdarzenia/wiadomości, typ
+  zdarzenia, kategoria i nazwa typu wyjątku — bez obiektu wyjątku i jego treści. Atrapa kanału powiadomień nie loguje
+  już ładunku (był w nim e-mail i imię klienta przy `customer.welcome`). Wyjątek: logi samego EF Core przy błędzie
+  zapisu (kategoria `Microsoft.EntityFrameworkCore.*`) nadal zawierają komunikat bazy — Npgsql domyślnie nie dołącza
+  do niego wartości wierszy (bez `Include Error Detail` w connection stringu; nie włączać na produkcji).
+
+**Która ścieżka jest aktywna.**
+- **Aktywna w pilotażu — szyna w procesie** (`RabbitMq:Host` pusty; Render + Neon, bez brokera — potwierdź w
+  `GET /api/admin/config/status`: `rabbitMq: false`). Outbox → dyspozytor → handlery w tym samym procesie. Wszystkie
+  reguły tej sekcji (ponawianie bez limitu, odkładanie tylko trwałych błędów, panel „Zdarzenia") dotyczą tej ścieżki.
+- **Opcjonalna — RabbitMQ** (tylko gdy ustawiono `RabbitMq:Host`; `docker-compose.yml` z repo ustawia
+  `RabbitMq__Host: rabbitmq`). Outbox oznacza wiadomość jako wysłaną, gdy przyjmie ją broker; błędy handlerów obsługuje
+  konsument: `RabbitMq:MaxDeliveryAttempts` (domyślnie 5) prób z odstępem 5 s → maks. 60 s, potem **kolejka martwych
+  w brokerze** (`zipzap.monolith.dead`). Te błędy **nie są widoczne w panelu „Zdarzenia"** i **nie podlegają regule
+  „bez limitu"**. Nagłówki ponawianej/martwej wiadomości: `x-attempt`, `x-error-category`, `x-error-type` — bez treści
+  wyjątku. Włączenie brokera wymaga osobnej decyzji (reguły ponawiania, wgląd w kolejkę martwych).
 
 **Wiele instancji API (np. nakładanie się starej i nowej instancji podczas deployu Render).** Partia jest pobierana
 atomowo (`UPDATE … FOR UPDATE SKIP LOCKED`) z 5-minutową dzierżawą (`LockedUntilUtc`): druga instancja pomija
 wiadomości pobrane przez pierwszą. Gdy instancja padnie, dzierżawa wygasa i wiadomość wraca (nic nie ginie).
-Oznaczenie „wysłana" zapisuje się po KAŻDEJ wiadomości. Duplikat jest nadal możliwy (gwarancja „co najmniej raz"):
-publikacja się udała, a zapis oznaczenia nie (awaria w tej chwili), albo pojedyncza obsługa trwała > 5 min.
-Dlatego dyspozytor zdarzeń pomija handler, który już obsłużył dane zdarzenie (inbox `messaging.inbox_messages`,
-klucz = Id zdarzenia + handler) — także przy ponowieniu po awarii jednego z kilku handlerów i przy ręcznym
-ponowieniu. Idempotencja samych handlerów:
+Oznaczenie „wysłana" zapisuje się po KAŻDEJ wiadomości. Gwarancja to **„co najmniej raz", nie „dokładnie raz"**:
+duplikat jest możliwy, gdy publikacja się udała, a zapis oznaczenia nie, albo pojedyncza obsługa trwała > 5 min.
 
-| Handler | Skutek powtórki bez inboxa |
+**Kolejność zdarzeń.** `SKIP LOCKED`, ponowienie po błędzie przejściowym i ręczne ponowienie sprawiają, że starsze
+zdarzenie może skończyć się PO nowszym. Nie blokujemy za to kolejki (zdarzenia innych sklepów/produktów idą
+niezależnie) — zamiast tego projekcje są odporne na kolejność: sklep i produkt w Catalog mają **wersję agregatu**
+(`Version`, rośnie z każdą zatwierdzoną zmianą; token współbieżności — równoległa edycja tych samych danych kończy się
+**409 „odśwież i spróbuj ponownie"** zamiast cichego nadpisania), zdarzenia niosą ją jako `AggregateVersion`, a
+projekcje w Ordering stosują tylko wersję **nowszą** od zapisanej (`SourceVersion`). Starsze i powtórzone zdarzenia są
+pomijane; `StoreUpdated` sprzed `StoreRegistered` zapisuje stan, a nazwę uzupełnia późniejsza rejestracja. Zdarzenia
+sprzed wdrożenia (wersja 0) są stosowane tylko do czasu pierwszego wersjonowanego zdarzenia danego sklepu/produktu.
+
+**Inbox i idempotencja.** Dyspozytor pomija handler, który już obsłużył dane zdarzenie (inbox
+`messaging.inbox_messages`, klucz = Id zdarzenia + handler) — przy ponowieniu po awarii jednego z kilku handlerów,
+ręcznym ponowieniu i powtórce po awarii instancji. Za „już obsłużone" uznawane jest **wyłącznie** naruszenie klucza
+unikalnego (równoległy zapis tego samego znacznika); każdy inny błąd zapisu znacznika jest zgłaszany jako awaria
+(kategoria `database`) i zdarzenie wraca do ponowienia. **Ograniczenie:** jeśli handler wykonał skutek (np. zapisał
+powiadomienie), a zapis znacznika się nie udał, przy ponowieniu skutek wykona się drugi raz.
+
+| Handler | Powtórzone lub spóźnione zdarzenie |
 |---|---|
 | Delivery ← `OrderReadyForPickup` | bezpieczny (sprawdzenie + unikalny `OrderId`) |
-| Ordering ← `PaymentAuthorized` / `OrderPickedUp` / `OrderDelivered` | bezpieczny sekwencyjnie (strażnik stanu); równolegle mógłby dopisać podwójny wpis historii |
-| Ordering ← zdarzenia Catalog (projekcje) | wynik ten sam, ale spóźniona powtórka starszego zdarzenia nadpisałaby nowsze dane |
-| Payments ← `OrderPlaced` / `OrderDelivered` | bezpieczny (unikalny `OrderId`; W1 nie tworzy płatności); przy realnej bramce równoległa powtórka mogłaby założyć drugą sesję u dostawcy |
-| Notifications ← wszystkie | **nieidempotentny** — drugie powiadomienie / push |
+| Ordering ← `PaymentAuthorized` / `OrderPickedUp` / `OrderDelivered` | bezpieczny (tylko do przodu, strażnik stanu); przy równoległej obsłudze tego samego zamówienia teoretycznie podwójny wpis historii |
+| Ordering ← zdarzenia Catalog (projekcje) | bezpieczny — monotoniczna wersja (wyżej) |
+| Payments ← `OrderPlaced` / `OrderDelivered` | bezpieczny (unikalny `OrderId`; W1 nie tworzy płatności); przy realnej bramce powtórka po nieudanym zapisie znacznika mogłaby założyć drugą sesję u dostawcy |
+| Notifications ← wszystkie | **nieidempotentny** — drugi wpis powiadomienia |
 
-Pozostałe okno: skutek handlera zapisany, a znacznik w inboxie nie (awaria dokładnie w tej chwili) — wtedy np.
-powiadomienie może pójść drugi raz. Ograniczenie operacyjne: obsługa jednego zdarzenia powinna trwać wyraźnie
-krócej niż 5 min (dzierżawa; partia przerywa pracę po 2,5 min). Domyślne limity pojedynczego wywołania to 2 min
-(SMTP) i 100 s (HTTP), ale handler z kilkoma wywołaniami może się zbliżyć do granicy — przy realnych integracjach
-(bramka płatności, e-mail) ustaw krótsze limity czasu.
+**Powiadomienia w pilotażu — ograniczenie do akceptacji przez właściciela.** Kanały są dziś atrapami (log + wpis
+powiadomienia w aplikacji; push i e-mail nie są wysyłane), więc duplikat to w praktyce drugi wpis powiadomienia
+w aplikacji — tylko przy awarii dokładnie między zapisem powiadomienia a zapisem znacznika. **Zanim zostanie podłączony
+realny e-mail lub push**, proponowany mechanizm: powiadomienie z kluczem idempotencji (Id zdarzenia + szablon +
+odbiorca, unikalny indeks w tabeli powiadomień) zapisywane w tej samej transakcji co jego stan; wysyłka dopiero po
+zapisie, z tym kluczem przekazanym dostawcy jako klucz idempotencji (jeśli dostawca go obsługuje) i znacznikiem
+„wysłano" po potwierdzeniu. Powtórka widzi istniejący wpis i nie wysyła ponownie; pozostaje tylko okno „dostawca
+przyjął, znacznik nie zapisany" — zamykane przez klucz idempotencji po stronie dostawcy.
+
+Ograniczenie operacyjne: obsługa jednego zdarzenia powinna trwać wyraźnie krócej niż 5 min (dzierżawa; partia
+przerywa pracę po 2,5 min). Domyślne limity pojedynczego wywołania to 2 min (SMTP) i 100 s (HTTP), ale handler
+z kilkoma wywołaniami może się zbliżyć do granicy — przy realnych integracjach (bramka płatności, e-mail) ustaw
+krótsze limity czasu.
 
 **Panel administratora → „Zdarzenia"** (tylko rola Admin):
 - lista odłożonych i osobno „ponawianych długo" (≥ 10 nieudanych prób — nadal ponawiane automatycznie, NIE są
   odkładane), liczniki per moduł; tylko metadane: moduł, typ, identyfikator zdarzenia, czasy, liczba prób,
   kategoria błędu — bez ładunku, treści błędów i danych klientów;
 - „Ponów" działa na JEDNO odłożone zdarzenie, warunkowo (liczba prób musi się zgadzać z tą widzianą w panelu —
-  podwójne kliknięcie lub dwóch administratorów naraz ponawia dokładnie raz), zapisuje autora i czas w wierszu
+  podwójne kliknięcie lub dwóch administratorów naraz przywraca zdarzenie do kolejki tylko raz), zapisuje autora i czas w wierszu
   (`LastManualRetry*`) oraz w audycie (`outbox.manual_retry`). Brak ponawiania masowego. Ponawiaj dopiero po usunięciu
   przyczyny (np. wdrożeniu poprawki) — ponowienie może ponownie uruchomić obsługę zdarzenia.
 - Awaryjnie (gdy panel niedostępny) to samo w SQL, np. w module zamówień:
@@ -187,8 +225,7 @@ SELECT count(*) FROM ordering.outbox_messages
    ('unknown_type','unreadable_payload','database','conflict','external_service','timeout','handler_error');
 ```
 Surowe treści mogą nadal być w kopiach zapasowych bazy i w starych logach Render (dawny kod logował pełny wyjątek) —
-decyzja o ich retencji należy do właściciela. Ścieżka RabbitMQ (włączana tylko przez `RabbitMq:Host`) nadal wpisuje
-treść wyjątku do nagłówka `x-error` kolejki martwych w brokerze — do poprawy, jeśli broker zostanie włączony.
+decyzja o ich retencji należy do właściciela.
 
 > ⚠ **Panel logowania (wersja obecnie wdrożona)** wypełniał formularz i pokazywał podpowiedź z domyślnym
 > kontem admina (`admin@zipzap.local` / `Admin123!`) także na produkcji. Na branchu pilotażowym jest to

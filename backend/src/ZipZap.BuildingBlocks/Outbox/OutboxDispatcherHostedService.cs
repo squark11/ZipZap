@@ -42,7 +42,10 @@ public sealed class OutboxDispatcherHostedService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd w pętli dispatchera outboxa.");
+                // Bez obiektu wyjątku i jego treści (bywa w niej e-mail, fragment danych albo sekret z konfiguracji) —
+                // tylko bezpieczna kategoria i nazwa typu.
+                _logger.LogError("Błąd w pętli dispatchera outboxa: kategoria {Category} ({ExceptionType}).",
+                    OutboxErrorCategory.Classify(ex), ex.GetType().Name);
             }
 
             try

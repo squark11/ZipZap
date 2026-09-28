@@ -17,8 +17,6 @@ namespace ZipZap.BuildingBlocks.Messaging;
 /// </summary>
 public sealed class RabbitMqSubscriberHostedService : BackgroundService
 {
-    private const string AttemptHeader = "x-attempt";
-
     private readonly RabbitMqConnection _connection;
     private readonly RabbitMqOptions _options;
     private readonly IIntegrationEventTypeRegistry _registry;
@@ -116,36 +114,31 @@ public sealed class RabbitMqSubscriberHostedService : BackgroundService
 
     private void RouteToRetryOrDead(IModel channel, BasicDeliverEventArgs ea, string typeName, Exception ex)
     {
-        var attempt = ReadAttempt(ea.BasicProperties.Headers);
-        var next = attempt + 1;
+        // Nagłówki i logi: tylko numer próby, kategoria i typ wyjątku — nigdy jego treść (patrz BrokerFailurePolicy).
+        var decision = BrokerFailurePolicy.Decide(ex, ReadAttempt(ea.BasicProperties.Headers), _options);
 
         var props = channel.CreateBasicProperties();
         props.Type = typeName;
         props.MessageId = ea.BasicProperties.MessageId;
         props.ContentType = "application/json";
         props.DeliveryMode = 2;
-        var headers = new Dictionary<string, object> { [AttemptHeader] = next };
+        props.Headers = decision.Headers;
 
-        if (next < _options.MaxDeliveryAttempts)
+        if (decision.DeadLetter)
         {
-            var delayMs = Math.Min(_options.RetryBaseDelayMs * (int)Math.Pow(2, attempt), _options.RetryMaxDelayMs);
-            props.Expiration = delayMs.ToString();
-            props.Headers = headers;
-            channel.BasicPublish(_options.RetryExchange, routingKey: typeName, basicProperties: props, body: ea.Body);
-            _logger.LogWarning(ex, "Błąd obsługi {Type} (próba {Attempt}) → retry za {Delay}ms.", typeName, next, delayMs);
+            channel.BasicPublish(_options.DeadExchange, routingKey: typeName, basicProperties: props, body: ea.Body);
         }
         else
         {
-            headers["x-error"] = Encoding.UTF8.GetBytes(ex.Message);
-            props.Headers = headers;
-            channel.BasicPublish(_options.DeadExchange, routingKey: typeName, basicProperties: props, body: ea.Body);
-            _logger.LogError(ex, "Wiadomość {Type} wyczerpała próby ({Max}) → dead-letter.", typeName, _options.MaxDeliveryAttempts);
+            props.Expiration = decision.DelayMs.ToString();
+            channel.BasicPublish(_options.RetryExchange, routingKey: typeName, basicProperties: props, body: ea.Body);
         }
+        BrokerFailurePolicy.Log(_logger, decision, typeName, ea.BasicProperties.MessageId, _options.MaxDeliveryAttempts);
     }
 
     private static int ReadAttempt(IDictionary<string, object>? headers)
     {
-        if (headers is null || !headers.TryGetValue(AttemptHeader, out var raw)) return 0;
+        if (headers is null || !headers.TryGetValue(BrokerFailurePolicy.AttemptHeader, out var raw)) return 0;
         return raw switch
         {
             int i => i,
