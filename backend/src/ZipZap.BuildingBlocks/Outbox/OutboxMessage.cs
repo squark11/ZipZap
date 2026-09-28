@@ -19,4 +19,13 @@ public sealed class OutboxMessage
     public DateTime? ProcessedAtUtc { get; set; }
     public int Attempts { get; set; }
     public string? Error { get; set; }
+
+    /// <summary>Najwcześniejszy moment kolejnej próby po błędzie (backoff); null = od razu.</summary>
+    public DateTime? NextAttemptAtUtc { get; set; }
+
+    /// <summary>
+    /// Moment odłożenia do martwych po wyczerpaniu prób — wiadomość nie jest już wysyłana.
+    /// Ponowienie ręczne: wyzerować DeadLetteredAtUtc, NextAttemptAtUtc i Attempts.
+    /// </summary>
+    public DateTime? DeadLetteredAtUtc { get; set; }
 }

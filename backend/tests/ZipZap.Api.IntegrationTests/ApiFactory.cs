@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Xunit;
+using ZipZap.BuildingBlocks.Outbox;
 
 namespace ZipZap.Api.IntegrationTests;
 
@@ -217,6 +218,24 @@ public class RoundsApiFactory : ApiFactory
         builder.ConfigureTestServices(s => s.AddSingleton<TimeProvider>(Clock));
 }
 
+/// <summary>
+/// Outbox bez dispatchera w tle, na OSOBNEJ świeżej bazie — testy przetwarzają wiadomości ręcznie,
+/// więc liczniki prób i terminy ponowień są deterministyczne.
+/// </summary>
+public class OutboxApiFactory : ApiFactory
+{
+    private const string Database = "zipzap_it_outbox";
+
+    public OutboxApiFactory() => TestDatabases.Recreate(Database, owner: null);
+
+    protected override string ConnectionString =>
+        new NpgsqlConnectionStringBuilder(BaseConnectionString) { Database = Database }.ConnectionString;
+
+    protected override void ConfigureSettings(IWebHostBuilder builder) =>
+        builder.ConfigureTestServices(s =>
+            s.Remove(s.Single(d => d.ImplementationType == typeof(OutboxDispatcherHostedService))));
+}
+
 internal static class TestDatabases
 {
     public static void Recreate(string database, string? owner)
@@ -246,3 +265,6 @@ public sealed class TestModeCollection : ICollectionFixture<TestModeApiFactory> 
 
 [CollectionDefinition("rounds")]
 public sealed class RoundsCollection : ICollectionFixture<RoundsApiFactory> { }
+
+[CollectionDefinition("outbox")]
+public sealed class OutboxCollection : ICollectionFixture<OutboxApiFactory> { }
