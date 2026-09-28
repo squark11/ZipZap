@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ZipZap.Api.Configuration;
 using ZipZap.Api.Middleware;
+using ZipZap.Api.Operations;
 using ZipZap.Api.Security;
 using ZipZap.BuildingBlocks.DependencyInjection;
 using ZipZap.BuildingBlocks.Domain;
@@ -844,6 +845,7 @@ app.MapNotificationsEndpoints();
 app.MapIntegrationsEndpoints();
 app.MapAuditEndpoints();
 app.MapFeedbackEndpoints();
+app.MapOutboxAdminEndpoints();
 
 app.Run();
 

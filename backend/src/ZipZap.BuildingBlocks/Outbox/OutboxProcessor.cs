@@ -13,16 +13,23 @@ namespace ZipZap.BuildingBlocks.Outbox;
 /// od razu trafia do martwych (<see cref="OutboxMessage.DeadLetteredAtUtc"/>); zostaje w bazie do ręcznego ponowienia.</item>
 /// <item>Każdy inny błąd (np. awaria bazy, brokera albo handlera) — ponawiany BEZ LIMITU prób, z narastającym
 /// odstępem (10 s, 20 s, 40 s… maks. co 30 min). Wiadomość czekająca na termin nie blokuje kolejnych.</item>
+/// <item>Wiele instancji API: partia jest pobierana atomowo z dzierżawą (<c>FOR UPDATE SKIP LOCKED</c>), więc dwie
+/// instancje nie wysyłają tej samej wiadomości równolegle. Po awarii instancji dzierżawa wygasa i wiadomość wraca.</item>
 /// </list>
-/// Gwarancja „co najmniej raz" bez zmian: wiadomość jest oznaczana jako wysłana dopiero po udanej publikacji.
+/// Gwarancja „co najmniej raz" bez zmian: wiadomość jest oznaczana jako wysłana dopiero po udanej publikacji
+/// (zapis po KAŻDEJ wiadomości, nie po całej partii). Duplikat jest możliwy tylko, gdy publikacja się udała, a zapis
+/// znacznika nie (awaria w tej chwili) — handlery chroni wtedy deduplikacja w dyspozytorze zdarzeń.
 /// </summary>
 public sealed class OutboxProcessor<TContext> : IOutboxProcessor
     where TContext : DbContext, IOutboxDbContext
 {
-    public const int BatchSize = 20;
+    public const int BatchSize = OutboxPolicy.BatchSize;
 
-    public static readonly TimeSpan BaseRetryDelay = TimeSpan.FromSeconds(10);
-    public static readonly TimeSpan MaxRetryDelay = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan BaseRetryDelay = OutboxPolicy.BaseRetryDelay;
+    public static readonly TimeSpan MaxRetryDelay = OutboxPolicy.MaxRetryDelay;
+
+    /// <summary>Dzierżawa pobranej partii. Partia przerywa pracę po połowie tego czasu, reszta wraca do kolejki.</summary>
+    public static readonly TimeSpan LeaseDuration = OutboxPolicy.LeaseDuration;
 
     private readonly TContext _db;
     private readonly IEventBus _bus;
@@ -43,63 +50,115 @@ public sealed class OutboxProcessor<TContext> : IOutboxProcessor
 
     public async Task ProcessPendingAsync(CancellationToken ct = default)
     {
-        var now = DateTime.UtcNow;
-        var messages = await _db.OutboxMessages
-            .Where(m => m.ProcessedAtUtc == null
-                        && m.DeadLetteredAtUtc == null
-                        && (m.NextAttemptAtUtc == null || m.NextAttemptAtUtc <= now))
-            .OrderBy(m => m.OccurredAtUtc)
-            .Take(BatchSize)
-            .ToListAsync(ct);
-
+        var claimedAt = DateTime.UtcNow;
+        var messages = await ClaimBatchAsync(claimedAt, ct);
         if (messages.Count == 0) return;
 
-        foreach (var message in messages)
+        var pending = new Queue<OutboxMessage>(messages.OrderBy(m => m.OccurredAtUtc));
+        try
         {
-            // Do logów trafiają tylko metadane — nigdy ładunek ani treść wyjątku (mogą zawierać dane osobowe).
-            if (!TryRead(message, out var @event, out var permanentError))
+            while (pending.Count > 0 && DateTime.UtcNow - claimedAt < LeaseDuration / 2)
             {
-                message.Attempts++;
-                message.Error = permanentError;
-                message.NextAttemptAtUtc = null;
-                message.DeadLetteredAtUtc = DateTime.UtcNow;
-                _logger.LogError(
-                    "Wiadomość outboxa {MessageId} ({Type}) odłożona do martwych — błąd trwały, ponowienie nic nie zmieni.",
-                    message.Id, message.Type);
-                continue;
-            }
-
-            try
-            {
-                await _bus.PublishAsync(@event, ct);
-
-                message.ProcessedAtUtc = DateTime.UtcNow;
-                message.NextAttemptAtUtc = null;
-                message.Error = null;
-            }
-            catch (Exception ex)
-            {
-                message.Attempts++;
-                message.Error = ex.Message;
-                message.NextAttemptAtUtc = DateTime.UtcNow + RetryDelay(message.Attempts);
-                _logger.LogWarning(
-                    "Nie udało się wysłać wiadomości outboxa {MessageId} ({Type}), próba {Attempts} ({ExceptionType}); kolejna po {NextAttemptAtUtc:o}.",
-                    message.Id, message.Type, message.Attempts, ex.GetType().Name, message.NextAttemptAtUtc);
+                await ProcessOneAsync(pending.Peek(), ct);
+                pending.Dequeue();
+                await _db.SaveChangesAsync(ct);
             }
         }
+        finally
+        {
+            // Nieobsłużona reszta partii (limit czasu dzierżawy, zamykanie aplikacji, błąd zapisu) — zwolnij od razu,
+            // żeby nie czekała na wygaśnięcie dzierżawy. Jeśli i to się nie uda, dzierżawa wygaśnie sama.
+            if (pending.Count > 0) await ReleaseAsync(pending);
+        }
+    }
 
-        await _db.SaveChangesAsync(ct);
+    /// <summary>Atomowo pobiera partię wymagalnych wiadomości i zakłada na nie dzierżawę (pomija zablokowane).</summary>
+    private Task<List<OutboxMessage>> ClaimBatchAsync(DateTime now, CancellationToken ct)
+    {
+        var t = new OutboxTable(_db);
+        string id = t.Col(nameof(OutboxMessage.Id)), locked = t.Col(nameof(OutboxMessage.LockedUntilUtc)),
+            next = t.Col(nameof(OutboxMessage.NextAttemptAtUtc));
+        // {0} = koniec dzierżawy, {1} = teraz (parametry); reszta to nazwy z modelu EF.
+        var sql = $$"""
+            UPDATE {{t.Table}} SET {{locked}} = {0}
+            WHERE {{id}} IN (
+                SELECT {{id}} FROM {{t.Table}}
+                WHERE {{t.Col(nameof(OutboxMessage.ProcessedAtUtc))}} IS NULL
+                  AND {{t.Col(nameof(OutboxMessage.DeadLetteredAtUtc))}} IS NULL
+                  AND ({{next}} IS NULL OR {{next}} <= {1})
+                  AND ({{locked}} IS NULL OR {{locked}} <= {1})
+                ORDER BY {{t.Col(nameof(OutboxMessage.OccurredAtUtc))}}
+                LIMIT {{BatchSize}}
+                FOR UPDATE SKIP LOCKED)
+            RETURNING *
+            """;
+        return _db.OutboxMessages.FromSqlRaw(sql, now + LeaseDuration, now).ToListAsync(ct);
+    }
+
+    private async Task ProcessOneAsync(OutboxMessage message, CancellationToken ct)
+    {
+        // Do logów i do pola Error trafiają tylko metadane i kod kategorii — nigdy ładunek ani treść wyjątku.
+        if (!TryRead(message, out var @event, out var permanentCategory))
+        {
+            message.Attempts++;
+            message.Error = permanentCategory;
+            message.NextAttemptAtUtc = null;
+            message.LockedUntilUtc = null;
+            message.DeadLetteredAtUtc = DateTime.UtcNow;
+            _logger.LogError(
+                "Wiadomość outboxa {MessageId} ({Type}) odłożona do martwych — błąd trwały {Category}, ponowienie nic nie zmieni.",
+                message.Id, message.Type, permanentCategory);
+            return;
+        }
+
+        try
+        {
+            await _bus.PublishAsync(@event, ct);
+
+            message.ProcessedAtUtc = DateTime.UtcNow;
+            message.NextAttemptAtUtc = null;
+            message.LockedUntilUtc = null;
+            message.Error = null;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw; // zamykanie aplikacji — to nie jest nieudana próba; wiadomość wraca do kolejki w finally
+        }
+        catch (Exception ex)
+        {
+            message.Attempts++;
+            message.Error = OutboxErrorCategory.Classify(ex);
+            message.NextAttemptAtUtc = DateTime.UtcNow + RetryDelay(message.Attempts);
+            message.LockedUntilUtc = null;
+            _logger.LogWarning(
+                "Nie udało się wysłać wiadomości outboxa {MessageId} ({Type}), próba {Attempts}, kategoria {Category} ({ExceptionType}); kolejna po {NextAttemptAtUtc:o}.",
+                message.Id, message.Type, message.Attempts, message.Error, ex.GetType().Name, message.NextAttemptAtUtc);
+        }
+    }
+
+    private async Task ReleaseAsync(IEnumerable<OutboxMessage> unprocessed)
+    {
+        try
+        {
+            foreach (var m in unprocessed) m.LockedUntilUtc = null;
+            await _db.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Nie udało się zwolnić dzierżawy wiadomości outboxa ({ExceptionType}) — wrócą po jej wygaśnięciu.",
+                ex.GetType().Name);
+        }
     }
 
     /// <summary>Rozpoznanie wiadomości; false = błąd trwały (nieznany typ albo ładunek, którego nie da się odczytać).</summary>
-    private bool TryRead(OutboxMessage message, out IIntegrationEvent @event, out string error)
+    private bool TryRead(OutboxMessage message, out IIntegrationEvent @event, out string category)
     {
         @event = null!;
-        error = string.Empty;
+        category = OutboxErrorCategory.UnreadablePayload;
         var type = _registry.Resolve(message.Type);
         if (type is null)
         {
-            error = $"Nieznany typ zdarzenia '{message.Type}'.";
+            category = OutboxErrorCategory.UnknownType;
             return false;
         }
         try
@@ -109,11 +168,10 @@ public sealed class OutboxProcessor<TContext> : IOutboxProcessor
                 @event = e;
                 return true;
             }
-            error = "Pusty ładunek zdarzenia.";
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException or ArgumentException)
         {
-            error = $"Nieczytelny ładunek zdarzenia ({ex.GetType().Name}).";
+            // nieczytelny ładunek — kategoria ustawiona wyżej
         }
         return false;
     }

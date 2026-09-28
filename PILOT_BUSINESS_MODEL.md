@@ -10,6 +10,33 @@
 > - **Plan dostawy (osobny, [ANALYSIS_TWO_PLANS.md](ANALYSIS_TWO_PLANS.md)): „dostawa ZipZap" vs „dostawa merchanta".** Kto *dowozi*.
 > Te osie są niezależne. Poniżej rozstrzygamy tylko oś sprzedaży.
 
+## 0. Decyzje właściciela (2026-09-29) i sprawy otwarte
+
+**Decyzje biznesowe właściciela (obowiązujące założenia projektu):**
+1. **Sprzedawcą towaru jest sklep** (wariant A — marketplace, §2).
+2. **Każdy sklep korzysta z własnego konta Przelewy24**; płatność klienta trafia **bezpośrednio do sklepu**.
+3. **Platforma nie przyjmuje pieniędzy klientów** na zwykłe konto i **nie buduje własnego harmonogramu wypłat**
+   do sklepów.
+4. Dowózka.pl **osobno rozlicza ze sklepem** prowizję i uzgodnioną usługę dostawy (technicznie istnieje już
+   miesięczne zestawienie/faktura dla sklepu w panelu; forma dokumentu — do potwierdzenia z księgowym).
+5. Na początku **operator robi zakupy w dwóch zaplanowanych rundach dziennie** (§1); **docelowo zamówienia
+   kompletuje sklep**.
+
+**Do potwierdzenia przez księgowego / prawnika — NIE są rozstrzygnięte prawnie ani podatkowo:**
+- **paragon / dokument za usługę dostawy** — kto go wystawia, na kogo i kiedy (szczególnie gdy klient płaci
+  całość przez P24 sklepu);
+- **dokumentowanie zamówień przy zakupie zbiorczym** — jak sklep dokumentuje sprzedaż osobno dla każdego
+  klienta, gdy operator kupuje pozycje wielu zamówień w jednej wizycie w rundzie (§5 pkt 1–2).
+
+**Kierunek rekomendowany do zaprojektowania — NIE zatwierdzony do produkcji i NIE wdrożony:** klient widzi
+**kwotę końcową po kompletacji** i po swojej **zgodzie na zamienniki**, a następnie płaci **przez P24 sklepu
+przed dostawą**. To propozycja do projektu (UX, statusy, obsługa różnicy kwot) i do konsultacji — nie decyzja
+o przepływie płatności.
+
+**Stan techniczny (bez zmian w tym kroku):** panel pozwala zapisać dane P24 sklepu, ale **adaptera Przelewy24
+nie ma** — żadna realna płatność nie jest możliwa. Obowiązuje **W1** (§9): zamknięta grupa testerów, bez
+pobierania pieniędzy.
+
 ## 1. Założenie operacyjne pilotażu (kontekst)
 
 Operator Dowózka.pl **nie jedzie do sklepu po każdym zamówieniu**. Na start robi zakupy i
@@ -95,9 +122,9 @@ Docelowo produkt to **marketplace lokalnych sklepów** — każdy sklep prowadzi
 ofertę. Pilotaż nie może przekształcić platformy w jeden centralny sklep Dowózka.pl ani przenieść
 własności asortymentu na platformę.
 
-**Robocze założenie do UI i modelu danych (wymaga potwierdzenia):** sprzedawcą towaru jest
-**sklep**, a Dowózka.pl obsługuje **platformę + zakupy/kompletację + dostawę**. To założenie
-biznesowe, nie rozstrzygnięcie prawne/podatkowe.
+**Decyzja właściciela (2026-09-29, §0):** sprzedawcą towaru jest **sklep**, a Dowózka.pl obsługuje
+**platformę + zakupy/kompletację + dostawę**. To decyzja biznesowa — sposób jej udokumentowania (paragon
+za dostawę, zakup zbiorczy w rundzie) wymaga jeszcze potwierdzenia księgowego/prawnika.
 
 ## 2. Wariant A — Marketplace / pośrednictwo
 
@@ -161,6 +188,10 @@ biznesowe, nie rozstrzygnięcie prawne/podatkowe.
 6. Kto ponosi **odpowiedzialność za zamienniki, niedostępność, produkty świeże i zwroty** wobec klienta
    (prawa konsumenta, rękojmia, odstąpienie od umowy na odległość)?
 7. Jak model wpływa na **rejestr działalności/PKD**, umowy ze sklepami i regulamin świadczenia usług?
+8. **Paragon / dokument za usługę dostawy:** kto go wystawia (Dowózka.pl czy sklep), na kogo i kiedy — jeśli
+   klient płaci całość (towar + dostawa) przez **P24 sklepu**, a Dowózka.pl rozlicza dostawę ze sklepem osobno?
+9. Czy kierunek „**kwota końcowa po kompletacji i zgodzie na zamienniki → płatność P24 do sklepu przed
+   dostawą**" (§0) jest dopuszczalny i jak udokumentować różnicę względem kwoty szacunkowej?
 
 ### Źródła urzędowe (do weryfikacji z doradcą — bez cytowania długich fragmentów)
 
@@ -217,8 +248,8 @@ Zbieramy **agregaty i identyfikatory techniczne**, **nie** dane osobowe ani peł
 
 ## 8. Rekomendacja i punkt decyzyjny (dla właściciela)
 
-- **Robocza rekomendacja projektowa:** wariant **A (marketplace/pośrednictwo)** — spójny z docelowym
-  produktem; operator zarabia na prowizji + dostawie, nie na odsprzedaży.
+- **Wariant A (marketplace/pośrednictwo) — wybrany przez właściciela (§0)**: spójny z docelowym
+  produktem; operator zarabia na prowizji + dostawie, nie na odsprzedaży. Wariant B nie jest rozwijany.
 - **Nie włączamy** realnych płatności za towary, fakturowania, paragonów, KSeF **przed** potwierdzeniem
   wariantu przez **właściciela oraz księgowego/prawnika** (patrz §5).
 - **Pilotaż** przygotowujemy **bez płatności online** (w trybie publicznym mock płatności jest wyłączony),
@@ -287,8 +318,11 @@ Zbieramy **agregaty i identyfikatory techniczne**, **nie** dane osobowe ani peł
 ### 9.4 Rekomendacja robocza (do decyzji właściciela)
 - **Etap 1:** **W1** — zamknięta grupa testerów, bez płatności. Weryfikuje QR→PWA, rundy, kompletację, dostawy
   i koszt rundy bez ryzyka finansowo-podatkowego.
-- **Etap 2 (prawdziwi klienci):** **W2 lub W3** dopiero po odpowiedziach księgowego/prawnika. W3 najmniej
-  angażuje operatora w pieniądze klienta; W2 daje najlepsze UX.
+- **Etap 2 (prawdziwi klienci):** dopiero po odpowiedziach księgowego/prawnika. Właściciel wskazał kierunek
+  do zaprojektowania (§0): **płatność online przez P24 sklepu przed dostawą, po kwocie końcowej** (pieniądze
+  nie przechodzą przez operatora — bliżej W3, ale w aplikacji zamiast poza platformą). **Nie jest to
+  zatwierdzony przepływ produkcyjny.** W2 (pobranie przy odbiorze przez operatora) nie pasuje do decyzji, że
+  płatność klienta trafia bezpośrednio do sklepu (§0 pkt 2) — zostaje tylko jako tło porównawcze.
 
 ### 9.5 Co trzeba zbudować po wyborze wariantu (bez tego — brak testu z ludźmi)
 1. **Tryb płatności pilotażu** w konfiguracji (np. `test` / `przy odbiorze` / `u sklepu`), udostępniony aplikacji

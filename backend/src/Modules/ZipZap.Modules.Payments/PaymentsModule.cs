@@ -22,7 +22,7 @@ public static class PaymentsModule
         services.AddDbContext<PaymentsDbContext>(o =>
             o.UseNpgsql(conn, npg => npg.MigrationsHistoryTable("__ef_migrations_history", PaymentsDbContext.Schema)));
 
-        services.AddScoped<IOutboxProcessor, OutboxProcessor<PaymentsDbContext>>();
+        services.AddModuleOutbox<PaymentsDbContext>(); // procesor + wgląd administratora
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<PaymentsDbContext>>();
 
         // Dostawcy płatności (abstrakcja) + rejestr z domyślnym kluczem z konfiguracji.

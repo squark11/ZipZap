@@ -22,7 +22,7 @@ public static class IdentityModule
             o.UseNpgsql(conn, npg =>
                 npg.MigrationsHistoryTable("__ef_migrations_history", IdentityDbContext.Schema)));
 
-        services.AddScoped<IOutboxProcessor, OutboxProcessor<IdentityDbContext>>();
+        services.AddModuleOutbox<IdentityDbContext>(); // procesor + wgląd administratora
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<IdentityDbContext>>();
 
         services.Configure<JwtOptions>(config.GetSection(JwtOptions.SectionName));

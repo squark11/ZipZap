@@ -119,23 +119,76 @@ wykonują się automatycznie przy starcie.
 > `Delivery_AdminOverride` (nullable kolumna `Reason` w `delivery_history`). Zdarzenie
 > `OrderReadyForPickup` ma nowe pola opcjonalne (okno dostawy) — starsze wiadomości w outboxie są zgodne.
 > Gałąź `pilot-outbox-deadletter` dodaje w KAŻDYM module (Catalog, Delivery, Identity, Ordering, Payments)
-> migrację `*_OutboxDeadLetter`: dwie nullable kolumny `NextAttemptAtUtc` i `DeadLetteredAtUtc` w `outbox_messages`.
-> Wszystkie zmiany są addytywne (bez usuwania danych). Przed
+> dwie migracje tabeli `outbox_messages`: `*_OutboxDeadLetter` (nullable `NextAttemptAtUtc`, `DeadLetteredAtUtc`)
+> i `*_OutboxLeaseAndManualRetry` (nullable `LockedUntilUtc`, `LastManualRetryAtUtc`, `LastManualRetryByUserId`)
+> — razem 10 migracji. Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
 
 ### Outbox: ponawianie i odłożone zdarzenia
+Brak nowych zmiennych środowiskowych. Reguły (decyzja właściciela, 2026-09-28):
 - Błąd **trwały** (nieznany typ zdarzenia, nieczytelny ładunek) → wiadomość od razu trafia do odłożonych
-  (`DeadLetteredAtUtc`), zostaje w bazie; w logach błąd z id i typem wiadomości (bez ładunku).
-- Każdy inny błąd (awaria bazy, brokera, handlera) → ponawianie **bez limitu** z narastającym odstępem
-  10 s → 20 s → … maks. co 30 min (`NextAttemptAtUtc`); wiadomość czekająca na termin nie blokuje kolejnych.
-- Do czasu widoku w panelu admina — ręczne ponowienie odłożonej wiadomości (po usunięciu przyczyny), np. w module
-  zamówień:
+  (`DeadLetteredAtUtc`) i zostaje w bazie.
+- Każdy inny błąd (awaria bazy, usługi zewnętrznej, handlera) → ponawianie **bez limitu** z narastającym odstępem
+  10 s → 20 s → … maks. co 30 min (`NextAttemptAtUtc`); nigdy automatycznie do odłożonych. Wiadomość czekająca na
+  termin nie blokuje kolejnych.
+- Pole `Error` zawiera **wyłącznie kod kategorii** (`unknown_type`, `unreadable_payload`, `database`, `conflict`,
+  `external_service`, `timeout`, `handler_error`) — nigdy treść wyjątku ani ładunek. Logi: id i typ wiadomości,
+  kategoria i nazwa typu wyjątku (bez treści).
+
+**Wiele instancji API (np. nakładanie się starej i nowej instancji podczas deployu Render).** Partia jest pobierana
+atomowo (`UPDATE … FOR UPDATE SKIP LOCKED`) z 5-minutową dzierżawą (`LockedUntilUtc`): druga instancja pomija
+wiadomości pobrane przez pierwszą. Gdy instancja padnie, dzierżawa wygasa i wiadomość wraca (nic nie ginie).
+Oznaczenie „wysłana" zapisuje się po KAŻDEJ wiadomości. Duplikat jest nadal możliwy (gwarancja „co najmniej raz"):
+publikacja się udała, a zapis oznaczenia nie (awaria w tej chwili), albo pojedyncza obsługa trwała > 5 min.
+Dlatego dyspozytor zdarzeń pomija handler, który już obsłużył dane zdarzenie (inbox `messaging.inbox_messages`,
+klucz = Id zdarzenia + handler) — także przy ponowieniu po awarii jednego z kilku handlerów i przy ręcznym
+ponowieniu. Idempotencja samych handlerów:
+
+| Handler | Skutek powtórki bez inboxa |
+|---|---|
+| Delivery ← `OrderReadyForPickup` | bezpieczny (sprawdzenie + unikalny `OrderId`) |
+| Ordering ← `PaymentAuthorized` / `OrderPickedUp` / `OrderDelivered` | bezpieczny sekwencyjnie (strażnik stanu); równolegle mógłby dopisać podwójny wpis historii |
+| Ordering ← zdarzenia Catalog (projekcje) | wynik ten sam, ale spóźniona powtórka starszego zdarzenia nadpisałaby nowsze dane |
+| Payments ← `OrderPlaced` / `OrderDelivered` | bezpieczny (unikalny `OrderId`; W1 nie tworzy płatności); przy realnej bramce równoległa powtórka mogłaby założyć drugą sesję u dostawcy |
+| Notifications ← wszystkie | **nieidempotentny** — drugie powiadomienie / push |
+
+Pozostałe okno: skutek handlera zapisany, a znacznik w inboxie nie (awaria dokładnie w tej chwili) — wtedy np.
+powiadomienie może pójść drugi raz. Ograniczenie operacyjne: obsługa jednego zdarzenia powinna trwać wyraźnie
+krócej niż 5 min (dzierżawa; partia przerywa pracę po 2,5 min). Domyślne limity pojedynczego wywołania to 2 min
+(SMTP) i 100 s (HTTP), ale handler z kilkoma wywołaniami może się zbliżyć do granicy — przy realnych integracjach
+(bramka płatności, e-mail) ustaw krótsze limity czasu.
+
+**Panel administratora → „Zdarzenia"** (tylko rola Admin):
+- lista odłożonych i osobno „ponawianych długo" (≥ 10 nieudanych prób — nadal ponawiane automatycznie, NIE są
+  odkładane), liczniki per moduł; tylko metadane: moduł, typ, identyfikator zdarzenia, czasy, liczba prób,
+  kategoria błędu — bez ładunku, treści błędów i danych klientów;
+- „Ponów" działa na JEDNO odłożone zdarzenie, warunkowo (liczba prób musi się zgadzać z tą widzianą w panelu —
+  podwójne kliknięcie lub dwóch administratorów naraz ponawia dokładnie raz), zapisuje autora i czas w wierszu
+  (`LastManualRetry*`) oraz w audycie (`outbox.manual_retry`). Brak ponawiania masowego. Ponawiaj dopiero po usunięciu
+  przyczyny (np. wdrożeniu poprawki) — ponowienie może ponownie uruchomić obsługę zdarzenia.
+- Awaryjnie (gdy panel niedostępny) to samo w SQL, np. w module zamówień:
   ```sql
   UPDATE ordering.outbox_messages
-     SET "DeadLetteredAtUtc" = NULL, "NextAttemptAtUtc" = NULL, "Attempts" = 0
-   WHERE "Id" = '<id wiadomości z logu>';
+     SET "DeadLetteredAtUtc" = NULL, "NextAttemptAtUtc" = NULL, "LockedUntilUtc" = NULL,
+         "LastManualRetryAtUtc" = now()
+   WHERE "Id" = '<id z panelu lub logu>' AND "DeadLetteredAtUtc" IS NOT NULL AND "ProcessedAtUtc" IS NULL;
   ```
-  (odpowiednio `delivery.`, `payments.`, `identity.`, `catalog.`). Brak nowych zmiennych środowiskowych.
+  (odpowiednio `delivery.`, `payments.`, `identity.`, `catalog.`).
+
+**Stare wartości `Error` po wdrożeniu.** Wersja obecnie na produkcji zapisywała do `Error` surowe
+`Exception.Message` (np. odrzucenie SMTP z adresem e-mail) — tylko dla wiadomości niewysłanych; po udanej wysyłce
+pole było czyszczone. Po wdrożeniu każda taka wiadomość jest ponawiana od razu i pole zostaje nadpisane kategorią
+albo wyczyszczone, a panel i tak nie pokazuje wartości spoza listy kodów („Starszy błąd — treść ukryta").
+Osobne czyszczenie **nie powinno być potrzebne**; po wdrożeniu sprawdź zapytaniem tylko do odczytu (dla każdego
+schematu), że wynik to 0:
+```sql
+SELECT count(*) FROM ordering.outbox_messages
+ WHERE "Error" IS NOT NULL AND "Error" NOT IN
+   ('unknown_type','unreadable_payload','database','conflict','external_service','timeout','handler_error');
+```
+Surowe treści mogą nadal być w kopiach zapasowych bazy i w starych logach Render (dawny kod logował pełny wyjątek) —
+decyzja o ich retencji należy do właściciela. Ścieżka RabbitMQ (włączana tylko przez `RabbitMq:Host`) nadal wpisuje
+treść wyjątku do nagłówka `x-error` kolejki martwych w brokerze — do poprawy, jeśli broker zostanie włączony.
 
 > ⚠ **Panel logowania (wersja obecnie wdrożona)** wypełniał formularz i pokazywał podpowiedź z domyślnym
 > kontem admina (`admin@zipzap.local` / `Admin123!`) także na produkcji. Na branchu pilotażowym jest to

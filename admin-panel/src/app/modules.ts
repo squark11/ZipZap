@@ -13,7 +13,7 @@ export type PanelRole = 'Admin' | 'StoreEmployee' | 'Driver' | 'Customer';
 export type PanelTab =
   | 'onboarding' | 'dashboard' | 'orders' | 'rounds' | 'deliveries' | 'catalog'
   | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings'
-  | 'admin-home' | 'users' | 'invoices' | 'support' | 'compliance';
+  | 'admin-home' | 'users' | 'invoices' | 'support' | 'compliance' | 'outbox';
 
 export interface PanelModule {
   id: PanelTab;
@@ -36,6 +36,8 @@ export const PANEL_MODULES: readonly PanelModule[] = [
   { id: 'support',      label: 'Wsparcie',     icon: 'support',      roles: ['Admin'],            storeScoped: false },
   { id: 'compliance',   label: 'Nadzór',       icon: 'compliance',   roles: ['Admin'],            storeScoped: false },
   { id: 'feedback',     label: 'Uwagi',        icon: 'feedback',     roles: ['Admin'],            storeScoped: false },
+  // Kolejka zdarzeń: odłożone i długo ponawiane zdarzenia + ręczne ponowienie (tylko metadane, bez danych klientów).
+  { id: 'outbox',       label: 'Zdarzenia',    icon: 'events',       roles: ['Admin'],            storeScoped: false },
   { id: 'settings',     label: 'Konfiguracja', icon: 'settings',     roles: ['Admin'],            storeScoped: false },
 
   // Administrator sklepu (właściciel) — narzędzia do prowadzenia sklepu

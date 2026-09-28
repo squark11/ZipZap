@@ -20,7 +20,7 @@ public static class DeliveryModule
         services.AddDbContext<DeliveryDbContext>(o =>
             o.UseNpgsql(conn, npg => npg.MigrationsHistoryTable("__ef_migrations_history", DeliveryDbContext.Schema)));
 
-        services.AddScoped<IOutboxProcessor, OutboxProcessor<DeliveryDbContext>>();
+        services.AddModuleOutbox<DeliveryDbContext>(); // procesor + wgląd administratora
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<DeliveryDbContext>>();
         services.AddScoped<DeliveryService>();
         // Porty do innych modułów — domyślnie „zamknięte" (brak kierowców, brak danych klienta); host podmienia adaptery.

@@ -236,8 +236,10 @@ public class OutboxApiFactory : ApiFactory
         builder.ConfigureTestServices(s =>
         {
             s.Remove(s.Single(d => d.ImplementationType == typeof(OutboxDispatcherHostedService)));
-            // Zdarzenie testowe z handlerem, który zawodzi na żądanie — symulacja przejściowej awarii.
+            // Zdarzenie testowe z dwoma handlerami: pierwszy zawsze działa, drugi zawodzi na żądanie — symulacja
+            // przejściowej awarii jednego z kilku handlerów (ponowienie nie może dublować skutków pierwszego).
             s.RegisterIntegrationEventType<OutboxProbeEvent>();
+            s.AddScoped<IIntegrationEventHandler<OutboxProbeEvent>, OutboxProbeCompanionHandler>();
             s.AddScoped<IIntegrationEventHandler<OutboxProbeEvent>, OutboxProbeHandler>();
         });
 }

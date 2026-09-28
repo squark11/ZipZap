@@ -22,6 +22,7 @@ const loaders: Record<string, () => Promise<any>> = {
   drivers:      () => import('./drivers').then(m => m.DriversComponent),
   stores:       () => import('./stores').then(m => m.StoresComponent),
   feedback:     () => import('./feedback').then(m => m.FeedbackComponent),
+  outbox:       () => import('./outbox').then(m => m.OutboxComponent),
   settings:     () => import('./settings').then(m => m.SettingsComponent),
 };
 

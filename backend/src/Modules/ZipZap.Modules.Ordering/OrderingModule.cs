@@ -25,7 +25,7 @@ public static class OrderingModule
             o.UseNpgsql(conn, npg =>
                 npg.MigrationsHistoryTable("__ef_migrations_history", OrderingDbContext.Schema)));
 
-        services.AddScoped<IOutboxProcessor, OutboxProcessor<OrderingDbContext>>();
+        services.AddModuleOutbox<OrderingDbContext>(); // procesor + wgląd administratora
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<OrderingDbContext>>();
         services.Configure<PilotOrderingOptions>(config.GetSection(PilotOrderingOptions.SectionName));
         // Czas bieżący przez TimeProvider — rundy liczone deterministycznie w testach (stały zegar).

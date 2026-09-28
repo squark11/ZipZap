@@ -36,6 +36,10 @@ public sealed class OutboxDispatcherHostedService : BackgroundService
                 foreach (var processor in processors)
                     await processor.ProcessPendingAsync(stoppingToken);
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break; // zamykanie aplikacji — niewysłane wiadomości procesor już zwolnił do kolejki
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd w pętli dispatchera outboxa.");

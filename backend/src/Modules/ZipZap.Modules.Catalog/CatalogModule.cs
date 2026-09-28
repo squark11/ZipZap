@@ -21,7 +21,7 @@ public static class CatalogModule
             o.UseNpgsql(conn, npg =>
                 npg.MigrationsHistoryTable("__ef_migrations_history", CatalogDbContext.Schema)));
 
-        services.AddScoped<IOutboxProcessor, OutboxProcessor<CatalogDbContext>>();
+        services.AddModuleOutbox<CatalogDbContext>(); // procesor + wgląd administratora
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<CatalogDbContext>>();
         services.AddScoped<CatalogService>();
 
