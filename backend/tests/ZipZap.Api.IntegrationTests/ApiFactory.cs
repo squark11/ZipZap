@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Xunit;
+using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 
 namespace ZipZap.Api.IntegrationTests;
@@ -233,7 +234,12 @@ public class OutboxApiFactory : ApiFactory
 
     protected override void ConfigureSettings(IWebHostBuilder builder) =>
         builder.ConfigureTestServices(s =>
-            s.Remove(s.Single(d => d.ImplementationType == typeof(OutboxDispatcherHostedService))));
+        {
+            s.Remove(s.Single(d => d.ImplementationType == typeof(OutboxDispatcherHostedService)));
+            // Zdarzenie testowe z handlerem, który zawodzi na żądanie — symulacja przejściowej awarii.
+            s.RegisterIntegrationEventType<OutboxProbeEvent>();
+            s.AddScoped<IIntegrationEventHandler<OutboxProbeEvent>, OutboxProbeHandler>();
+        });
 }
 
 internal static class TestDatabases

@@ -24,7 +24,8 @@ public sealed class OutboxMessage
     public DateTime? NextAttemptAtUtc { get; set; }
 
     /// <summary>
-    /// Moment odłożenia do martwych po wyczerpaniu prób — wiadomość nie jest już wysyłana.
+    /// Moment odłożenia do martwych po błędzie TRWAŁYM (nieznany typ zdarzenia, nieczytelny ładunek) — wiadomość nie
+    /// jest już wysyłana, ale zostaje w bazie. Błędy przejściowe nigdy tu nie trafiają (są ponawiane bez limitu).
     /// Ponowienie ręczne: wyzerować DeadLetteredAtUtc, NextAttemptAtUtc i Attempts.
     /// </summary>
     public DateTime? DeadLetteredAtUtc { get; set; }

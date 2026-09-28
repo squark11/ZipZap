@@ -118,8 +118,24 @@ wykonują się automatycznie przy starcie.
 > `delivery.deliveries` — nullable lub z wartością domyślną — i tabela `delivery_history`) oraz
 > `Delivery_AdminOverride` (nullable kolumna `Reason` w `delivery_history`). Zdarzenie
 > `OrderReadyForPickup` ma nowe pola opcjonalne (okno dostawy) — starsze wiadomości w outboxie są zgodne.
+> Gałąź `pilot-outbox-deadletter` dodaje w KAŻDYM module (Catalog, Delivery, Identity, Ordering, Payments)
+> migrację `*_OutboxDeadLetter`: dwie nullable kolumny `NextAttemptAtUtc` i `DeadLetteredAtUtc` w `outbox_messages`.
 > Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
+
+### Outbox: ponawianie i odłożone zdarzenia
+- Błąd **trwały** (nieznany typ zdarzenia, nieczytelny ładunek) → wiadomość od razu trafia do odłożonych
+  (`DeadLetteredAtUtc`), zostaje w bazie; w logach błąd z id i typem wiadomości (bez ładunku).
+- Każdy inny błąd (awaria bazy, brokera, handlera) → ponawianie **bez limitu** z narastającym odstępem
+  10 s → 20 s → … maks. co 30 min (`NextAttemptAtUtc`); wiadomość czekająca na termin nie blokuje kolejnych.
+- Do czasu widoku w panelu admina — ręczne ponowienie odłożonej wiadomości (po usunięciu przyczyny), np. w module
+  zamówień:
+  ```sql
+  UPDATE ordering.outbox_messages
+     SET "DeadLetteredAtUtc" = NULL, "NextAttemptAtUtc" = NULL, "Attempts" = 0
+   WHERE "Id" = '<id wiadomości z logu>';
+  ```
+  (odpowiednio `delivery.`, `payments.`, `identity.`, `catalog.`). Brak nowych zmiennych środowiskowych.
 
 > ⚠ **Panel logowania (wersja obecnie wdrożona)** wypełniał formularz i pokazywał podpowiedź z domyślnym
 > kontem admina (`admin@zipzap.local` / `Admin123!`) także na produkcji. Na branchu pilotażowym jest to

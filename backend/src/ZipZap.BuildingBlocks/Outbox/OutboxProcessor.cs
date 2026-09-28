@@ -8,18 +8,21 @@ namespace ZipZap.BuildingBlocks.Outbox;
 /// <summary>
 /// Generyczny procesor outboxa nad DbContextem modułu. Pobiera partię
 /// nieprzetworzonych wiadomości, publikuje je na szynę i oznacza jako wysłane.
-/// Nieudana wiadomość jest ponawiana z wykładniczym odstępem, a po
-/// <see cref="MaxAttempts"/> próbach odkładana do martwych — dzięki temu
-/// wiadomości „trujące" nie blokują kolejnych wiadomości modułu.
+/// <list type="bullet">
+/// <item>Błąd TRWAŁY (nieznany typ zdarzenia, nieczytelny ładunek) — ponowienie nic nie zmieni, więc wiadomość
+/// od razu trafia do martwych (<see cref="OutboxMessage.DeadLetteredAtUtc"/>); zostaje w bazie do ręcznego ponowienia.</item>
+/// <item>Każdy inny błąd (np. awaria bazy, brokera albo handlera) — ponawiany BEZ LIMITU prób, z narastającym
+/// odstępem (10 s, 20 s, 40 s… maks. co 30 min). Wiadomość czekająca na termin nie blokuje kolejnych.</item>
+/// </list>
+/// Gwarancja „co najmniej raz" bez zmian: wiadomość jest oznaczana jako wysłana dopiero po udanej publikacji.
 /// </summary>
 public sealed class OutboxProcessor<TContext> : IOutboxProcessor
     where TContext : DbContext, IOutboxDbContext
 {
     public const int BatchSize = 20;
-    public const int MaxAttempts = 10;
 
-    private static readonly TimeSpan BaseRetryDelay = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan BaseRetryDelay = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan MaxRetryDelay = TimeSpan.FromMinutes(30);
 
     private readonly TContext _db;
     private readonly IEventBus _bus;
@@ -53,12 +56,21 @@ public sealed class OutboxProcessor<TContext> : IOutboxProcessor
 
         foreach (var message in messages)
         {
+            // Do logów trafiają tylko metadane — nigdy ładunek ani treść wyjątku (mogą zawierać dane osobowe).
+            if (!TryRead(message, out var @event, out var permanentError))
+            {
+                message.Attempts++;
+                message.Error = permanentError;
+                message.NextAttemptAtUtc = null;
+                message.DeadLetteredAtUtc = DateTime.UtcNow;
+                _logger.LogError(
+                    "Wiadomość outboxa {MessageId} ({Type}) odłożona do martwych — błąd trwały, ponowienie nic nie zmieni.",
+                    message.Id, message.Type);
+                continue;
+            }
+
             try
             {
-                var type = _registry.Resolve(message.Type)
-                    ?? throw new InvalidOperationException($"Nieznany typ zdarzenia '{message.Type}'.");
-
-                var @event = (IIntegrationEvent)JsonSerializer.Deserialize(message.Payload, type)!;
                 await _bus.PublishAsync(@event, ct);
 
                 message.ProcessedAtUtc = DateTime.UtcNow;
@@ -69,33 +81,47 @@ public sealed class OutboxProcessor<TContext> : IOutboxProcessor
             {
                 message.Attempts++;
                 message.Error = ex.Message;
-
-                // Do logów trafiają tylko metadane — nigdy ładunek ani treść wyjątku (mogą zawierać dane osobowe).
-                if (message.Attempts >= MaxAttempts)
-                {
-                    message.DeadLetteredAtUtc = DateTime.UtcNow;
-                    message.NextAttemptAtUtc = null;
-                    _logger.LogError(
-                        "Wiadomość outboxa {MessageId} ({Type}) odłożona do martwych po {Attempts} próbach ({ExceptionType}).",
-                        message.Id, message.Type, message.Attempts, ex.GetType().Name);
-                }
-                else
-                {
-                    message.NextAttemptAtUtc = DateTime.UtcNow + RetryDelay(message.Attempts);
-                    _logger.LogWarning(
-                        "Nie udało się wysłać wiadomości outboxa {MessageId} ({Type}), próba {Attempts}/{MaxAttempts} ({ExceptionType}); kolejna po {NextAttemptAtUtc:o}.",
-                        message.Id, message.Type, message.Attempts, MaxAttempts, ex.GetType().Name, message.NextAttemptAtUtc);
-                }
+                message.NextAttemptAtUtc = DateTime.UtcNow + RetryDelay(message.Attempts);
+                _logger.LogWarning(
+                    "Nie udało się wysłać wiadomości outboxa {MessageId} ({Type}), próba {Attempts} ({ExceptionType}); kolejna po {NextAttemptAtUtc:o}.",
+                    message.Id, message.Type, message.Attempts, ex.GetType().Name, message.NextAttemptAtUtc);
             }
         }
 
         await _db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Odstęp po <paramref name="attempts"/> nieudanych próbach: 10 s, 20 s, 40 s… maks. 30 min.</summary>
-    private static TimeSpan RetryDelay(int attempts)
+    /// <summary>Rozpoznanie wiadomości; false = błąd trwały (nieznany typ albo ładunek, którego nie da się odczytać).</summary>
+    private bool TryRead(OutboxMessage message, out IIntegrationEvent @event, out string error)
     {
-        var seconds = BaseRetryDelay.TotalSeconds * Math.Pow(2, attempts - 1);
+        @event = null!;
+        error = string.Empty;
+        var type = _registry.Resolve(message.Type);
+        if (type is null)
+        {
+            error = $"Nieznany typ zdarzenia '{message.Type}'.";
+            return false;
+        }
+        try
+        {
+            if (JsonSerializer.Deserialize(message.Payload, type) is IIntegrationEvent e)
+            {
+                @event = e;
+                return true;
+            }
+            error = "Pusty ładunek zdarzenia.";
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException or ArgumentException)
+        {
+            error = $"Nieczytelny ładunek zdarzenia ({ex.GetType().Name}).";
+        }
+        return false;
+    }
+
+    /// <summary>Odstęp po <paramref name="attempts"/> nieudanych próbach: 10 s, 20 s, 40 s… maks. 30 min.</summary>
+    public static TimeSpan RetryDelay(int attempts)
+    {
+        var seconds = BaseRetryDelay.TotalSeconds * Math.Pow(2, Math.Max(0, attempts - 1));
         return TimeSpan.FromSeconds(Math.Min(seconds, MaxRetryDelay.TotalSeconds));
     }
 }
