@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/config/app_config.dart';
+import '../../core/navigation/last_store.dart';
 import '../../core/providers.dart';
+import '../../core/router/redirects.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/widgets/captcha_field.dart';
 import '../../core/widgets/zz_icon.dart';
@@ -65,7 +67,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } else {
         await ctrl.login(_email.text.trim(), _password.text);
       }
-      if (mounted) context.go(widget.redirect ?? '/stores');
+      // Wracamy tam, skąd przyszło logowanie (tylko ścieżka w aplikacji), a bez wskazanego celu —
+      // do oferty ostatnio oglądanego sklepu (np. otwartego z kodu QR), nie na listę wszystkich sklepów.
+      if (mounted) {
+        context.go(safeInternalRedirect(widget.redirect)
+            ?? ref.read(lastStoreProvider)?.path
+            ?? '/stores');
+      }
     } on ApiException catch (e) {
       _snack(e.message);
     } finally {

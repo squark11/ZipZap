@@ -1,6 +1,45 @@
 # Deploy Dowózka.pl
 
-## ✅ Strona `dowózka.pl` na hostingu lh.pl + aplikacja jako APK — 2026-09-15 (stan bieżący)
+## S2 — kod QR sklepu → aplikacja webowa (bez instalacji) — 2026-09-29, lokalnie, NIEWDROŻONE
+**Architektura:** istniejąca aplikacja Flutter zbudowana jako web (PWA) — ten sam kod co na Androidzie, bez nowego
+frontendu. Adresy bez `#` (path URL strategy); stały link do oferty sklepu: **`https://<host aplikacji>/s/<slug-sklepu>?src=qr`**
+(każda lokalizacja = osobny sklep = osobny slug i osobny kod). `src` służy tylko do liczenia wejść (licznik w API), po
+zliczeniu znika z adresu. Kod QR generuje panel (Start sklepu / Sklepy → „Kod QR", PNG i SVG do druku, opcjonalna
+etykieta miejsca, np. `qr-kasa`). Landing `dowózka.pl` kieruje „Zamów online" i swój QR do aplikacji web, nie do APK.
+
+**Adres aplikacji NIE jest wybrany** — w dokumentacji są różne hosty (Azure SWA `yellow-sea-…`, Netlify, dawniej Fly).
+Zanim wydrukujesz kody, właściciel wybiera JEDEN kanoniczny host (np. subdomenę na `dowózka.pl` albo istniejący SWA).
+Zmiana hosta po wydruku unieważnia wydrukowane kody (chyba że stary host przekierowuje `/s/*` na nowy).
+
+**Uruchomienie QR w pilotażu (kolejność):**
+1. **DNS** — rekord dla wybranego hosta:
+   - subdomena na lh.pl (obsługuje IDN): rekord `A` → `185.135.90.143` (jak `dowózka.pl` i `panel.dowózka.pl`) i katalog
+     w `public_html/<folder>/` przypisany do subdomeny w panelu lh.pl;
+   - albo Azure SWA: dla domeny IDN tylko przez Cloudflare (proxy + Host Header Override, patrz niżej) — SWA odrzuca IDN.
+2. **TLS** — certyfikat Let's Encrypt wystawiony dokładnie na ten host (panel lh.pl). Sprawdź w przeglądarce, że nie ma
+   ostrzeżenia (dla `panel.dowózka.pl` certyfikat NIE był wystawiony — ten sam błąd zablokuje aplikację i kody QR).
+3. **Build aplikacji:** `cd mobile; flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.onrender.com/api`
+   (host w katalogu głównym; pod ścieżką dodaj `--base-href /<ścieżka>/` — niezalecane).
+4. **SPA-fallback** — każda nieznana ścieżka (`/s/...`, `/checkout`) ma zwracać `index.html`, inaczej link z QR i
+   odświeżenie strony dadzą 404:
+   - Apache/lh.pl: `.htaccess` z `RewriteRule ^ index.html [L]` — gotowy jest nieśledzony plik właściciela
+     `mobile/web/.htaccess` (główny checkout); przed wysyłką upewnij się, że leży w `build/web/` (w razie potrzeby
+     skopiuj). Zalecane dopisać, żeby po wdrożeniu telefony nie trzymały starej wersji:
+     `<FilesMatch "^(index\.html|flutter_bootstrap\.js|sw\.js|version\.json|manifest\.json)$">Header set Cache-Control "no-cache"</FilesMatch>`;
+   - Azure SWA: `staticwebapp.config.json`; Netlify: `_redirects` (oba w `mobile/web/`, kopiowane do buildu).
+5. **Upload** zawartości `mobile/build/web/` do katalogu hosta (FTP jak dla landingu/panelu).
+6. **API (Render):** `PUBLICAPP__CUSTOMERAPPURL=https://<host aplikacji>`; w trybie hartowanym także
+   `CORS__ALLOWEDORIGINS__<n>=https://<host aplikacji>`. W panelu: Konfiguracja → „Aplikacja klienta i kody QR" — ten sam
+   adres (panel pokazuje, skąd pochodzi aktywna wartość).
+7. **Landing:** w `public_html/dowozka.pl/config.js` ustaw `appUrl: "https://<host aplikacji>"` (plik jest w
+   `web-landing/config.js`; puste = sekcja „Zamów online" pokazuje „wkrótce", bez QR). Plik APK na serwerze
+   (`/pobierz/dowozka.apk`) nie jest już linkowany — usunięcie decyzją właściciela.
+8. **Sprawdzenie przed drukiem** (na prawdziwych telefonach): iPhone — **Safari** (App Store nie jest potrzebny), Android —
+   Chrome: skan kodu z panelu → oferta sklepu → dodanie do koszyka → odświeżenie → logowanie/rejestracja → zamówienie
+   (W1: konto testera). Opcjonalnie „Dodaj do ekranu głównego" (instrukcja w aplikacji, ikona w nagłówku sklepu).
+9. Dopiero potem: panel → Start sklepu → „Pobierz SVG (do druku)" / PNG.
+
+## ✅ Strona `dowózka.pl` na hostingu lh.pl + aplikacja jako APK — 2026-09-15 (stan wdrożony; QR→APK zastąpione w S2)
 > Właściciel ma domenę **dowózka.pl** (IDN, punycode `xn--dowzka-dxa.pl`) i hosting **lh.pl** — domena już wskazuje na lh.pl (A `185.135.90.143`), serwuje HTTP/HTTPS (SSL Let's Encrypt lh.pl). Architektura:
 - **`dowózka.pl` = strona marketingowo-biznesowa** (`web-landing/index.html`), statyczna, hostowana na lh.pl w `public_html/dowozka.pl/`. Główne CTA B2B „Dołącz jako sklep" + sekcja pobrania aplikacji. **Aplikacja Flutter NIE jest serwowana na desktopie** — jest tylko mobilna (dystrybucja przez APK).
 - **Aplikacja klienta = Android APK** do pobrania: `https://dowózka.pl/pobierz/dowozka.apk` (na stronie przycisk + kod QR; iOS „wkrótce"). APK celuje w API na Render (`--dart-define=API_BASE_URL=…onrender.com/api`). Podpisany kluczem debug (sideload/pilot; do Google Play trzeba własnego keystore).

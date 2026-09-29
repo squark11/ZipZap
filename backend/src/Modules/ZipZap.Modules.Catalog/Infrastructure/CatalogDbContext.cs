@@ -10,6 +10,7 @@ namespace ZipZap.Modules.Catalog.Infrastructure;
 public sealed class CatalogDbContext : DbContext, IOutboxDbContext
 {
     public const string Schema = "catalog";
+    public const string StoreEntryStatsTable = "store_entry_stats";
 
     private readonly ICurrentTenant _tenant;
 
@@ -21,6 +22,7 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<StoreEntryStat> StoreEntryStats => Set<StoreEntryStat>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -81,6 +83,14 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.HasIndex(p => new { p.StoreId, p.CategoryId });
             e.Ignore(p => p.DomainEvents);
             e.HasQueryFilter(p => _tenant.StoreId == null || p.StoreId == _tenant.StoreId);
+        });
+
+        // Dzienne liczniki wejść na kartę sklepu wg źródła (np. kod QR) — agregat bez danych osobowych.
+        b.Entity<StoreEntryStat>(e =>
+        {
+            e.ToTable(StoreEntryStatsTable);
+            e.HasKey(s => new { s.StoreId, s.Day, s.Source });
+            e.Property(s => s.Source).IsRequired().HasMaxLength(StoreEntrySource.MaxLength);
         });
 
         b.Entity<OutboxMessage>(e =>

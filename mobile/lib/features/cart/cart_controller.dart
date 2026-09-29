@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
@@ -10,12 +13,17 @@ class CartState {
   final bool busy;
   final String? error;
 
-  const CartState({this.cart, this.busy = false, this.error});
+  /// Trwa odtwarzanie zapamiętanego koszyka (np. zaraz po odświeżeniu strony) — ekrany pokazują ładowanie,
+  /// a nie mylący komunikat „Koszyk jest pusty".
+  final bool restoring;
 
-  CartState copyWith({Cart? cart, bool? busy, String? error}) => CartState(
+  const CartState({this.cart, this.busy = false, this.error, this.restoring = false});
+
+  CartState copyWith({Cart? cart, bool? busy, String? error, bool? restoring}) => CartState(
         cart: cart ?? this.cart,
         busy: busy ?? this.busy,
         error: error,
+        restoring: restoring ?? this.restoring,
       );
 
   int get count => cart?.totalQuantity ?? 0;
@@ -24,11 +32,58 @@ class CartState {
 }
 
 /// Koszyk klienta (jeden aktywny na sklep). Token koszyka trzymamy w [Cart].
+///
+/// Odnośnik do koszyka (id + token, bez zawartości) jest zapisywany w trwałym magazynie, więc odświeżenie strony
+/// w przeglądarce, przejście przez logowanie czy ponowne otwarcie aplikacji nie gubią koszyka — zawartość
+/// zawsze pobieramy od nowa z serwera.
 class CartController extends Notifier<CartState> {
+  static const storageKey = 'zz_cart';
+
   OrderingRepository get _repo => ref.read(orderingRepositoryProvider);
 
   @override
-  CartState build() => const CartState();
+  CartState build() {
+    unawaited(_restore().whenComplete(() {
+      if (state.restoring) state = state.copyWith(restoring: false);
+    }));
+    return const CartState(restoring: true);
+  }
+
+  /// Odtwarza koszyk zapisany przed odświeżeniem strony. Nie nadpisuje koszyka założonego w międzyczasie.
+  Future<void> _restore() async {
+    final raw = await ref.read(appStorageProvider).read(storageKey);
+    if (raw == null) return;
+    String? id, token;
+    try {
+      final j = jsonDecode(raw);
+      if (j is Map && j['id'] is String && j['token'] is String) {
+        id = j['id'] as String;
+        token = j['token'] as String;
+      }
+    } catch (_) {}
+    if (id == null || token == null) return _forget();
+    try {
+      final cart = await _repo.getCart(id, token);
+      if (state.cart != null) return;
+      if (cart.status == 'Active') {
+        state = CartState(cart: cart);
+      } else {
+        await _forget(); // koszyk już zamówiony / porzucony
+      }
+    } on ApiException catch (e) {
+      // Koszyk nie istnieje lub token jest nieważny — zapominamy. Błąd sieci/serwera: próbujemy przy następnym starcie.
+      final gone = e.isNotFound || e.isForbidden || e.statusCode == 400 || e.statusCode == 410;
+      if (gone) await _forget();
+    } catch (_) {}
+  }
+
+  void _setCart(Cart cart) {
+    state = CartState(cart: cart);
+    unawaited(ref.read(appStorageProvider)
+        .write(storageKey, jsonEncode({'id': cart.id, 'token': cart.cartToken})));
+  }
+
+  Future<void> _forget() => ref.read(appStorageProvider).delete(storageKey);
 
   /// Zapewnia aktywny koszyk dla danego sklepu. Zmiana sklepu tworzy nowy koszyk.
   Future<void> ensureCartForStore(String storeId) async {
@@ -37,7 +92,7 @@ class CartController extends Notifier<CartState> {
     state = state.copyWith(busy: true, error: null);
     try {
       final cart = await _repo.createCart(storeId);
-      state = CartState(cart: cart);
+      _setCart(cart);
     } on ApiException catch (e) {
       state = state.copyWith(busy: false, error: e.message);
     }
@@ -92,8 +147,11 @@ class CartController extends Notifier<CartState> {
     await _mutate(() => _repo.getCart(c.id, c.cartToken));
   }
 
-  /// Po złożeniu zamówienia — czyścimy lokalny koszyk.
-  void clearAfterCheckout() => state = const CartState();
+  /// Po złożeniu zamówienia — czyścimy lokalny koszyk (i zapamiętany odnośnik).
+  void clearAfterCheckout() {
+    state = const CartState();
+    unawaited(_forget());
+  }
 
   int quantityOf(String productId) {
     final items = state.cart?.items ?? const [];
@@ -112,7 +170,7 @@ class CartController extends Notifier<CartState> {
       state = state.copyWith(busy: true, error: null);
       try {
         final cart = await op();
-        state = CartState(cart: cart);
+        _setCart(cart);
       } on ApiException catch (e) {
         state = state.copyWith(busy: false, error: e.message);
       }

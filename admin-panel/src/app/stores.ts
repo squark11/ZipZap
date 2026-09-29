@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api, StoreDto } from './api';
 import { ConfigModalComponent } from './config-modal';
+import { StoreQrComponent } from './store-qr';
 
 @Component({
   selector: 'app-stores',
-  imports: [CommonModule, FormsModule, ConfigModalComponent],
+  imports: [CommonModule, FormsModule, ConfigModalComponent, StoreQrComponent],
   styles: [`
     .rowlink { cursor:pointer; transition:background .12s; }
     .rowlink:hover { background:#f4faf9; }
@@ -94,6 +95,11 @@ import { ConfigModalComponent } from './config-modal';
         <div><span>Prowizja</span><b>{{ (s.commissionRate * 100) | number:'1.0-1' }}%</b></div>
         <div><span>Konto</span><b [style.color]="s.isActive ? '#128040' : '#B4232A'">{{ s.isActive ? 'aktywny' : 'nieaktywny' }}</b></div>
         <div><span>Identyfikator</span><b class="mono" style="font-size:12px">{{ s.slug }}</b></div>
+      </div>
+
+      <div class="act">
+        <label class="lbl">Kod QR do oferty (bez instalacji aplikacji)</label>
+        <app-store-qr [storeId]="s.id"></app-store-qr>
       </div>
 
       <div class="act">

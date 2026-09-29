@@ -16,6 +16,10 @@ export interface ConfigStatus {
   identityPublicUrl: string;
   adminSeedEmail: string;
   jwtUsingDevSecret: boolean;
+  /** Efektywny adres aplikacji klienta (web) i jego źródło: „panel" / „env"; null = nieustawiony. */
+  customerAppUrl?: string | null;
+  customerAppUrlSource?: string | null;
+  customerAppUrlEnv?: string | null;
 }
 
 export interface PlatformSettings {
@@ -53,6 +57,7 @@ export interface PlatformIntegrations {
   smtpFromEmail?: string;
   smtpFromName?: string;
   hasSmtpPassword?: boolean;
+  customerAppUrl?: string;
 }
 
 @Component({
@@ -86,6 +91,12 @@ export interface PlatformIntegrations {
     <button class="tile" (click)="open('integrations')">
       <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="5"/><path d="M13 10l8-8m-3 0h3v3"/><path d="M14 9l3 3"/></svg></span>
       <span class="tbody"><span class="ttl">Logowanie i captcha</span><span class="tst" [class.on]="!!status?.googleSignIn">{{ status?.googleSignIn ? '✓ Google aktywne' : '— Google wyłączone' }}</span></span>
+      <span class="tcta">Konfiguruj →</span>
+    </button>
+
+    <button class="tile" (click)="open('customerapp')">
+      <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4"/></svg></span>
+      <span class="tbody"><span class="ttl">Aplikacja klienta i kody QR</span><span class="tst" [class.on]="!!status?.customerAppUrl">{{ status?.customerAppUrl ? '✓ ' + status?.customerAppUrl : '— adres nieustawiony' }}</span></span>
       <span class="tcta">Konfiguruj →</span>
     </button>
 
@@ -173,6 +184,24 @@ export interface PlatformIntegrations {
       <input type="password" name="capsecret" [(ngModel)]="captchaSecret" [placeholder]="integrations.hasCaptchaSecret ? '•••••••• (bez zmian)' : 'wklej secret key'" />
       <p class="note" style="margin-top:12px">🔒 Secret szyfrowany, nigdy nie pokazywany z powrotem.</p>
     }
+    @if (integError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ integError }}</p> }
+  </app-config-modal>
+
+  <!-- ===== Aplikacja klienta (web) i kody QR ===== -->
+  <app-config-modal [open]="panel === 'customerapp'" title="Aplikacja klienta i kody QR"
+      [saving]="savingI" [saved]="savedI" (save)="saveIntegrations()" (close)="close()">
+    <p class="muted" style="margin-top:0">Adres, pod którym działa aplikacja webowa dla klientów (bez instalacji ze sklepu). Z niego powstają stałe linki
+      do sklepów i kody QR: <code>{{ (integrations.customerAppUrl || status?.customerAppUrl || 'https://adres-aplikacji') }}/s/&lt;identyfikator-sklepu&gt;?src=qr</code>.</p>
+    <label class="lbl">Adres aplikacji klienta (HTTPS)</label>
+    <input type="url" name="custapp" [(ngModel)]="integrations.customerAppUrl" placeholder="https://adres-aplikacji-klienta" />
+    <p class="muted" style="font-size:12px;margin-top:6px">Tylko HTTPS (HTTP wyłącznie dla localhost), bez „?" i „#". Puste = użyj wartości z serwera
+      (zmienna <code>PUBLICAPP__CUSTOMERAPPURL</code>)@if (status?.customerAppUrlEnv) { — teraz: <code>{{ status?.customerAppUrlEnv }}</code> }.</p>
+    @if (status?.customerAppUrlSource === 'env') {
+      <p class="note">Aktywny adres pochodzi ze zmiennej środowiskowej serwera.</p>
+    }
+    <p class="warn" style="margin-top:10px">⚠ Zmiana adresu po wydrukowaniu kodów QR unieważnia wydrukowane kody — ustaw go raz, na docelowej domenie,
+      zanim wydrukujesz materiały. Zapis w panelu trzymany jest w pliku serwera; na hostingu bez trwałego dysku ustaw ten sam adres także w zmiennej
+      <code>PUBLICAPP__CUSTOMERAPPURL</code> (przetrwa restart).</p>
     @if (integError) { <p class="warn" style="background:#FEECEC;color:#B4232A">{{ integError }}</p> }
   </app-config-modal>
 
@@ -409,6 +438,7 @@ export class SettingsComponent implements OnInit {
       smtpFromEmail: i.smtpFromEmail || '',
       smtpFromName: i.smtpFromName || '',
       hasSmtpPassword: !!i.hasSmtpPassword,
+      customerAppUrl: i.customerAppUrl || '',
     };
   }
 
@@ -426,6 +456,7 @@ export class SettingsComponent implements OnInit {
       smtpUsername: (this.integrations.smtpUsername || '').trim() || undefined,
       smtpFromEmail: (this.integrations.smtpFromEmail || '').trim() || undefined,
       smtpFromName: (this.integrations.smtpFromName || '').trim() || undefined,
+      customerAppUrl: (this.integrations.customerAppUrl || '').trim() || undefined,
     };
     if (this.captchaSecret.trim()) body.captchaSecret = this.captchaSecret.trim();
     if (this.smtpPassword.trim()) body.smtpPassword = this.smtpPassword.trim();

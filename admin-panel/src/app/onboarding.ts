@@ -2,6 +2,7 @@ import { Component, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api, StoreDto } from './api';
+import { StoreQrComponent } from './store-qr';
 
 interface ReadyStep { key: string; label: string; done: boolean; required: boolean; hint: string; }
 interface Readiness { storeId: string; readyToSell: boolean; steps: ReadyStep[]; }
@@ -13,7 +14,7 @@ interface Slot {
 
 @Component({
   selector: 'app-onboarding',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, StoreQrComponent],
   styles: [`
     .steps { display:flex; flex-direction:column; gap:8px; }
     .step { display:flex; align-items:flex-start; gap:10px; }
@@ -47,6 +48,13 @@ interface Slot {
         <span class="muted">Ładowanie…</span>
       }
     </div>
+  </div>
+
+  <div class="card pad" style="margin-bottom:16px">
+    <h2 style="font-size:16px;margin:0 0 4px">Kod QR dla klientów</h2>
+    <p class="muted" style="margin:0 0 12px;font-size:13px">Wydrukuj i powieś w sklepie — klient skanuje go telefonem i od razu zamawia z Twojej oferty,
+      bez instalowania aplikacji. Dla każdej lokalizacji jest osobny kod.</p>
+    <app-store-qr [storeId]="storeId()"></app-store-qr>
   </div>
 
   <div class="card pad" style="margin-bottom:16px">

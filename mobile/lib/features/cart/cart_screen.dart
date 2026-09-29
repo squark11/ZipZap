@@ -21,7 +21,9 @@ class CartScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Koszyk')),
-      body: (c == null || c.items.isEmpty)
+      body: (c == null && cart.restoring)
+          ? const LoadingView(label: 'Wczytywanie koszyka…')
+          : (c == null || c.items.isEmpty)
           ? const EmptyView(
               svgAsset: 'assets/svg/empty_cart.svg',
               icon: Icons.shopping_cart_outlined,

@@ -24,6 +24,22 @@ public static class CatalogEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         });
 
+        // Wejście na kartę sklepu (np. z kodu QR `?src=qr`) — tylko pomiar źródła: bez logowania, bez danych
+        // osobowych, niczego nie odblokowuje. Aplikacja wysyła raz na sesję.
+        group.MapPost("/stores/{idOrSlug}/entries", async (string idOrSlug, StoreEntryRequest? req, CatalogService svc,
+            CancellationToken ct) =>
+        {
+            var result = await svc.RecordEntryAsync(idOrSlug, req?.Source, ct);
+            return result.IsSuccess ? Results.NoContent() : Problem(result.Error);
+        });
+
+        // Wejścia z ostatnich dni wg źródła — obsługa tego sklepu albo administrator.
+        group.MapGet("/stores/{storeId:guid}/entries", async (Guid storeId, int? days, CatalogService svc, CancellationToken ct) =>
+        {
+            var result = await svc.GetEntryStatsAsync(storeId, days ?? 30, ct);
+            return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+        }).RequireAuthorization();
+
         group.MapGet("/stores/{storeId:guid}/categories", async (Guid storeId, CatalogService svc, CancellationToken ct) =>
             Results.Ok(await svc.ListCategoriesAsync(storeId, ct)));
 

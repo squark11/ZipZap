@@ -1,0 +1,1 @@
+bool isRunningStandalone() => false;

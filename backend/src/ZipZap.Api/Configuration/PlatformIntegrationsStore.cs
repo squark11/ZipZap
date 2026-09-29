@@ -18,19 +18,43 @@ public sealed record PlatformIntegrations
     public string? SmtpPasswordEnc { get; init; }        // zaszyfrowany
     public string? SmtpFromEmail { get; init; }          // adres nadawcy
     public string? SmtpFromName { get; init; }           // nazwa nadawcy (np. Dowózka.pl)
+    // ---- Aplikacja klienta (web) ----
+    public string? CustomerAppUrl { get; init; }         // jawny, np. https://<host aplikacji> — baza linków i kodów QR
 }
 
 /// <summary>Status dla panelu — BEZ sekretów (tylko flaga „ustawiony").</summary>
 public sealed record PlatformIntegrationsStatus(
     string? GoogleClientId, string? CaptchaProvider, string? CaptchaSiteKey, bool HasCaptchaSecret,
     string? SmtpHost, int? SmtpPort, bool SmtpUseSsl, string? SmtpUsername,
-    string? SmtpFromEmail, string? SmtpFromName, bool HasSmtpPassword);
+    string? SmtpFromEmail, string? SmtpFromName, bool HasSmtpPassword, string? CustomerAppUrl = null);
 
 /// <summary>Dane z panelu. Puste pole sekretu = zachowaj istniejący.</summary>
 public sealed record PlatformIntegrationsUpdate(
     string? GoogleClientId, string? CaptchaProvider, string? CaptchaSiteKey, string? CaptchaSecret,
     string? SmtpHost = null, int? SmtpPort = null, bool? SmtpUseSsl = null, string? SmtpUsername = null,
-    string? SmtpPassword = null, string? SmtpFromEmail = null, string? SmtpFromName = null);
+    string? SmtpPassword = null, string? SmtpFromEmail = null, string? SmtpFromName = null,
+    string? CustomerAppUrl = null);
+
+/// <summary>
+/// Adres aplikacji klienta (web/PWA) — baza stałych linków do sklepów i kodów QR (<c>{adres}/s/{slug}</c>).
+/// Wymagany HTTPS (HTTP tylko dla localhost — testy lokalne), bez parametrów i fragmentu; końcowy „/" usuwany.
+/// </summary>
+public static class CustomerAppUrl
+{
+    public static (string? Value, string? Error) Normalize(string? raw)
+    {
+        var v = raw?.Trim();
+        if (string.IsNullOrEmpty(v)) return (null, null);
+        if (!Uri.TryCreate(v, UriKind.Absolute, out var uri))
+            return (null, "Adres aplikacji klienta musi być pełnym adresem, np. https://sklep.example.pl");
+        var local = uri.IsLoopback;
+        if (uri.Scheme != Uri.UriSchemeHttps && !(local && uri.Scheme == Uri.UriSchemeHttp))
+            return (null, "Adres aplikacji klienta musi używać HTTPS (HTTP tylko dla localhost).");
+        if (!string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment) || !string.IsNullOrEmpty(uri.UserInfo))
+            return (null, "Adres aplikacji klienta nie może zawierać parametrów (?), fragmentu (#) ani danych logowania.");
+        return (uri.GetLeftPart(UriPartial.Path).TrimEnd('/'), null);
+    }
+}
 
 /// <summary>Konfiguracja captchy po stronie serwera (z odszyfrowanym sekretem) — do weryfikacji.</summary>
 public sealed record CaptchaConfig(string? Provider, string? SiteKey, string? Secret)
@@ -84,7 +108,7 @@ public sealed class PlatformIntegrationsStore
         return new PlatformIntegrationsStatus(i.GoogleClientId, i.CaptchaProvider, i.CaptchaSiteKey,
             !string.IsNullOrEmpty(i.CaptchaSecretEnc),
             i.SmtpHost, i.SmtpPort, i.SmtpUseSsl, i.SmtpUsername, i.SmtpFromEmail, i.SmtpFromName,
-            !string.IsNullOrEmpty(i.SmtpPasswordEnc));
+            !string.IsNullOrEmpty(i.SmtpPasswordEnc), i.CustomerAppUrl);
     }
 
     /// <summary>Konfiguracja SMTP z odszyfrowanym hasłem (serwer). Hasło nie opuszcza backendu.</summary>
@@ -134,13 +158,15 @@ public sealed class PlatformIntegrationsStore
                     : _dp.Protect(u.SmtpPassword.Trim()),
                 SmtpFromEmail = Norm(u.SmtpFromEmail),
                 SmtpFromName = Norm(u.SmtpFromName),
+                CustomerAppUrl = CustomerAppUrl.Normalize(u.CustomerAppUrl).Value,
             };
             await using var s = File.Create(_path);
             await JsonSerializer.SerializeAsync(s, clean, _json, ct);
             return new PlatformIntegrationsStatus(clean.GoogleClientId, clean.CaptchaProvider, clean.CaptchaSiteKey,
                 !string.IsNullOrEmpty(clean.CaptchaSecretEnc),
                 clean.SmtpHost, clean.SmtpPort, clean.SmtpUseSsl, clean.SmtpUsername,
-                clean.SmtpFromEmail, clean.SmtpFromName, !string.IsNullOrEmpty(clean.SmtpPasswordEnc));
+                clean.SmtpFromEmail, clean.SmtpFromName, !string.IsNullOrEmpty(clean.SmtpPasswordEnc),
+                clean.CustomerAppUrl);
         }
         finally { _lock.Release(); }
     }
@@ -173,6 +199,6 @@ public sealed class PlatformIntegrationsStore
             if (string.IsNullOrEmpty(from) || !from.Contains('@'))
                 return "Konfiguracja SMTP wymaga poprawnego adresu nadawcy.";
         }
-        return null;
+        return CustomerAppUrl.Normalize(i.CustomerAppUrl).Error;
     }
 }

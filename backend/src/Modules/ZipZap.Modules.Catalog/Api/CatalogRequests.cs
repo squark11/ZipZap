@@ -25,3 +25,6 @@ public sealed record UpdateProductRequest(
 
 /// <summary>Import asortymentu z pliku CSV (surowa treść) + flaga zatwierdzenia.</summary>
 public sealed record ImportProductsRequest(string Content);
+
+/// <summary>Wejście na kartę sklepu: źródło z adresu (np. „qr", „qr-kasa"); normalizowane po stronie serwera.</summary>
+public sealed record StoreEntryRequest(string? Source);

@@ -123,8 +123,21 @@ wykonują się automatycznie przy starcie.
 > i `*_OutboxLeaseAndManualRetry` (nullable `LockedUntilUtc`, `LastManualRetryAtUtc`, `LastManualRetryByUserId`)
 > — razem 10 migracji — oraz `Catalog_AggregateVersion` (kolumna `Version int NOT NULL DEFAULT 0` w
 > `catalog.stores` i `catalog.products`) i `Ordering_CatalogProjectionVersion` (`SourceVersion int NOT NULL DEFAULT 0`
-> w `ordering.catalog_stores` i `ordering.catalog_products`). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
+> w `ordering.catalog_stores` i `ordering.catalog_products`), a S2 (kod QR → aplikacja web) dodaje
+> `Catalog_StoreEntryStats` (nowa tabela `catalog.store_entry_stats`: sklep, dzień, źródło, liczba — dzienny licznik
+> wejść bez danych osobowych). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
+
+### Aplikacja klienta (web) i kody QR — konfiguracja
+- **Adres aplikacji klienta** (baza linków `/s/{slug}` i kodów QR): panel → Konfiguracja → „Aplikacja klienta i kody QR";
+  rezerwa w zmiennej `PUBLICAPP__CUSTOMERAPPURL=https://<host aplikacji>` (zalecane ustawić OBIE — zapis panelu leży w
+  `App_Data`, które na Renderze bez trwałego dysku znika przy restarcie). Tylko HTTPS, bez `?`/`#`. Widoczny publicznie w
+  `GET /api/config/public` (`customerAppUrl`). Szczegóły DNS/hostingu: [DEPLOY.md](DEPLOY.md) → „S2".
+- **CORS:** w trybie hartowanym dopisz origin aplikacji: `CORS__ALLOWEDORIGINS__<n>=https://<host aplikacji>`
+  (tryb Development pilotażu przyjmuje każdy origin).
+- **Licznik wejść:** `POST /api/catalog/stores/{slug|id}/entries` (publiczny, osobny limit 60/min na IP, źródło
+  normalizowane do `a-z0-9-`, maks. 40 znaków); podgląd `GET /api/catalog/stores/{id}/entries?days=30` (obsługa sklepu,
+  admin). Źródło to tylko etykieta pomiaru — niczego nie odblokowuje.
 
 ### Outbox: ponawianie i odłożone zdarzenia
 Brak nowych zmiennych środowiskowych. Reguły (decyzja właściciela, 2026-09-28):

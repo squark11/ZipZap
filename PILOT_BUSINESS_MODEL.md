@@ -233,7 +233,8 @@ przychód operatora
 
 Zbieramy **agregaty i identyfikatory techniczne**, **nie** dane osobowe ani pełne adresy:
 
-- skany QR (per sklep/lokalizacja + kod źródła kampanii),
+- skany QR (per sklep/lokalizacja + kod źródła kampanii) — od S2 zbierane jako dzienny licznik wejść na kartę sklepu
+  wg źródła (`qr`, `qr-kasa`…), bez IP i bez danych klienta; raport zbiorczy w S5,
 - wejścia na kartę sklepu,
 - dodania do ulubionych,
 - **wyszukania bez wyników** (czego klienci szukają, a nie ma),

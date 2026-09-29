@@ -110,6 +110,7 @@ builder.Services.AddSingleton<ZipZap.Modules.Ordering.Application.IStoreLegalPol
 builder.Services.AddScoped<ZipZap.Modules.Delivery.Application.IDriverDirectory, DriverDirectoryAdapter>();
 builder.Services.AddScoped<ZipZap.Modules.Delivery.Application.IOrderContactProvider, OrderContactAdapter>();
 builder.Services.AddSingleton<PlatformIntegrationsStore>();
+builder.Services.AddSingleton<CustomerAppUrlProvider>();
 // Realny sender e-mail. Priorytet: HTTP API dostawcy (Resend/Brevo, port 443 — Render blokuje SMTP),
 // z fallbackiem na SMTP/MailKit (lokalnie / hosting bez blokady portów). Nadpisuje mock LoggingEmailSender.
 builder.Services.AddScoped<SmtpEmailSender>();
@@ -167,9 +168,19 @@ builder.Services.AddRateLimiter(options =>
             path.StartsWith("/api/identity/password", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/register", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/feedback", StringComparison.OrdinalIgnoreCase);
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        // Licznik wejść na kartę sklepu (np. z kodu QR) — publiczny, więc limitowany, ale OSOBNYM kubełkiem
+        // (wejścia nie mogą zjadać limitu logowania tego samego IP; wiele osób za jednym NAT-em skanuje naraz).
+        if (rateLimitEnabled && HttpMethods.IsPost(ctx.Request.Method)
+            && path.StartsWith("/api/catalog/stores/", StringComparison.OrdinalIgnoreCase)
+            && path.EndsWith("/entries", StringComparison.OrdinalIgnoreCase))
+            return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter("entries|" + ip,
+                _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = Math.Max(rateLimitPerMinute * 6, 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0,
+                });
         if (!rateLimitEnabled || !sensitive || !HttpMethods.IsPost(ctx.Request.Method))
             return System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("none");
-        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ip,
             _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
             {
@@ -355,14 +366,20 @@ app.MapGet("/health/ready", async (MessagingDbContext db, StartupReadiness start
 // Status konfiguracji (tylko admin) — SAME FLAGI, bez żadnych sekretów.
 app.MapGet("/api/admin/config/status",
     async (IConfiguration cfg, IHostEnvironment env,
-        ZipZap.Modules.Identity.Application.IGoogleClientIdProvider google, CancellationToken ct) =>
+        ZipZap.Modules.Identity.Application.IGoogleClientIdProvider google, CustomerAppUrlProvider appUrl,
+        CancellationToken ct) =>
 {
     bool set(string key) => !string.IsNullOrWhiteSpace(cfg[key]);
     var jwt = cfg["Jwt:SigningKey"] ?? string.Empty;
     var googleId = await google.GetClientIdAsync(ct); // panel → env (efektywna wartość)
+    var app = await appUrl.GetAsync(ct);
     return Results.Ok(new
     {
         environment = env.EnvironmentName,
+        // Aplikacja klienta (web): efektywny adres + skąd pochodzi („panel" / „env") + wartość rezerwowa z env.
+        customerAppUrl = app.Url,
+        customerAppUrlSource = app.Source,
+        customerAppUrlEnv = CustomerAppUrl.Normalize(cfg[CustomerAppUrlProvider.ConfigKey]).Value,
         payments = new
         {
             provider = cfg["Payments:Provider"],
@@ -429,11 +446,12 @@ app.MapPost("/api/admin/config/smtp/test",
 
 // Publiczna konfiguracja dla aplikacji klienta — Google Client ID + captcha (provider + site key, jawne).
 app.MapGet("/api/config/public",
-    async (IGoogleClientIdProvider google, PlatformIntegrationsStore store,
+    async (IGoogleClientIdProvider google, PlatformIntegrationsStore store, CustomerAppUrlProvider appUrl,
         Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot, CancellationToken ct) =>
 {
     var googleId = await google.GetClientIdAsync(ct);
     var status = await store.GetStatusAsync(ct);
+    var app = await appUrl.GetAsync(ct);
     var captchaEnabled = !string.IsNullOrWhiteSpace(status.CaptchaProvider)
         && !string.IsNullOrWhiteSpace(status.CaptchaSiteKey) && status.HasCaptchaSecret;
     return Results.Ok(new
@@ -444,6 +462,8 @@ app.MapGet("/api/config/public",
         captchaSiteKey = captchaEnabled ? status.CaptchaSiteKey : null,
         // „online" albo „test" (pilotaż W1): aplikacja NIE pokazuje wtedy ekranu płatności.
         paymentMode = (pilot.Value.PaymentMode ?? "online").Trim().ToLowerInvariant(),
+        // Adres aplikacji klienta (baza linków /s/{slug} i kodów QR); null = aplikacja web nie jest opublikowana.
+        customerAppUrl = app.Url,
     });
 }).WithTags("System");
 

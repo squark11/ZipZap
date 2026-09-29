@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_state.dart';
+import '../navigation/last_store.dart';
 import '../providers.dart';
 import 'main_scaffold.dart';
+import 'not_found_screen.dart';
+import 'redirects.dart';
 import '../../features/account/login_screen.dart';
 import '../../features/account/forgot_password_screen.dart';
 import '../../features/account/change_password_screen.dart';
@@ -28,10 +31,21 @@ bool _needsAuth(String loc) =>
     loc.startsWith('/account') ||
     loc.startsWith('/notifications');
 
+/// Parametr źródła w stałym linku do sklepu (np. kod QR: `/s/{slug}?src=qr`) — tylko do pomiaru wejść.
+const sourceParam = 'src';
+
+/// Karta sklepu: `/s/{slug}` (stały link z kodu QR) albo `/stores/{id}` (z listy). Zwraca slug/id albo null.
+String? _storeRefOf(String path) {
+  final m = RegExp(r'^/(?:s|stores)/([^/]+)$').firstMatch(path);
+  return m == null ? null : Uri.decodeComponent(m.group(1)!);
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(authControllerProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
+  // Wczytaj zapamiętany sklep już przy starcie (z magazynu), żeby był gotowy, zanim klient się zaloguje.
+  ref.read(lastStoreProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -42,7 +56,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final uri = gstate.uri;
 
       // Podczas bootstrapu pokazujemy splash, ale zapamiętujemy dokąd
-      // użytkownik zmierzał (deep‑link do sklepu / z powiadomienia).
+      // użytkownik zmierzał (deep‑link do sklepu / z powiadomienia / z kodu QR).
       if (auth.status == AuthStatus.unknown) {
         if (loc == '/splash') return null;
         return '/splash?from=${Uri.encodeComponent(uri.toString())}';
@@ -52,20 +66,36 @@ final routerProvider = Provider<GoRouter>((ref) {
         final from = uri.queryParameters['from'];
         if (from != null && from.isNotEmpty) {
           final decoded = Uri.decodeComponent(from);
-          if (decoded.startsWith('/') && !decoded.startsWith('/splash')) {
+          if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.startsWith('/splash')) {
             return decoded;
           }
         }
         return '/stores';
       }
 
+      // Wejście z kodu QR/kampanii: zliczamy źródło (raz na sesję) i czyścimy adres — odświeżenie strony, zakładka
+      // czy udostępniony dalej link nie liczą się ponownie jako skan. Źródło niczego nie odblokowuje.
+      final src = uri.queryParameters[sourceParam];
+      if (src != null) {
+        final storeRef = _storeRefOf(uri.path);
+        if (storeRef != null) ref.read(storeEntryRecorderProvider).record(storeRef, src);
+        final rest = Map<String, String>.of(uri.queryParameters)..remove(sourceParam);
+        return rest.isEmpty ? uri.path : Uri(path: uri.path, queryParameters: rest).toString();
+      }
+
       if (_needsAuth(loc) && !auth.isAuthenticated) {
         return '/login?redirect=${Uri.encodeComponent(uri.toString())}';
       }
-      if (loc == '/login' && auth.isAuthenticated) return '/stores';
+      if (loc == '/login' && auth.isAuthenticated) {
+        return safeInternalRedirect(uri.queryParameters['redirect'])
+            ?? ref.read(lastStoreProvider)?.path
+            ?? '/stores';
+      }
       return null;
     },
+    errorBuilder: (_, _) => const NotFoundScreen(),
     routes: [
+      GoRoute(path: '/', redirect: (_, _) => '/stores'),
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
 
       // Główne zakładki z dolną nawigacją.
@@ -80,9 +110,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // Ekrany pełnoekranowe (bez dolnej nawigacji).
+      // Stały link do oferty sklepu — ten adres jest w kodach QR (`/s/{slug}?src=qr`).
+      GoRoute(
+        path: '/s/:slug',
+        builder: (_, s) => StoreDetailScreen(storeRef: s.pathParameters['slug']!),
+      ),
       GoRoute(
         path: '/stores/:id',
-        builder: (_, s) => StoreDetailScreen(storeId: s.pathParameters['id']!),
+        builder: (_, s) => StoreDetailScreen(storeRef: s.pathParameters['id']!),
       ),
       GoRoute(path: '/checkout', builder: (_, _) => const CheckoutScreen()),
       GoRoute(

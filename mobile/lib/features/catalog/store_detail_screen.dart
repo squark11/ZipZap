@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/navigation/last_store.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/util/format.dart';
+import '../../core/widgets/account_button.dart';
 import '../../core/widgets/cart_button.dart';
+import '../../core/widgets/install_hint.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import 'store_header.dart';
@@ -13,82 +17,179 @@ import '../../models/product.dart';
 import '../../models/store.dart';
 import '../cart/cart_controller.dart';
 
+/// Sklep po slugu (stały link z kodu QR) albo po id (z listy).
 final storeDetailProvider = FutureProvider.autoDispose.family<Store, String>(
-    (ref, id) => ref.read(catalogRepositoryProvider).getStore(id));
+    (ref, idOrSlug) => ref.read(catalogRepositoryProvider).getStore(idOrSlug));
 
+/// Produkty sklepu — zawsze po id (API przyjmuje tu tylko identyfikator, nie slug).
 final productsProvider = FutureProvider.autoDispose.family<List<Product>, String>(
     (ref, storeId) => ref.read(catalogRepositoryProvider).listProducts(storeId));
 
-class StoreDetailScreen extends ConsumerStatefulWidget {
-  final String storeId;
-  const StoreDetailScreen({super.key, required this.storeId});
+/// Oferta sklepu. Wejście z kodu QR (`/s/{slug}`) i z listy sklepów (`/stores/{id}`) prowadzi tutaj.
+/// Stany: ładowanie, sklep nie istnieje, błąd sieci (ponów), sklep nie przyjmuje zamówień, brak produktów.
+class StoreDetailScreen extends ConsumerWidget {
+  /// Slug (z kodu QR) albo id sklepu.
+  final String storeRef;
+  const StoreDetailScreen({super.key, required this.storeRef});
 
   @override
-  ConsumerState<StoreDetailScreen> createState() => _StoreDetailScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = ref.watch(storeDetailProvider(storeRef));
+    return store.when(
+      loading: () => const _Frame(title: 'Sklep', body: ProductListSkeleton()),
+      error: (e, _) => _Frame(
+        title: 'Sklep',
+        body: e is ApiException && e.isNotFound
+            ? const _StoreNotFound()
+            : ErrorView(
+                message: e.toString(),
+                onRetry: () => ref.invalidate(storeDetailProvider(storeRef)),
+              ),
+      ),
+      data: (s) => _StoreOffer(store: s, storeRef: storeRef),
+    );
+  }
 }
 
-class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
+/// Wspólna rama ekranu: powrót (albo „Wszystkie sklepy", gdy klient wszedł bezpośrednio z kodu QR),
+/// skrót na ekran główny (web), konto/logowanie, koszyk.
+class _Frame extends StatelessWidget {
+  final String title;
+  final Widget body;
+  final Widget? bottom;
+  const _Frame({required this.title, required this.body, this.bottom});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          leading: context.canPop()
+              ? null
+              : IconButton(
+                  tooltip: 'Wszystkie sklepy',
+                  icon: const Icon(Icons.storefront_outlined),
+                  onPressed: () => context.go('/stores'),
+                ),
+          title: Text(title, overflow: TextOverflow.ellipsis),
+          actions: const [InstallHintButton(), AccountButton(), CartButton()],
+        ),
+        body: body,
+        bottomNavigationBar: bottom,
+      );
+}
+
+class _StoreNotFound extends StatelessWidget {
+  const _StoreNotFound();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const EmptyView(
+              icon: Icons.storefront_outlined,
+              title: 'Nie znaleziono sklepu',
+              subtitle: 'Kod QR lub link może być nieaktualny. Zobacz sklepy dostępne w Dowózka.pl.',
+            ),
+            ElevatedButton(
+              onPressed: () => context.go('/stores'),
+              child: const Text('Zobacz sklepy'),
+            ),
+          ],
+        ),
+      );
+}
+
+class _StoreOffer extends ConsumerStatefulWidget {
+  final Store store;
+  final String storeRef;
+  const _StoreOffer({required this.store, required this.storeRef});
+
+  @override
+  ConsumerState<_StoreOffer> createState() => _StoreOfferState();
+}
+
+class _StoreOfferState extends ConsumerState<_StoreOffer> {
+  @override
+  void initState() {
+    super.initState();
+    _remember();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StoreOffer old) {
+    super.didUpdateWidget(old);
+    if (old.store.id != widget.store.id) _remember();
+  }
+
+  // Po zalogowaniu (i po odświeżeniu strony) klient wraca do oferty tego sklepu.
+  void _remember() => Future.microtask(() => ref.read(lastStoreProvider.notifier).remember(widget.store));
+
   // Koszyk NIE jest tworzony przy wejściu do sklepu — dopiero przy pierwszym dodaniu
   // produktu (patrz `_ProductRow._add`). Dzięki temu wejście na stronę innego sklepu
   // nie kasuje po cichu koszyka z poprzedniego sklepu.
   @override
   Widget build(BuildContext context) {
-    final store = ref.watch(storeDetailProvider(widget.storeId));
-    final products = ref.watch(productsProvider(widget.storeId));
+    final s = widget.store;
+    final products = ref.watch(productsProvider(s.id));
     final cart = ref.watch(cartControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(store.valueOrNull?.name ?? 'Sklep'),
-        actions: const [CartButton()],
-      ),
+    Future<void> refresh() async {
+      ref.invalidate(productsProvider(s.id));
+      ref.invalidate(storeDetailProvider(widget.storeRef));
+    }
+
+    return _Frame(
+      title: s.name,
       body: products.when(
         loading: () => const ProductListSkeleton(),
         error: (e, _) => ErrorView(
           message: e.toString(),
-          onRetry: () => ref.invalidate(productsProvider(widget.storeId)),
+          onRetry: () => ref.invalidate(productsProvider(s.id)),
         ),
-        data: (list) {
-          if (list.isEmpty) {
-            return const EmptyView(
-              svgAsset: 'assets/svg/empty_box.svg',
-              icon: Icons.inventory_2_outlined,
-              title: 'Brak produktów',
-              subtitle: 'Ten sklep nie dodał jeszcze oferty.',
-            );
-          }
-          final storeVal = store.valueOrNull;
-          return RefreshIndicator(
-            color: ZzColors.orange,
-            onRefresh: () async {
-              ref.invalidate(productsProvider(widget.storeId));
-              ref.invalidate(storeDetailProvider(widget.storeId));
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: list.length + 1,
-              itemBuilder: (_, i) {
-                if (i == 0) {
-                  if (storeVal == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: StoreHeader(store: storeVal),
-                  );
-                }
+        data: (list) => RefreshIndicator(
+          color: ZzColors.orange,
+          onRefresh: refresh,
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            itemCount: list.isEmpty ? 2 : list.length + 1,
+            itemBuilder: (_, i) {
+              if (i == 0) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ProductRow(
-                    product: list[i - 1],
-                    storeId: widget.storeId,
-                    storeName: storeVal?.name ?? 'tym sklepie',
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(children: [
+                    StoreHeader(store: s),
+                    if (!s.isAcceptingOrders) ...[
+                      const SizedBox(height: 12),
+                      StoreClosedNotice(store: s),
+                    ],
+                  ]),
+                );
+              }
+              if (list.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 24),
+                  child: EmptyView(
+                    svgAsset: 'assets/svg/empty_box.svg',
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Brak produktów',
+                    subtitle: 'Ten sklep nie dodał jeszcze oferty. Zajrzyj później.',
                   ),
                 );
-              },
-            ),
-          );
-        },
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ProductRow(
+                  product: list[i - 1],
+                  storeId: s.id,
+                  storeName: s.name,
+                  canOrder: s.isAcceptingOrders,
+                ),
+              );
+            },
+          ),
+        ),
       ),
-      bottomNavigationBar: AnimatedSwitcher(
+      bottom: AnimatedSwitcher(
         duration: const Duration(milliseconds: 240),
         switchInCurve: Curves.easeOutBack,
         transitionBuilder: (child, anim) => SizeTransition(
@@ -106,11 +207,39 @@ class _StoreDetailScreenState extends ConsumerState<StoreDetailScreen> {
   }
 }
 
+/// Sklep nie przyjmuje teraz zamówień (zamknięty / chwilowo niedostępny / nieaktywny) — oferta widoczna,
+/// dodawanie do koszyka wyłączone, zamiast błędu dopiero przy zamówieniu.
+class StoreClosedNotice extends StatelessWidget {
+  final Store store;
+  const StoreClosedNotice({super.key, required this.store});
+
+  String get _reason => switch (store.status) {
+        'Closed' => 'Sklep jest teraz zamknięty.',
+        'TemporarilyUnavailable' => 'Sklep jest chwilowo niedostępny.',
+        _ => 'Sklep nie przyjmuje teraz zamówień.',
+      };
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.zz.orangeTint,
+          borderRadius: BorderRadius.circular(ZzRadius.md),
+        ),
+        child: Text(
+          '$_reason Możesz przejrzeć ofertę — zamówienie złożysz, gdy sklep wznowi przyjmowanie zamówień.',
+          style: const TextStyle(color: ZzColors.orange600, fontSize: 13.5),
+        ),
+      );
+}
+
 class _ProductRow extends ConsumerWidget {
   final Product product;
   final String storeId;
   final String storeName;
-  const _ProductRow({required this.product, required this.storeId, required this.storeName});
+  final bool canOrder;
+  const _ProductRow({required this.product, required this.storeId, required this.storeName, this.canOrder = true});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,7 +301,7 @@ class _ProductRow extends ConsumerWidget {
             if (available)
               qty == 0
                   ? OutlinedButton(
-                      onPressed: () => _add(context, ref),
+                      onPressed: canOrder ? () => _add(context, ref) : null,
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(40, 40),
                         padding: const EdgeInsets.symmetric(horizontal: 14),

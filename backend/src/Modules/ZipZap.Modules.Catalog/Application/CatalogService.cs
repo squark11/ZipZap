@@ -18,6 +18,10 @@ public sealed record ImportRowResult(int Row, string Name, string Action, string
 public sealed record ImportReport(bool Committed, int Total, int Created, int Updated, int Failed,
     IReadOnlyList<ImportRowResult> Rows);
 
+/// <summary>Wejścia na kartę sklepu wg źródła (np. „qr", „qr-kasa") — same liczby, bez danych osobowych.</summary>
+public sealed record StoreEntrySourceDto(string Source, int Count);
+public sealed record StoreEntryStatsDto(Guid StoreId, int Days, int Total, IReadOnlyList<StoreEntrySourceDto> BySource);
+
 /// <summary>
 /// Przypadki użycia Catalog. Odczyty publiczne (przeglądanie bez logowania),
 /// zapisy chronione RBAC + kontrolą przynależności do sklepu.
@@ -86,6 +90,48 @@ public sealed class CatalogService
             : await query.FirstOrDefaultAsync(s => s.Slug == idOrSlug, ct);
 
         return store is null ? Error.NotFound("Sklep nie istnieje.") : StoreDto.From(store);
+    }
+
+    // ---------- Wejścia na kartę sklepu (pomiar źródeł, np. kodów QR) ----------
+
+    /// <summary>
+    /// Zlicza jedno wejście na kartę sklepu z danego źródła (publiczne, bez logowania). Zapisuje WYŁĄCZNIE dzienny
+    /// agregat (sklep, dzień UTC, znormalizowane źródło) — bez IP, użytkownika i urządzenia. Źródło to tylko etykieta
+    /// pomiaru: niczego nie odblokowuje.
+    /// </summary>
+    public async Task<Result> RecordEntryAsync(string idOrSlug, string? source, CancellationToken ct)
+    {
+        var query = _db.Stores.AsNoTracking().IgnoreQueryFilters();
+        var storeId = Guid.TryParse(idOrSlug, out var id)
+            ? await query.Where(s => s.Id == id).Select(s => (Guid?)s.Id).FirstOrDefaultAsync(ct)
+            : await query.Where(s => s.Slug == idOrSlug).Select(s => (Guid?)s.Id).FirstOrDefaultAsync(ct);
+        if (storeId is not Guid sid) return Result.Failure(Error.NotFound("Sklep nie istnieje."));
+
+        var day = DateOnly.FromDateTime(DateTime.UtcNow);
+        var label = StoreEntrySource.Normalize(source);
+        // Atomowy „upsert" — równoległe wejścia nie gubią się i nie dublują wierszy.
+        await _db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO catalog.store_entry_stats ("StoreId", "Day", "Source", "Count")
+            VALUES ({sid}, {day}, {label}, 1)
+            ON CONFLICT ("StoreId", "Day", "Source") DO UPDATE SET "Count" = store_entry_stats."Count" + 1
+            """, ct);
+        return Result.Success();
+    }
+
+    /// <summary>Wejścia na kartę sklepu z ostatnich <paramref name="days"/> dni wg źródła (obsługa sklepu / admin).</summary>
+    public async Task<Result<StoreEntryStatsDto>> GetEntryStatsAsync(Guid storeId, int days, CancellationToken ct)
+    {
+        var guard = EnsureCanManageStore(storeId);
+        if (guard.IsFailure) return guard.Error;
+        days = Math.Clamp(days, 1, 365);
+        var since = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-(days - 1));
+        var bySource = await _db.StoreEntryStats.AsNoTracking()
+            .Where(s => s.StoreId == storeId && s.Day >= since)
+            .GroupBy(s => s.Source)
+            .Select(g => new StoreEntrySourceDto(g.Key, g.Sum(x => x.Count)))
+            .ToListAsync(ct);
+        bySource = bySource.OrderByDescending(s => s.Count).ThenBy(s => s.Source).ToList();
+        return new StoreEntryStatsDto(storeId, days, bySource.Sum(s => s.Count), bySource);
     }
 
     /// <summary>Kod wsparcia sklepu (właściciel/Admin); generuje unikalny przy pierwszym pobraniu.</summary>

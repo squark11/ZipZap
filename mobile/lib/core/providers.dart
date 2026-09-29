@@ -10,11 +10,18 @@ import '../features/cart/ordering_repository.dart';
 import '../features/payment/payments_repository.dart';
 import '../features/notifications/notifications_repository.dart';
 import '../features/feedback/feedback_repository.dart';
+import '../features/catalog/store_entry_recorder.dart';
 import 'config/public_config.dart';
+import 'storage/app_storage.dart';
 
 // --- Infrastruktura ---
 final tokenStoreProvider = Provider<TokenStore>((ref) => TokenStore());
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+/// Trwały magazyn (koszyk, ostatni sklep) — przeżywa odświeżenie strony w wersji web.
+final appStorageProvider = Provider<AppStorage>((ref) => AppStorage());
+/// Pomiar wejść z kodów QR (raz na sesję dla sklepu i źródła).
+final storeEntryRecorderProvider =
+    Provider<StoreEntryRecorder>((ref) => StoreEntryRecorder(ref.read(apiClientProvider)));
 
 // --- Auth ---
 final authRepositoryProvider =

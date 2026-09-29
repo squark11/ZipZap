@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dowózka.pl — dowóz z lokalnych sklepów i restauracji</title>
-<meta name="description" content="Dowózka.pl łączy lokalne sklepy i restauracje z klientami w okolicy. Dołącz jako sklep i sprzedawaj z dowozem — albo pobierz aplikację i zamawiaj z telefonu.">
+<meta name="description" content="Dowózka.pl łączy lokalne sklepy i restauracje z klientami w okolicy. Dołącz jako sklep i sprzedawaj z dowozem — albo zamawiaj z telefonu, bez instalowania aplikacji.">
 <meta property="og:title" content="Dowózka.pl — dowóz z lokalnych sklepów i restauracji">
 <meta property="og:description" content="Dołącz do sklepów korzystających z Dowózka.pl albo zamawiaj z aplikacji mobilnej.">
 <meta property="og:type" content="website">
@@ -217,7 +217,7 @@
       <a href="#dostawcy">Dla dostawców</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn btn-ghost" href="#aplikacja">Pobierz aplikację</a>
+      <a class="btn btn-ghost" href="#aplikacja">Zamów online</a>
       <a class="btn btn-primary" href="#dolacz">Dołącz jako sklep</a>
     </div>
   </div>
@@ -238,8 +238,8 @@
           Dołącz jako sklep
         </a>
         <a class="btn btn-ghost" href="#aplikacja">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 12l5 5 5-5"/><path d="M5 21h14"/></svg>
-          Pobierz aplikację
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          Zamów online
         </a>
       </div>
       <div class="trust">
@@ -351,20 +351,16 @@
 <section id="aplikacja" class="app">
   <div class="wrap app-grid">
     <div>
-      <span class="eyebrow" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><span class="dot" style="background:#fff"></span> Aplikacja mobilna</span>
-      <h2>Zamawiaj z aplikacji Dowózka.pl</h2>
-      <p class="lead">Aplikacja dla klientów działa na telefonie — przeglądaj lokalne sklepy, składaj zamówienia i śledź dostawę w jednym miejscu.</p>
+      <span class="eyebrow" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><span class="dot" style="background:#fff"></span> Zamawianie online</span>
+      <h2>Zamawiaj z telefonu — bez instalacji</h2>
+      <p class="lead">Otwórz Dowózkę w przeglądarce telefonu (iPhone lub Android): przeglądaj lokalne sklepy, składaj zamówienia i śledź dostawę. Nie trzeba niczego pobierać ze sklepu z aplikacjami — jeśli chcesz, dodasz skrót do ekranu głównego.</p>
       <div class="dl-row">
-        <a class="store-badge" id="btn-android" href="/pobierz/dowozka.apk">
-          <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.6 9.5l1.4-2.4a.4.4 0 0 0-.7-.4l-1.4 2.5A8.7 8.7 0 0 0 12 8c-1.8 0-3.5.5-4.9 1.2L5.7 6.7a.4.4 0 0 0-.7.4l1.4 2.4C4 11 2.5 13.4 2.3 16.2h19.4c-.2-2.8-1.7-5.2-4.1-6.7zM7.5 14a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8zm9 0a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8z"/></svg>
-          <span><small>Pobierz na</small><b>Androida (APK)</b></span>
+        <a class="store-badge disabled" id="btn-app" href="#aplikacja" aria-disabled="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+          <span><small id="btn-app-small">Wkrótce</small><b>Otwórz w przeglądarce</b></span>
         </a>
-        <span class="store-badge disabled" title="Wkrótce w App Store">
-          <svg viewBox="0 0 24 24" fill="#fff"><path d="M16.4 12.6c0-2 1.6-3 1.7-3-.9-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.4 2 2.4 2 1 0 1.3-.6 2.5-.6s1.5.6 2.5.6 1.6-1 2.3-2c.7-1 1-2 1-2-.1 0-2-.8-2-3zM14.8 6.3c.5-.7.9-1.6.8-2.5-.8 0-1.7.5-2.3 1.2-.5.6-.9 1.5-.8 2.4.9.1 1.8-.4 2.3-1.1z"/></svg>
-          <span><small>Wkrótce w</small><b>App Store</b></span>
-        </span>
       </div>
-      <p class="app-note">Aplikacja przeznaczona jest na telefony. Na komputerze zeskanuj kod QR, aby pobrać ją na telefon.</p>
+      <p class="app-note" id="app-note">Link do zamawiania online pojawi się tu wkrótce.</p>
     </div>
     <div class="app-visual">
       <div class="phone" aria-hidden="true">
@@ -379,9 +375,9 @@
           </div>
         </div>
       </div>
-      <div class="qr">
+      <div class="qr" id="qr-card" hidden>
         <div id="qr-box"></div>
-        <span>Zeskanuj telefonem,<br>aby pobrać aplikację</span>
+        <span>Zeskanuj telefonem,<br>aby zamówić online</span>
       </div>
     </div>
   </div>
@@ -408,7 +404,7 @@
     <p>Dołącz do lokalnych sklepów i restauracji, które sprzedają z dowozem na własnych zasadach.</p>
     <div class="hero-cta">
       <a class="btn btn-primary" href="#dolacz">Dołącz jako sklep</a>
-      <a class="btn btn-ghost" href="#aplikacja" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">Pobierz aplikację</a>
+      <a class="btn btn-ghost" href="#aplikacja" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">Zamów online</a>
     </div>
   </div>
 </section>
@@ -432,7 +428,7 @@
       </div>
       <div class="foot-col">
         <h4>Aplikacja</h4>
-        <a href="#aplikacja">Pobierz na Androida</a>
+        <a href="#aplikacja">Zamów online</a>
         <a href="#dostawcy">Zostań dostawcą</a>
       </div>
       <div class="foot-col">
@@ -447,37 +443,51 @@
   </div>
 </footer>
 
+<!-- Adres aplikacji klienta (web) — ustawiany przy wdrożeniu strony w config.js (bez domeny na sztywno w kodzie). -->
+<script src="config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  var APK_URL = (location.protocol.indexOf('http') === 0 ? location.origin : 'https://dowózka.pl') + '/pobierz/dowozka.apk';
+  // Link do aplikacji webowej z oznaczeniem źródła (tylko do pomiaru wejść). new URL zamienia domenę IDN na punycode,
+  // czytelną dla każdego skanera QR. Brak/niepoprawny adres = sekcja pokazuje „wkrótce" zamiast QR.
+  function appLink(source){
+    var raw = (window.DOWOZKA_CONFIG && window.DOWOZKA_CONFIG.appUrl) || '';
+    try{
+      var u = new URL(String(raw).replace(/\/+$/, '') + '/');
+      var local = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+      if(u.protocol !== 'https:' && !(local && u.protocol === 'http:')) return null;
+      u.searchParams.set('src', source);
+      return u.href;
+    }catch(e){ return null; }
+  }
 
   (function(){
+    var open = appLink('landing');
+    var scan = appLink('landing-qr');
+    if(!open || !scan) return;
+
+    var btn = document.getElementById('btn-app');
+    if(btn){
+      btn.setAttribute('href', open);
+      btn.classList.remove('disabled');
+      btn.removeAttribute('aria-disabled');
+      document.getElementById('btn-app-small').textContent = 'iPhone i Android';
+    }
+    var note = document.getElementById('app-note');
+    if(note){ note.textContent = 'Na komputerze zeskanuj kod QR telefonem, aby otworzyć Dowózkę na telefonie.'; }
+
     var box = document.getElementById('qr-box');
     if(!box || typeof qrcode === 'undefined') return;
     try{
       var qr = qrcode(0, 'M');
-      qr.addData(APK_URL);
+      qr.addData(scan);
       qr.make();
       box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
       var svg = box.querySelector('svg');
       if(svg){ svg.setAttribute('width','140'); svg.setAttribute('height','140'); }
-    }catch(e){ box.textContent = 'QR'; }
-  })();
-
-  (function(){
-    var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    var btn = document.getElementById('btn-android');
-    if(btn){ btn.setAttribute('href', APK_URL); }
-    if(!isMobile && btn){
-      btn.addEventListener('click', function(e){
-        e.preventDefault();
-        document.getElementById('aplikacja').scrollIntoView({behavior:'smooth'});
-        var box = document.getElementById('qr-box');
-        if(box){ box.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:600}); }
-      }, {passive:false});
-    }
+      document.getElementById('qr-card').hidden = false;
+    }catch(e){ /* bez QR — przycisk nadal działa */ }
   })();
 </script>
 </body>

@@ -145,10 +145,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (c == null || c.items.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(title)),
-        body: const EmptyView(
-          icon: Icons.shopping_cart_outlined,
-          title: 'Koszyk jest pusty',
-        ),
+        // Po odświeżeniu strony koszyk jest jeszcze odtwarzany — nie pokazujemy wtedy „pustego koszyka".
+        body: cart.restoring && c == null
+            ? const LoadingView(label: 'Wczytywanie koszyka…')
+            : const EmptyView(
+                icon: Icons.shopping_cart_outlined,
+                title: 'Koszyk jest pusty',
+              ),
       );
     }
 

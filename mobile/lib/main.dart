@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/router/app_router.dart';
@@ -9,6 +10,9 @@ import 'core/widgets/connectivity_banner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Web: zwykłe adresy (https://…/s/{slug}) zamiast „/#/…" — stałe linki z kodów QR, odświeżanie strony
+  // i wklejanie linku działają przy SPA-fallbacku hostingu (index.html dla nieznanych ścieżek). Na mobile no-op.
+  usePathUrlStrategy();
   await initializeDateFormatting('pl_PL');
   runApp(const ProviderScope(child: ZipZapApp()));
 }
