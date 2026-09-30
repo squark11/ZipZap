@@ -137,7 +137,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (_, s) => LoginScreen(redirect: s.uri.queryParameters['redirect']),
       ),
-      GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: '/forgot-password',
+        // E-mail wpisany na ekranie logowania (przekazany w pamięci, nie w adresie).
+        builder: (_, s) => ForgotPasswordScreen(initialEmail: s.extra is String ? s.extra as String : null),
+      ),
       GoRoute(path: '/change-password', builder: (_, _) => const ChangePasswordScreen()),
       GoRoute(path: '/addresses', builder: (_, _) => const AddressesScreen()),
     ],

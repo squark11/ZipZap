@@ -1,15 +1,19 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Api, StoreDto, isTwoFactorChallenge } from './api';
 import { PANEL_MODULES } from './modules';
+import { PasswordRecoveryComponent } from './password-recovery';
+
+/** Publiczna strona resetu hasła (link z e-maila) — pokazywana także zalogowanym, zamiast powłoki panelu. */
+const isResetPath = (url: string) => url.split(/[?#]/)[0] === '/reset-password';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, PasswordRecoveryComponent],
   template: `
-  @if (!api.isLoggedIn()) {
+  @if (!api.isLoggedIn() || resetRoute()) {
     <div class="auth">
       <div class="auth-brand">
         <div class="logo">
@@ -30,7 +34,10 @@ import { PANEL_MODULES } from './modules';
 
       <div class="auth-form">
         <div class="auth-top">
-          @if (authMode === 'login') {
+          @if (resetRoute() || authMode === 'forgot') {
+            <span>Pamiętasz hasło?</span>
+            <button type="button" class="pill-cta" (click)="goLogin()">Zaloguj się</button>
+          } @else if (authMode === 'login') {
             <span>Nie masz konta?</span>
             <button type="button" class="pill-cta" (click)="setMode('store')">Zarejestruj się</button>
           } @else {
@@ -39,7 +46,13 @@ import { PANEL_MODULES } from './modules';
           }
         </div>
         <div class="auth-body">
+          @if (resetRoute()) {
+            <app-password-recovery mode="reset" (back)="goLogin()" />
+          } @else {
           @switch (authMode) {
+            @case ('forgot') {
+              <app-password-recovery mode="forgot" [initialEmail]="email" (back)="setMode('login')" />
+            }
             @case ('login') {
               @if (twoFaToken) {
                 <form class="auth-card" (ngSubmit)="completeTwoFactor()">
@@ -54,7 +67,10 @@ import { PANEL_MODULES } from './modules';
                 <form class="auth-card" (ngSubmit)="login()">
                   <h2>Zaloguj się do panelu</h2>
                   <div class="field"><label>Login (e-mail)</label><input name="email" [(ngModel)]="email" type="email" required /></div>
-                  <div class="field"><label>Hasło</label><input name="password" [(ngModel)]="password" type="password" required /></div>
+                  <div class="field">
+                    <div class="label-row"><label for="login-password">Hasło</label>
+                      <button type="button" class="link-btn" (click)="setMode('forgot')">Nie pamiętasz hasła?</button></div>
+                    <input id="login-password" name="password" [(ngModel)]="password" type="password" autocomplete="current-password" required /></div>
                   <button class="btn-lg" type="submit" [disabled]="loading">Zaloguj się</button>
                   @if (error) { <p class="error">{{ error }}</p> }
                   @if (isLocalDev) { <p class="hint">Domyślny admin (tylko lokalny dev): admin&#64;zipzap.local / Admin123!</p> }
@@ -114,6 +130,7 @@ import { PANEL_MODULES } from './modules';
                 </form>
               }
             }
+          }
           }
         </div>
       </div>
@@ -206,8 +223,24 @@ export class App {
   loading = false;
   search = '';
 
-  // Rejestracja per-kanał (web): logowanie / „Załóż sklep" / „Zostań dostawcą".
-  authMode: 'login' | 'store' | 'driver' = 'login';
+  // Rejestracja per-kanał (web): logowanie / „Załóż sklep" / „Zostań dostawcą" / odzyskiwanie hasła.
+  authMode: 'login' | 'store' | 'driver' | 'forgot' = 'login';
+  /** Strona resetu z linku e-mail (/reset-password) — ustalana od razu przy starcie, zanim router ruszy. */
+  readonly resetRoute = signal(typeof location !== 'undefined' && isResetPath(location.pathname));
+
+  constructor() {
+    this.router.events.subscribe(e => {
+      if (e instanceof NavigationEnd) this.resetRoute.set(isResetPath(e.urlAfterRedirects));
+    });
+  }
+
+  /** Z odzyskiwania hasła do formularza logowania (także z publicznej strony resetu). */
+  goLogin() {
+    const wasReset = this.resetRoute();
+    this.resetRoute.set(false);
+    this.setMode('login');
+    if (wasReset) this.router.navigateByUrl('/');
+  }
   fullName = '';
   phone = '';
   storeName = '';
@@ -261,14 +294,15 @@ export class App {
 
   cancelTwoFactor() { this.twoFaToken = ''; this.twoFaCode = ''; this.error = ''; }
 
-  setMode(m: 'login' | 'store' | 'driver') {
+  setMode(m: 'login' | 'store' | 'driver' | 'forgot') {
+    const typedEmail = this.email;
     this.authMode = m;
     this.error = '';
     this.driverDone = false;
     this.fullName = ''; this.phone = ''; this.storeName = ''; this.city = ''; this.nip = ''; this.confirmPassword = '';
     this.twoFaToken = ''; this.twoFaCode = '';
     if (m === 'login' && this.isLocalDev) { this.email = 'admin@zipzap.local'; this.password = 'Admin123!'; }
-    else { this.email = ''; this.password = ''; }
+    else { this.email = m === 'forgot' ? typedEmail : ''; this.password = ''; } // e-mail z logowania przechodzi do prośby o link
   }
 
   // Przełączanie typu rejestracji (Sklep/Dostawca) bez czyszczenia wspólnych pól.

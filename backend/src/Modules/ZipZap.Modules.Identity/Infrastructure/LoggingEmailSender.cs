@@ -9,7 +9,7 @@ namespace ZipZap.Modules.Identity.Infrastructure;
 /// NIE loguje treści wiadomości — linki weryfikacji/resetu zawierają jednorazowe tokeny,
 /// które nie mogą trafić do logów. Adres odbiorcy jest maskowany.
 /// </summary>
-public sealed class LoggingEmailSender : IEmailSender
+public sealed class LoggingEmailSender : IEmailSender, IEmailChannelInfo
 {
     private readonly ILogger<LoggingEmailSender> _logger;
 
@@ -17,8 +17,10 @@ public sealed class LoggingEmailSender : IEmailSender
 
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
-        _logger.LogInformation("[EMAIL:mock] to={To} subject={Subject} (treść pominięta — zawiera tokeny)",
+        _logger.LogWarning("[EMAIL:mock] ATRAPA — wiadomość NIE została wysłana. to={To} subject={Subject} (treść pominięta — zawiera tokeny)",
             EmailLog.Mask(message.To), message.Subject);
         return Task.CompletedTask;
     }
+
+    public Task<string> GetChannelAsync(CancellationToken ct = default) => Task.FromResult(EmailChannel.None);
 }

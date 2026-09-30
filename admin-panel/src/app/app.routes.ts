@@ -1,6 +1,11 @@
+import { Component } from '@angular/core';
 import { Routes } from '@angular/router';
 import { PANEL_MODULES } from './modules';
 import { roleGuard } from './role.guard';
+
+/** Pusta trasa publicznej strony resetu — treść rysuje App (poza powłoką panelu, bez logowania). */
+@Component({ template: '' })
+class PublicPageRoute {}
 
 // Leniwe ładowanie komponentów sekcji (mniejszy bundle startowy).
 const loaders: Record<string, () => Promise<any>> = {
@@ -30,6 +35,8 @@ const loaders: Record<string, () => Promise<any>> = {
 // „dashboard" jest bezpiecznym domyślnym celem (widoczny dla wszystkich ról panelu).
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // Link z e-maila: {Identity:PublicUrl}/reset-password#token=… — bez przekierowania, żeby nie zgubić tokenu.
+  { path: 'reset-password', component: PublicPageRoute },
   ...PANEL_MODULES.map(m => ({
     path: m.id,
     canActivate: [roleGuard(m.roles)],

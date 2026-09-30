@@ -10,6 +10,8 @@ public static class ErrorStatus
         "conflict" => 409,
         "unauthorized" => 401,
         "forbidden" => 403,
+        // Doprecyzowany błąd walidacji (np. „validation.reset_token_expired") — klient rozróżnia przypadki po kodzie.
+        var code when code.StartsWith("validation.", StringComparison.Ordinal) => 400,
         _ => 500,
     };
 }

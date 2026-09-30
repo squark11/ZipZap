@@ -30,7 +30,7 @@ public sealed class SmtpEmailSender : IEmailSender
         if (!cfg.Enabled) cfg = SmtpFromEnv();
         if (!cfg.Enabled)
         {
-            _logger.LogInformation("[EMAIL:mock] SMTP nieustawiony (panel ani env). to={To} subject={Subject}",
+            _logger.LogWarning("[EMAIL:mock] ATRAPA — poczta nieskonfigurowana (HTTP API, panel ani env), wiadomość NIE została wysłana. to={To} subject={Subject}",
                 EmailLog.Mask(message.To), message.Subject);
             return;
         }
@@ -42,8 +42,11 @@ public sealed class SmtpEmailSender : IEmailSender
         msg.Body = new TextPart("plain") { Text = message.Body };
 
         using var client = new SmtpClient();
-        // 465 = SSL bezpośredni (SslOnConnect); inaczej STARTTLS.
-        var socket = cfg.UseSsl || cfg.Port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+        // 465 = SSL bezpośredni (SslOnConnect); inaczej STARTTLS. Bez szyfrowania WYŁĄCZNIE do lokalnego serwera-atrapy
+        // (np. Mailpit na localhost) — dla każdego innego hosta brak TLS nie jest dopuszczalny.
+        var socket = cfg.UseSsl || cfg.Port == 465 ? SecureSocketOptions.SslOnConnect
+            : IsLoopback(cfg.Host) ? SecureSocketOptions.None
+            : SecureSocketOptions.StartTls;
         await client.ConnectAsync(cfg.Host, cfg.Port, socket, ct);
         if (!string.IsNullOrWhiteSpace(cfg.Username))
             await client.AuthenticateAsync(cfg.Username, cfg.Password ?? string.Empty, ct);
@@ -51,6 +54,10 @@ public sealed class SmtpEmailSender : IEmailSender
         await client.DisconnectAsync(true, ct);
         _logger.LogInformation("[EMAIL] wysłano to={To} subject={Subject}", EmailLog.Mask(message.To), message.Subject);
     }
+
+    private static bool IsLoopback(string? host)
+        => string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+           || (System.Net.IPAddress.TryParse(host, out var ip) && System.Net.IPAddress.IsLoopback(ip));
 
     /// <summary>Konfiguracja SMTP z env (Email:Smtp:*), gdy panel nieustawiony. Port domyślny 465, SSL domyślnie on.</summary>
     private SmtpConfig SmtpFromEnv()

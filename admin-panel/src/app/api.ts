@@ -127,6 +127,20 @@ export class Api {
       .pipe(tap(r => this.apply(r)));
   }
 
+  /// Odzyskiwanie hasła (publiczne, bez sesji). Odpowiedź jest zawsze taka sama — nie zdradza, czy konto istnieje.
+  forgotPassword(email: string) {
+    return this.http.post<{ status: string }>(`${this.base}/identity/password/forgot`, { email });
+  }
+
+  /// Sprawdza link z e-maila (błąd 400 z kodem validation.reset_token_invalid/expired/used w polu „title").
+  checkResetToken(token: string) {
+    return this.http.post<{ status: string; email: string }>(`${this.base}/identity/password/reset/check`, { token });
+  }
+
+  resetPassword(token: string, newPassword: string) {
+    return this.http.post<{ status: string }>(`${this.base}/identity/password/reset`, { token, newPassword });
+  }
+
   logout() { this.token.set(null); this.refreshToken.set(null); this.userEmail.set(''); this.roles.set([]); this.storeIds.set([]); }
 
   private opts() { return { headers: { Authorization: `Bearer ${this.token()}` } }; }

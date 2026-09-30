@@ -12,6 +12,11 @@ class AppConfig {
     return 'http://10.0.2.2:5080/api';
   }
 
+  /// Środowisko buildu: `--dart-define=APP_ENV=preview` (podgląd na testowym API) — aplikacja pokazuje wtedy
+  /// stały znacznik „PODGLĄD", żeby testerzy nie pomylili go z działającą usługą.
+  static const String appEnv = String.fromEnvironment('APP_ENV');
+  static bool get isPreview => appEnv == 'preview';
+
   /// Realne integracje wymagają konfiguracji — do tego czasu wyłączone
   /// (bez atrap sukcesu: przycisk pokazuje jasny komunikat).
   static const bool googleSignInEnabled = false;

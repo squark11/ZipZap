@@ -23,6 +23,7 @@ public class GoogleLoginTests
             new FakeTokenService(),
             new IntegrationEventTypeRegistry(),
             new FakeEmailSender(),
+            new FakeEmailQueue(),
             Options.Create(new IdentityOptions()),
             new FakeGoogleTokenValidator(googlePayload),
             new TotpService());

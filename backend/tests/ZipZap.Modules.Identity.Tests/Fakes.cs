@@ -15,6 +15,12 @@ internal sealed class FakeEmailSender : IEmailSender
     public Task SendAsync(EmailMessage message, CancellationToken ct = default) => Task.CompletedTask;
 }
 
+internal sealed class FakeEmailQueue : IEmailQueue
+{
+    public List<EmailMessage> Messages { get; } = new();
+    public void Enqueue(EmailMessage message) => Messages.Add(message);
+}
+
 internal sealed class FakeTokenService : ITokenService
 {
     public AccessToken CreateAccessToken(User user) => new("access-token", DateTime.UtcNow.AddMinutes(15));

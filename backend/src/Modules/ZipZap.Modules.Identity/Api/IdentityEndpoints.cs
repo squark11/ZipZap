@@ -256,19 +256,27 @@ public static class IdentityEndpoints
         .RequireAuthorization()
         .WithSummary("Ponowne wysłanie e-maila weryfikacyjnego.");
 
-        group.MapPost("/password/forgot", async (ForgotPasswordRequest req, IdentityService svc, CancellationToken ct) =>
+        group.MapPost("/password/forgot", (ForgotPasswordRequest req, IPasswordResetRequestQueue queue) =>
         {
-            await svc.ForgotPasswordAsync(req.Email, ct);
-            return Ok(); // zawsze 200 — nie ujawnia istnienia konta
+            // Zawsze ta sama odpowiedź w tym samym czasie — konto, token i e-mail obsługuje kolejka w tle.
+            queue.Enqueue(req.Email);
+            return Ok();
         })
         .WithSummary("Wysyła link resetu hasła (jeśli konto istnieje).");
+
+        group.MapPost("/password/reset/check", async (CheckResetTokenRequest req, IdentityService svc, CancellationToken ct) =>
+        {
+            var result = await svc.CheckPasswordResetTokenAsync(req.Token, ct);
+            return result.IsSuccess ? Results.Ok(new { status = "ok", email = result.Value }) : Problem(result.Error);
+        })
+        .WithSummary("Sprawdza link resetu przed wpisaniem hasła (kody: validation.reset_token_invalid/expired/used).");
 
         group.MapPost("/password/reset", async (ResetPasswordRequest req, IdentityService svc, CancellationToken ct) =>
         {
             var result = await svc.ResetPasswordAsync(req.Token, req.NewPassword, ct);
             return result.IsSuccess ? Ok() : Problem(result.Error);
         })
-        .WithSummary("Ustawia nowe hasło tokenem resetu (unieważnia sesje).");
+        .WithSummary("Ustawia nowe hasło tokenem resetu (unieważnia sesje i pozostałe linki resetu).");
 
         return app;
     }

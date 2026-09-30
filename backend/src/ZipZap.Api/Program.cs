@@ -115,6 +115,8 @@ builder.Services.AddSingleton<CustomerAppUrlProvider>();
 // z fallbackiem na SMTP/MailKit (lokalnie / hosting bez blokady portów). Nadpisuje mock LoggingEmailSender.
 builder.Services.AddScoped<SmtpEmailSender>();
 builder.Services.AddHttpClient<ZipZap.Modules.Identity.Application.IEmailSender, HttpEmailSender>();
+// Który kanał poczty jest aktywny (albo „none" = atrapa) — dla aplikacji (ostrzeżenie) i panelu admina.
+builder.Services.AddSingleton<ZipZap.Modules.Identity.Application.IEmailChannelInfo, PlatformEmailChannelInfo>();
 // Integracje platformy edytowalne w panelu — nadpisz domyślne (env) źródło Google Client ID.
 builder.Services.AddSingleton<ZipZap.Modules.Identity.Application.IGoogleClientIdProvider, PlatformGoogleClientIdProvider>();
 // Captcha (Cloudflare Turnstile) — weryfikacja po stronie serwera; wyłączona, dopóki niekonfigurowana w panelu.
@@ -283,6 +285,19 @@ if (hardened && readiness.IsReady)
     }
 }
 
+// Odzyskiwanie hasła w środowisku publicznym: głośne ostrzeżenia, gdy link resetu nie może zadziałać
+// (poczta-atrapa albo Identity:PublicUrl bez HTTPS / na localhost). Nie blokujemy gotowości — logowanie działa dalej.
+if (hardened)
+{
+    var publicUrlProblem = IdentityOptions.PublicUrlProblem(
+        app.Configuration["Identity:PublicUrl"] ?? new IdentityOptions().PublicUrl, publicEnvironment: true);
+    if (publicUrlProblem is not null)
+        app.Logger.LogWarning("Reset hasła: {Problem}", publicUrlProblem);
+    var channel = await app.Services.GetRequiredService<IEmailChannelInfo>().GetChannelAsync();
+    if (channel == EmailChannel.None)
+        app.Logger.LogWarning("Poczta: ATRAPA — brak Email:Http:ApiKey i SMTP; linki resetu hasła i weryfikacji NIE są wysyłane.");
+}
+
 // Globalny handler wyjątków → spójna koperta ProblemDetails (bez stack trace do klienta).
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -367,12 +382,15 @@ app.MapGet("/health/ready", async (MessagingDbContext db, StartupReadiness start
 app.MapGet("/api/admin/config/status",
     async (IConfiguration cfg, IHostEnvironment env,
         ZipZap.Modules.Identity.Application.IGoogleClientIdProvider google, CustomerAppUrlProvider appUrl,
+        ZipZap.Modules.Identity.Application.IEmailChannelInfo emailChannel,
+        ZipZap.Modules.Identity.Infrastructure.EmailDeliveryStatus emailStatus,
         CancellationToken ct) =>
 {
     bool set(string key) => !string.IsNullOrWhiteSpace(cfg[key]);
     var jwt = cfg["Jwt:SigningKey"] ?? string.Empty;
     var googleId = await google.GetClientIdAsync(ct); // panel → env (efektywna wartość)
     var app = await appUrl.GetAsync(ct);
+    var channel = await emailChannel.GetChannelAsync(ct);
     return Results.Ok(new
     {
         environment = env.EnvironmentName,
@@ -387,12 +405,20 @@ app.MapGet("/api/admin/config/status",
             mockPayPage = set("Payments:Mock:PayPageUrl"),
         },
         googleSignIn = !string.IsNullOrWhiteSpace(googleId),
-        email = set("Email:Http:ApiKey") || set("Email:Smtp:Host"),
-        emailChannel = set("Email:Http:ApiKey")
-            ? "http:" + (cfg["Email:Http:Provider"] ?? "resend")
-            : (set("Email:Smtp:Host") ? "smtp" : "none"),
+        // Kanał poczty z uwzględnieniem SMTP z panelu; „none" = atrapa (reset hasła i weryfikacja nie docierają).
+        email = channel != ZipZap.Modules.Identity.Application.EmailChannel.None,
+        emailChannel = channel,
+        emailQueue = new
+        {
+            sent = emailStatus.Sent, failed = emailStatus.Failed, dropped = emailStatus.Dropped,
+            lastSentAtUtc = emailStatus.LastSentAtUtc, lastFailureAtUtc = emailStatus.LastFailureAtUtc,
+            lastFailureCategory = emailStatus.LastFailureCategory,
+        },
         rabbitMq = set("RabbitMq:Host"),
         identityPublicUrl = cfg["Identity:PublicUrl"],
+        // Link resetu = {Identity:PublicUrl}/reset-password — w środowisku publicznym musi być HTTPS i nie localhost.
+        identityPublicUrlProblem = ZipZap.Modules.Identity.Application.IdentityOptions.PublicUrlProblem(
+            cfg["Identity:PublicUrl"] ?? new ZipZap.Modules.Identity.Application.IdentityOptions().PublicUrl, hardened),
         adminSeedEmail = cfg["Seed:AdminEmail"],
         jwtUsingDevSecret = jwt.Contains("CHANGE_ME") || jwt.Contains("DEV_ONLY"),
     });
@@ -447,9 +473,11 @@ app.MapPost("/api/admin/config/smtp/test",
 // Publiczna konfiguracja dla aplikacji klienta — Google Client ID + captcha (provider + site key, jawne).
 app.MapGet("/api/config/public",
     async (IGoogleClientIdProvider google, PlatformIntegrationsStore store, CustomerAppUrlProvider appUrl,
-        Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot, CancellationToken ct) =>
+        Microsoft.Extensions.Options.IOptions<PilotOrderingOptions> pilot,
+        ZipZap.Modules.Identity.Application.IEmailChannelInfo emailChannel, CancellationToken ct) =>
 {
     var googleId = await google.GetClientIdAsync(ct);
+    var email = await emailChannel.GetChannelAsync(ct);
     var status = await store.GetStatusAsync(ct);
     var app = await appUrl.GetAsync(ct);
     var captchaEnabled = !string.IsNullOrWhiteSpace(status.CaptchaProvider)
@@ -464,6 +492,8 @@ app.MapGet("/api/config/public",
         paymentMode = (pilot.Value.PaymentMode ?? "online").Trim().ToLowerInvariant(),
         // Adres aplikacji klienta (baza linków /s/{slug} i kodów QR); null = aplikacja web nie jest opublikowana.
         customerAppUrl = app.Url,
+        // „live" albo „mock" (atrapa — e-maile, np. link resetu hasła, NIE są wysyłane); bez szczegółów konfiguracji.
+        emailDelivery = ZipZap.Modules.Identity.Application.EmailChannel.PublicDelivery(email),
     });
 }).WithTags("System");
 

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ZipZap.BuildingBlocks.Domain;
+using ZipZap.BuildingBlocks.Logging;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.Contracts.Identity;
@@ -9,6 +10,17 @@ using ZipZap.Modules.Identity.Domain;
 using ZipZap.Modules.Identity.Infrastructure;
 
 namespace ZipZap.Modules.Identity.Application;
+
+/// <summary>Stany linku resetu hasła (kod w polu „title" odpowiedzi problem+json, HTTP 400).</summary>
+public static class PasswordResetErrors
+{
+    public static readonly Error Invalid = new("validation.reset_token_invalid",
+        "Link do zmiany hasła jest nieprawidłowy lub niepełny. Skopiuj go z wiadomości w całości albo wyślij nowy.");
+    public static readonly Error Expired = new("validation.reset_token_expired",
+        "Link do zmiany hasła wygasł. Wyślij nowy link.");
+    public static readonly Error Used = new("validation.reset_token_used",
+        "Ten link został już użyty do zmiany hasła. Jeśli to nie Ty — wyślij nowy link i od razu zmień hasło.");
+}
 
 /// <summary>
 /// Przypadki użycia modułu Identity. Publikacja zdarzeń idzie przez outbox
@@ -21,6 +33,7 @@ public sealed class IdentityService
     private readonly ITokenService _tokens;
     private readonly IIntegrationEventTypeRegistry _eventRegistry;
     private readonly IEmailSender _email;
+    private readonly IEmailQueue _emailQueue;
     private readonly IdentityOptions _options;
     private readonly IGoogleTokenValidator _google;
     private readonly ITotpService _totp;
@@ -34,6 +47,7 @@ public sealed class IdentityService
         ITokenService tokens,
         IIntegrationEventTypeRegistry eventRegistry,
         IEmailSender email,
+        IEmailQueue emailQueue,
         IOptions<IdentityOptions> options,
         IGoogleTokenValidator google,
         ITotpService totp)
@@ -43,6 +57,7 @@ public sealed class IdentityService
         _tokens = tokens;
         _eventRegistry = eventRegistry;
         _email = email;
+        _emailQueue = emailQueue;
         _options = options.Value;
         _google = google;
         _totp = totp;
@@ -96,41 +111,113 @@ public sealed class IdentityService
         return Result.Success();
     }
 
-    /// <summary>Zawsze zwraca sukces — nie ujawnia, czy konto istnieje.</summary>
-    public async Task<Result> ForgotPasswordAsync(string email, CancellationToken ct)
+    /// <summary>
+    /// Przetwarza prośbę o link resetu hasła — wywoływane W TLE przez <c>PasswordResetRequestWorker</c> (endpoint tylko
+    /// kolejkuje adres), więc odpowiedź i jej czas są takie same dla istniejącego i nieistniejącego konta. E-mail idzie
+    /// przez kolejkę z ponowieniami (<see cref="IEmailQueue"/>); błąd dostawcy nie trafia do użytkownika.
+    /// Link: <c>{PublicUrl}/reset-password#token=…</c> — token we fragmencie adresu nie jest wysyłany do serwera WWW
+    /// (brak w logach dostępowych i nagłówku Referer). Maks. <see cref="IdentityOptions.PasswordResetMaxPerHour"/>
+    /// linków na konto na godzinę — ponad limit cicho bez wysyłki.
+    /// </summary>
+    public async Task ForgotPasswordAsync(string? email, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(email)) return;
         var normalized = User.Normalize(email);
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == normalized, ct);
-        if (user is not null && user.IsActive)
-        {
-            var raw = CreateToken(user.Id, UserTokenType.PasswordReset, _options.PasswordResetHours);
-            await _db.SaveChangesAsync(ct);
+        if (user is null || !user.IsActive) return;
 
-            var link = $"{_options.PublicUrl.TrimEnd('/')}/reset-password?token={raw}";
-            await _email.SendAsync(new EmailMessage(user.Email, "ZipZap — reset hasła",
-                $"Aby zresetować hasło, otwórz: {link}\nLink wygasa za {_options.PasswordResetHours} h. Jeśli to nie Ty — zignoruj tę wiadomość."), ct);
-        }
-        return Result.Success();
+        var since = DateTime.UtcNow.AddHours(-1);
+        var recent = await _db.UserTokens.CountAsync(
+            t => t.UserId == user.Id && t.Type == UserTokenType.PasswordReset && t.CreatedAtUtc > since, ct);
+        if (recent >= _options.PasswordResetMaxPerHour) return;
+
+        var raw = CreateToken(user.Id, UserTokenType.PasswordReset, _options.PasswordResetHours);
+        await _db.SaveChangesAsync(ct);
+
+        var hours = _options.PasswordResetHours == 1 ? "1 godzinę" : $"{_options.PasswordResetHours} h";
+        _emailQueue.Enqueue(new EmailMessage(user.Email, "Dowózka.pl — ustaw nowe hasło",
+            $"""
+            Dzień dobry,
+
+            otrzymaliśmy prośbę o zmianę hasła do konta Dowózka.pl.
+            Ustaw nowe hasło: {PasswordResetLink(raw)}
+
+            Link jest ważny {hours} i działa jeden raz. Po zmianie hasła wylogujemy Cię ze wszystkich urządzeń.
+            Jeśli to nie Ty — zignoruj tę wiadomość, hasło pozostanie bez zmian.
+            """));
     }
 
-    public async Task<Result> ResetPasswordAsync(string rawToken, string newPassword, CancellationToken ct)
+    /// <summary>Adres strony resetu (wspólny dla kont panelu i klientów aplikacji).</summary>
+    public string PasswordResetLink(string rawToken) => $"{PublicBaseUrl(_options.PublicUrl)}/reset-password#token={rawToken}";
+
+    /// <summary>
+    /// Baza linków w e-mailach z domeną IDN zapisaną w punycode (np. „panel.dowózka.pl" → „panel.xn--dowzka-dxa.pl") —
+    /// klienci poczty nie zawsze rozpoznają link z polskimi znakami w domenie.
+    /// </summary>
+    public static string PublicBaseUrl(string publicUrl)
     {
+        var raw = (publicUrl ?? string.Empty).Trim().TrimEnd('/');
+        return Uri.TryCreate(raw, UriKind.Absolute, out var u)
+            ? $"{u.Scheme}://{u.IdnHost}{(u.IsDefaultPort ? "" : ":" + u.Port)}{u.AbsolutePath.TrimEnd('/')}"
+            : raw;
+    }
+
+    /// <summary>
+    /// Sprawdza link resetu przed wpisaniem nowego hasła; zwraca zamaskowany adres konta (np. „j***@sklep.pl").
+    /// Rozróżnienie „wygasł / użyty / nieprawidłowy" jest bezpieczne — zna je tylko posiadacz tokenu (256 bitów losowych).
+    /// </summary>
+    public async Task<Result<string>> CheckPasswordResetTokenAsync(string? rawToken, CancellationToken ct)
+    {
+        var (token, error) = await ResolvePasswordResetTokenAsync(rawToken, ct);
+        if (error is not null) return error;
+        var email = await _db.Users.Where(u => u.Id == token!.UserId).Select(u => u.Email).FirstOrDefaultAsync(ct);
+        return email is null ? PasswordResetErrors.Invalid : EmailLog.Mask(email);
+    }
+
+    /// <summary>
+    /// Ustawia nowe hasło tokenem z e-maila. Token jest zużywany atomowo (równoległe użycie tego samego linku — tylko
+    /// jedno się uda), pozostałe niewykorzystane linki resetu konta przestają działać, a wszystkie sesje są unieważniane.
+    /// </summary>
+    public async Task<Result> ResetPasswordAsync(string? rawToken, string? newPassword, CancellationToken ct)
+    {
+        var (token, error) = await ResolvePasswordResetTokenAsync(rawToken, ct);
+        if (error is not null) return Result.Failure(error);
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
             return Result.Failure(Error.Validation("Nowe hasło musi mieć co najmniej 6 znaków."));
 
-        var token = await FindValidTokenAsync(rawToken, UserTokenType.PasswordReset, ct);
-        if (token is null) return Result.Failure(Error.Validation("Nieprawidłowy lub wygasły token resetu."));
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == token!.UserId, ct);
+        if (user is null) return Result.Failure(PasswordResetErrors.Invalid);
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == token.UserId, ct);
-        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        var now = DateTime.UtcNow;
+        var claimed = await _db.UserTokens
+            .Where(t => t.Id == token!.Id && t.UsedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UsedAtUtc, now), ct);
+        if (claimed == 0) return Result.Failure(PasswordResetErrors.Used);
+
+        await _db.UserTokens
+            .Where(t => t.UserId == user.Id && t.Type == UserTokenType.PasswordReset && t.UsedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UsedAtUtc, now), ct);
 
         user.ChangePassword(_hasher.Hash(newPassword));
-        token.Use();
         var sessions = await _db.RefreshTokens.Where(t => t.UserId == user.Id && t.RevokedAtUtc == null).ToListAsync(ct);
         foreach (var s in sessions) s.Revoke();
 
         await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Result.Success();
+    }
+
+    private async Task<(UserToken? Token, Error? Error)> ResolvePasswordResetTokenAsync(string? rawToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken) || rawToken.Length > 128) return (null, PasswordResetErrors.Invalid);
+        var hash = _tokens.HashRefreshToken(rawToken.Trim());
+        var token = await _db.UserTokens.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TokenHash == hash && t.Type == UserTokenType.PasswordReset, ct);
+        if (token is null) return (null, PasswordResetErrors.Invalid);
+        if (token.UsedAtUtc is not null) return (null, PasswordResetErrors.Used);
+        if (DateTime.UtcNow >= token.ExpiresAtUtc) return (null, PasswordResetErrors.Expired);
+        return (token, null);
     }
 
     private string CreateToken(Guid userId, UserTokenType type, int hours)
@@ -153,9 +240,9 @@ public sealed class IdentityService
 
     private Task SendVerificationEmailAsync(string email, string rawToken, CancellationToken ct)
     {
-        var link = $"{_options.PublicUrl.TrimEnd('/')}/verify-email?token={rawToken}";
-        return _email.SendAsync(new EmailMessage(email, "ZipZap — potwierdź adres e-mail",
-            $"Witaj w ZipZap! Potwierdź adres e-mail: {link}\nLink wygasa za {_options.EmailVerificationHours} h."), ct);
+        var link = $"{PublicBaseUrl(_options.PublicUrl)}/verify-email?token={rawToken}";
+        return _email.SendAsync(new EmailMessage(email, "Dowózka.pl — potwierdź adres e-mail",
+            $"Witaj w Dowózka.pl! Potwierdź adres e-mail: {link}\nLink wygasa za {_options.EmailVerificationHours} h."), ct);
     }
 
     public async Task<Result<LoginResult>> LoginAsync(string email, string password, CancellationToken ct)

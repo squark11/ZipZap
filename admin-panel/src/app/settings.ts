@@ -14,6 +14,10 @@ export interface ConfigStatus {
   emailChannel?: string;
   rabbitMq: boolean;
   identityPublicUrl: string;
+  /** Problem z adresem linków w e-mailach (reset hasła) — null = OK. */
+  identityPublicUrlProblem?: string | null;
+  /** Kolejka e-maili w tle (reset hasła) — liczniki i ostatni błąd (sama kategoria, bez treści). */
+  emailQueue?: { sent: number; failed: number; dropped: number; lastFailureAtUtc?: string | null; lastFailureCategory?: string | null };
   adminSeedEmail: string;
   jwtUsingDevSecret: boolean;
   /** Efektywny adres aplikacji klienta (web) i jego źródło: „panel" / „env"; null = nieustawiony. */
@@ -284,7 +288,21 @@ export interface PlatformIntegrations {
         <div class="row"><span>E-mail</span><b [style.color]="col(status.email)">{{ status.email ? emailChannelLabel(status.emailChannel) : '— brak' }}</b></div>
         <div class="row"><span>RabbitMQ</span><b [style.color]="col(status.rabbitMq)">{{ txt(status.rabbitMq) }}</b></div>
         <div class="row"><span>Admin (seed)</span><b>{{ status.adminSeedEmail }}</b></div>
+        <div class="row"><span>Link resetu hasła</span>
+          <b [style.color]="col(!status.identityPublicUrlProblem)">{{ status.identityPublicUrl }}/reset-password</b></div>
       </div>
+      @if (!status.email) {
+        <p class="warn">⚠ Poczta to <b>atrapa</b> — e-maile (link resetu hasła, weryfikacja adresu) NIE są wysyłane, a użytkownicy
+          widzą o tym ostrzeżenie. Ustaw dostawcę HTTP (<code>EMAIL__HTTP__APIKEY</code>) albo SMTP w „Poczta".</p>
+      }
+      @if (status.identityPublicUrlProblem) {
+        <p class="warn">⚠ {{ status.identityPublicUrlProblem }} Ustaw <code>IDENTITY__PUBLICURL</code> na adres panelu po HTTPS
+          (np. <code>https://panel.dowozka.pl</code>) — tam działa wspólna strona resetu dla wszystkich kont.</p>
+      }
+      @if (status.emailQueue?.failed) {
+        <p class="warn">⚠ Nieudane wysyłki z kolejki: {{ status.emailQueue?.failed }} (ostatnia: {{ status.emailQueue?.lastFailureAtUtc | date:'short' }},
+          {{ status.emailQueue?.lastFailureCategory }}). Sprawdź konfigurację poczty — „Wyślij test".</p>
+      }
       @if (status.jwtUsingDevSecret) {
         <p class="warn">⚠ Klucz JWT to wartość deweloperska — ustaw własny <code>JWT__SIGNINGKEY</code> (min. 32 znaki) przed produkcją.</p>
       }

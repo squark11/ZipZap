@@ -20,6 +20,8 @@ public sealed record ForgotPasswordRequest(string Email);
 
 public sealed record ResetPasswordRequest(string Token, string NewPassword);
 
+public sealed record CheckResetTokenRequest(string Token);
+
 public sealed record CreateUserRequest(
     string Email, string Password, string FullName, string? Phone, string Role, Guid? StoreId);
 

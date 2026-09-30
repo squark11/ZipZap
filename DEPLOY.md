@@ -1,5 +1,66 @@
 # Deploy Dowózka.pl
 
+## Podgląd `app.dowózka.pl` na testowym API — 2026-10-01, przygotowane lokalnie, NIEWDROŻONE
+Host `app.dowózka.pl` (`app.xn--dowzka-dxa.pl`) utworzył właściciel. Podgląd = ta sama aplikacja Flutter web, ale
+zbudowana na **osobne testowe API i osobną bazę** (nigdy produkcyjne `dowozka-api.onrender.com` — skrypt odmawia), ze
+znacznikiem „PODGLĄD" w rogu każdego ekranu.
+
+**Tablica gotowości** (✓ tak · ✗ nie · — nie dotyczy):
+
+| Element | Gotowe w kodzie | Sprawdzone lokalnie | Wdrożone | Sprawdzone na żywo |
+|---|---|---|---|---|
+| DNS `app.xn--dowzka-dxa.pl` → `185.135.90.143` (lh.pl) | — | — | ✓ (właściciel) | ✓ odczyt 2026-09-30 |
+| Certyfikat TLS (Let's Encrypt, `app` + `www.app`, do 29.12.2026) | — | — | ✓ | ✓ łańcuch zaufany |
+| Przekierowanie HTTP → HTTPS | — | — | ✗ (HTTP zwraca 403) | ✗ |
+| Pliki aplikacji w katalogu głównym subdomeny | ✓ `build-preview.ps1` → `build/web` + ZIP | ✓ ZIP rozpakowany w Linuksie = 87/87 plików | ✗ (`/` zwraca 403 — pusty katalog) | ✗ |
+| `.htaccess` (SPA-fallback + `Cache-Control: no-cache`) | ✓ `mobile/hosting/app.htaccess` (w paczce) | ✓ Apache 2.4 | ✗ | ✗ |
+| Trasy `/s/{slug}`, `?src=`, odświeżenie, `/login?from=`, `/forgot-password` → `index.html` | ✓ | ✓ Apache 2.4 | ✗ | ✗ |
+| Service worker (zakres `/`, nowa wersja po wdrożeniu) | ✓ | ✓ Edge headless + Apache | ✗ | ✗ |
+| Osobne testowe API + baza | ✓ opis niżej | ✓ lokalne API na osobnej bazie | ✗ | ✗ |
+| Blokada produkcyjnego API w paczce | ✓ | ✓ skrypt odmawia | — | — |
+| Znacznik „PODGLĄD" | ✓ `APP_ENV=preview` | ✓ | ✗ | ✗ |
+| Telefony (iPhone Safari, Android Chrome) | — | ✗ nie testowane | ✗ | ✗ |
+
+**Kroki (właściciel; niczego z tego nie wykonano):**
+1. **Testowe API** — osobna usługa Render (np. `dowozka-api-preview`, ten sam Dockerfile) z gałęzi wybranej przez
+   właściciela (wymaga wypchnięcia gałęzi — decyzja właściciela) i **osobna baza** (Neon: nowa gałąź/baza, nie
+   produkcyjna). Zmienne jak dla publicznego pilotażu (tabela wyżej w PRODUCTION_SETUP.md, `PILOT__PUBLIC=true`), ale z
+   własnym `CONNECTIONSTRINGS__POSTGRES` i `JWT__SIGNINGKEY`, oraz: `CORS__ALLOWEDORIGINS__0=https://app.dowózka.pl`,
+   `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl`, `PILOT__PAYMENTMODE=test`. Poczty nie ustawiaj — podgląd ma
+   pocztę-atrapę (aplikacja pokaże ostrzeżenie; reset hasła testujemy lokalnie na Mailpit, bo testowego panelu nie ma).
+2. **Paczka:** `powershell -ExecutionPolicy Bypass -File mobile/hosting/build-preview.ps1 -ApiBaseUrl https://<testowe-api>/api`
+   — buduje z `--base-href /`, kopiuje `mobile/hosting/app.htaccess` jako `build/web/.htaccess`, sprawdza paczkę
+   (base href, pliki, `.htaccess`, adres API w `main.dart.js`, brak produkcyjnego API) i tworzy
+   `mobile/build/dowozka-app-preview.zip` (ścieżki z „/", razem z `.htaccess`).
+3. **Wgranie:** menedżer plików lh.pl → katalog główny subdomeny `app` → wgraj ZIP → „Rozpakuj" → usuń ZIP. Włącz
+   pokazywanie plików ukrytych i sprawdź, że jest `.htaccess` (przy FTP: włącz wysyłanie plików ukrytych).
+4. **HTTPS:** w panelu lh.pl włącz wymuszanie SSL dla `app.dowózka.pl` (ustawienie hostingu — nie w `.htaccess`).
+5. **Sprawdzenie na żywo:** `curl -I https://app.xn--dowzka-dxa.pl/s/<slug>` → `200 text/html`, `cache-control: no-cache`;
+   `curl -I https://app.xn--dowzka-dxa.pl/main.dart.js` → `200`, `no-cache`; `curl -I http://app.xn--dowzka-dxa.pl/` →
+   `301` na `https://`; potem telefony: skan QR z testowego sklepu → oferta → koszyk → odświeżenie → logowanie.
+
+## Odzyskiwanie hasła — 2026-10-01, lokalnie, NIEWDROŻONE
+- **Jeden wspólny adres dla wszystkich kont** (klient aplikacji Flutter, sklep, kierowca, admin):
+  `{IDENTITY__PUBLICURL}/reset-password#token=…` → strona w panelu (bez logowania, działa też w telefonie).
+  Aplikacja: „Nie pamiętasz hasła?" → e-mail → link otwiera stronę w przeglądarce → po zmianie hasła powrót do aplikacji.
+  Panel: link przy polu hasła → ten sam formularz. Projekt ekranów: Figma „Dowózka.pl — Odzyskiwanie hasła (UX/UI)".
+- **Produkcja wymaga:** `IDENTITY__PUBLICURL=https://panel.xn--dowzka-dxa.pl` **i wdrożenia panelu z tej gałęzi**
+  (obecny panel na `panel.dowózka.pl` działa po HTTPS, ale nie ma jeszcze strony resetu — link z e-maila pokazałby
+  logowanie). `panel.dowozka.pl` (bez „ó") ma inny IP i nieprawidłowy certyfikat — nie używać. Aktualnej wartości w
+  Render nie widać z repo: panel → Konfiguracja → Status i sekrety → „Link resetu hasła".
+- **Poczta:** bez `EMAIL__HTTP__APIKEY` i SMTP poczta jest **atrapą** — API loguje ostrzeżenie w trybie publicznym, panel
+  i aplikacja pokazują ostrzeżenie na formularzu, „Status" pokazuje atrapę. Render blokuje SMTP → HTTP API (Resend/Brevo).
+- **Bezpieczeństwo:** ta sama odpowiedź i ten sam czas dla istniejącego i nieistniejącego konta (prośba i e-mail w
+  kolejce w tle); maks. 3 linki/h na konto + limit 10/min na IP; token 256 bitów, w bazie tylko hash, ważny 1 h,
+  jednorazowy (zużycie atomowe); po zmianie hasła wszystkie sesje i pozostałe linki są unieważniane; token we
+  fragmencie `#` (nie trafia do logów serwera WWW ani nagłówka Referer), od razu usuwany z paska adresu; logi zawierają
+  tylko zamaskowany adres i kategorię błędu; stany linku: nieprawidłowy / wygasł / użyty (kody
+  `validation.reset_token_*`). Kolejka jest w pamięci — po restarcie API niewysłany link przepada (użytkownik prosi ponownie).
+- **Test lokalny na atrapowym serwerze pocztowym (Mailpit):**
+  `docker run -d --name zz-mailpit -p 127.0.0.1:1025:1025 -p 127.0.0.1:8025:8025 axllent/mailpit`, API z
+  `--Email:Smtp:Host=127.0.0.1 --Email:Smtp:Port=1025 --Email:Smtp:UseSsl=false --Email:Smtp:FromEmail=no-reply@dowozka.test`
+  (SMTP bez TLS dozwolony wyłącznie dla localhost), wiadomości: `http://127.0.0.1:8025`.
+
 ## S2 — kod QR sklepu → aplikacja webowa (bez instalacji) — 2026-09-29, lokalnie, NIEWDROŻONE
 **Architektura:** istniejąca aplikacja Flutter zbudowana jako web (PWA) — ten sam kod co na Androidzie, bez nowego
 frontendu. Adresy bez `#` (path URL strategy); stały link do oferty sklepu: **`https://<host aplikacji>/s/<slug-sklepu>?src=qr`**

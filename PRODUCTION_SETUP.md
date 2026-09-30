@@ -90,7 +90,7 @@ nie trafia do logów.
 | `PAYMENTS__PROVIDER` | Dostawca płatności (`mock` tylko dev; prod: realny). |
 | `PAYMENTS__MOCK__SECRET` | Sekret webhooka mocka (tylko dev). |
 | `PAYMENTS__PUBLICURL` | Bazowy URL powrotu z płatności. |
-| `IDENTITY__PUBLICURL` | URL w linkach e-mail (weryfikacja, reset hasła). |
+| `IDENTITY__PUBLICURL` | Adres **panelu po HTTPS** w linkach e-mail — `{adres}/reset-password` to wspólna strona resetu hasła dla wszystkich kont (klient aplikacji, sklep, kierowca). Produkcja: `https://panel.xn--dowzka-dxa.pl` (panel.dowózka.pl; domena IDN i tak jest zamieniana na punycode). **Nie** `https://panel.dowozka.pl` — ten host (bez „ó") ma inny IP i nieprawidłowy certyfikat (odczyt 2026-09-30). W trybie publicznym API ostrzega w logu, a panel w „Status i sekrety", gdy adres nie jest HTTPS lub wskazuje localhost. |
 | `GOOGLE__CLIENTID` | OAuth Client ID (logowanie Google; opcjonalne). |
 | `SEED__ADMINEMAIL/PASSWORD` | Administrator startowy. Silne hasło. |
 

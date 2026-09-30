@@ -174,7 +174,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (!_register)
             Center(
               child: TextButton(
-                onPressed: () => context.push('/forgot-password'),
+                onPressed: () => context.push('/forgot-password', extra: _email.text.trim()),
                 child: const Text('Nie pamiętasz hasła?'),
               ),
             ),

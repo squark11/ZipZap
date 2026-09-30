@@ -67,6 +67,11 @@ input, select { font-family: inherit; }
   background: linear-gradient(135deg, var(--zz-orange), #0E9A9B); box-shadow: 0 8px 20px rgba(20,185,186,.30);
 }
 .btn-lg:disabled { opacity: .65; box-shadow: none; }
+.btn-lg.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); box-shadow: none; }
+.btn-lg + .btn-lg { margin-top: 10px; }
+.btn-lg:focus-visible, .link-btn:focus-visible { outline: 3px solid rgba(20,185,186,.35); outline-offset: 2px; }
+.label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--zz-orange-600); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .auth .error { color: #DC2626; font-size: 14px; margin: 12px 0 0; }
 .auth .hint { color: #9AA1AC; font-size: 12px; margin: 18px 0 0; text-align: center; }
 

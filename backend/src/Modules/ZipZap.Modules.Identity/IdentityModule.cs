@@ -32,6 +32,16 @@ public static class IdentityModule
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<ITotpService, TotpService>();
         services.AddSingleton<IEmailSender, LoggingEmailSender>();
+        services.AddSingleton<IEmailChannelInfo, LoggingEmailSender>(); // host nadpisuje realnym kanałem
+        // Link resetu hasła idzie przez kolejkę w tle (stały czas odpowiedzi, błędy dostawcy nie wyciekają).
+        services.AddSingleton<EmailDeliveryStatus>();
+        services.AddSingleton<BackgroundEmailQueue>();
+        services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<BackgroundEmailQueue>());
+        services.AddHostedService<EmailQueueWorker>();
+        // Prośba o reset przetwarzana w tle — czas odpowiedzi nie zdradza istnienia konta.
+        services.AddSingleton<PasswordResetRequestQueue>();
+        services.AddSingleton<IPasswordResetRequestQueue>(sp => sp.GetRequiredService<PasswordResetRequestQueue>());
+        services.AddHostedService<PasswordResetRequestWorker>();
         // Domyślnie Client ID z env; host nadpisuje providerem czytającym magazyn panelu.
         services.AddSingleton<IGoogleClientIdProvider, OptionsGoogleClientIdProvider>();
         services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
