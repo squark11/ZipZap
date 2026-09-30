@@ -168,6 +168,7 @@ builder.Services.AddRateLimiter(options =>
             path.StartsWith("/api/identity/login", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/identity/register", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/identity/password", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/identity/email", StringComparison.OrdinalIgnoreCase) || // potwierdzenie adresu (publiczne) i ponowna wysyłka linku
             path.StartsWith("/api/register", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/api/feedback", StringComparison.OrdinalIgnoreCase);
         var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";

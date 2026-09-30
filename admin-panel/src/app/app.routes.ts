@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 import { PANEL_MODULES } from './modules';
 import { roleGuard } from './role.guard';
 
-/** Pusta trasa publicznej strony resetu — treść rysuje App (poza powłoką panelu, bez logowania). */
+/** Pusta trasa publicznych stron z linków e-mail (reset hasła, potwierdzenie adresu) — treść rysuje App (poza powłoką panelu, bez logowania). */
 @Component({ template: '' })
 class PublicPageRoute {}
 
@@ -37,6 +37,8 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   // Link z e-maila: {Identity:PublicUrl}/reset-password#token=… — bez przekierowania, żeby nie zgubić tokenu.
   { path: 'reset-password', component: PublicPageRoute },
+  // Link z e-maila po rejestracji: {Identity:PublicUrl}/verify-email#token=… — jw.
+  { path: 'verify-email', component: PublicPageRoute },
   ...PANEL_MODULES.map(m => ({
     path: m.id,
     canActivate: [roleGuard(m.roles)],

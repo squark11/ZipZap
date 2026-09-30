@@ -10,11 +10,6 @@ internal sealed class FakeGoogleTokenValidator : IGoogleTokenValidator
     public Task<GoogleUserInfo?> ValidateAsync(string idToken, CancellationToken ct = default) => Task.FromResult(_info);
 }
 
-internal sealed class FakeEmailSender : IEmailSender
-{
-    public Task SendAsync(EmailMessage message, CancellationToken ct = default) => Task.CompletedTask;
-}
-
 internal sealed class FakeEmailQueue : IEmailQueue
 {
     public List<EmailMessage> Messages { get; } = new();

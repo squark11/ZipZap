@@ -5,15 +5,18 @@ import { NavigationEnd, Router, RouterOutlet, RouterLink, RouterLinkActive } fro
 import { Api, StoreDto, isTwoFactorChallenge } from './api';
 import { PANEL_MODULES } from './modules';
 import { PasswordRecoveryComponent } from './password-recovery';
+import { EmailVerificationComponent } from './email-verification';
 
 /** Publiczna strona resetu hasła (link z e-maila) — pokazywana także zalogowanym, zamiast powłoki panelu. */
 const isResetPath = (url: string) => url.split(/[?#]/)[0] === '/reset-password';
+/** Publiczna strona potwierdzenia adresu e-mail (link z e-maila po rejestracji) — jw. */
+const isVerifyPath = (url: string) => url.split(/[?#]/)[0] === '/verify-email';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, PasswordRecoveryComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, PasswordRecoveryComponent, EmailVerificationComponent],
   template: `
-  @if (!api.isLoggedIn() || resetRoute()) {
+  @if (!api.isLoggedIn() || resetRoute() || verifyRoute()) {
     <div class="auth">
       <div class="auth-brand">
         <div class="logo">
@@ -34,7 +37,10 @@ const isResetPath = (url: string) => url.split(/[?#]/)[0] === '/reset-password';
 
       <div class="auth-form">
         <div class="auth-top">
-          @if (resetRoute() || authMode === 'forgot') {
+          @if (verifyRoute()) {
+            <span>{{ api.isLoggedIn() ? 'Jesteś zalogowany' : 'Masz konto w panelu?' }}</span>
+            <button type="button" class="pill-cta" (click)="goLogin()">{{ api.isLoggedIn() ? 'Przejdź do panelu' : 'Zaloguj się' }}</button>
+          } @else if (resetRoute() || authMode === 'forgot') {
             <span>Pamiętasz hasło?</span>
             <button type="button" class="pill-cta" (click)="goLogin()">Zaloguj się</button>
           } @else if (authMode === 'login') {
@@ -48,6 +54,8 @@ const isResetPath = (url: string) => url.split(/[?#]/)[0] === '/reset-password';
         <div class="auth-body">
           @if (resetRoute()) {
             <app-password-recovery mode="reset" (back)="goLogin()" />
+          } @else if (verifyRoute()) {
+            <app-email-verification [loggedIn]="api.isLoggedIn()" (back)="goLogin()" />
           } @else {
           @switch (authMode) {
             @case ('forgot') {
@@ -227,19 +235,25 @@ export class App {
   authMode: 'login' | 'store' | 'driver' | 'forgot' = 'login';
   /** Strona resetu z linku e-mail (/reset-password) — ustalana od razu przy starcie, zanim router ruszy. */
   readonly resetRoute = signal(typeof location !== 'undefined' && isResetPath(location.pathname));
+  /** Strona potwierdzenia adresu z linku e-mail (/verify-email) — jw. */
+  readonly verifyRoute = signal(typeof location !== 'undefined' && isVerifyPath(location.pathname));
 
   constructor() {
     this.router.events.subscribe(e => {
-      if (e instanceof NavigationEnd) this.resetRoute.set(isResetPath(e.urlAfterRedirects));
+      if (e instanceof NavigationEnd) {
+        this.resetRoute.set(isResetPath(e.urlAfterRedirects));
+        this.verifyRoute.set(isVerifyPath(e.urlAfterRedirects));
+      }
     });
   }
 
-  /** Z odzyskiwania hasła do formularza logowania (także z publicznej strony resetu). */
+  /** Z odzyskiwania hasła do formularza logowania (także z publicznych stron resetu i potwierdzenia e-mail). */
   goLogin() {
-    const wasReset = this.resetRoute();
+    const wasPublicPage = this.resetRoute() || this.verifyRoute();
     this.resetRoute.set(false);
+    this.verifyRoute.set(false);
     this.setMode('login');
-    if (wasReset) this.router.navigateByUrl('/');
+    if (wasPublicPage) this.router.navigateByUrl('/');
   }
   fullName = '';
   phone = '';

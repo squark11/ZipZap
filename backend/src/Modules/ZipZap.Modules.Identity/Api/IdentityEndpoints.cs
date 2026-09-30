@@ -243,9 +243,9 @@ public static class IdentityEndpoints
         group.MapPost("/email/verify", async (VerifyEmailRequest req, IdentityService svc, CancellationToken ct) =>
         {
             var result = await svc.VerifyEmailAsync(req.Token, ct);
-            return result.IsSuccess ? Ok() : Problem(result.Error);
+            return result.IsSuccess ? Results.Ok(new { status = "ok", email = result.Value }) : Problem(result.Error);
         })
-        .WithSummary("Potwierdzenie adresu e-mail tokenem z wiadomości.");
+        .WithSummary("Potwierdzenie adresu e-mail tokenem z wiadomości (kody: validation.verify_token_invalid/expired/used).");
 
         group.MapPost("/email/resend-verification", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
         {

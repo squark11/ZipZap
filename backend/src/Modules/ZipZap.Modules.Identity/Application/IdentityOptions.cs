@@ -5,8 +5,9 @@ public sealed class IdentityOptions
     public const string SectionName = "Identity";
 
     /// <summary>
-    /// Bazowy URL panelu (linki w e-mailach): <c>{PublicUrl}/reset-password</c> to wspólna strona resetu hasła dla
-    /// WSZYSTKICH kont (sklep, kierowca, klient aplikacji). Publicznie musi być HTTPS.
+    /// Bazowy URL panelu (linki w e-mailach): <c>{PublicUrl}/reset-password</c> (reset hasła) i
+    /// <c>{PublicUrl}/verify-email</c> (potwierdzenie adresu) to wspólne strony dla WSZYSTKICH kont (sklep, kierowca,
+    /// klient aplikacji). Publicznie musi być HTTPS.
     /// </summary>
     public string PublicUrl { get; set; } = "http://localhost:4200";
     public int EmailVerificationHours { get; set; } = 24;

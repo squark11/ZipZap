@@ -141,6 +141,11 @@ export class Api {
     return this.http.post<{ status: string }>(`${this.base}/identity/password/reset`, { token, newPassword });
   }
 
+  /// Potwierdza adres z linku e-mail (błąd 400 z kodem validation.verify_token_invalid/expired/used w polu „title").
+  verifyEmail(token: string) {
+    return this.http.post<{ status: string; email: string }>(`${this.base}/identity/email/verify`, { token });
+  }
+
   logout() { this.token.set(null); this.refreshToken.set(null); this.userEmail.set(''); this.roles.set([]); this.storeIds.set([]); }
 
   private opts() { return { headers: { Authorization: `Bearer ${this.token()}` } }; }

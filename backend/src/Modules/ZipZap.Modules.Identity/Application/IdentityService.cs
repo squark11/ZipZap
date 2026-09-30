@@ -22,6 +22,18 @@ public static class PasswordResetErrors
         "Ten link został już użyty do zmiany hasła. Jeśli to nie Ty — wyślij nowy link i od razu zmień hasło.");
 }
 
+/// <summary>Stany linku potwierdzającego adres e-mail (kod w polu „title" odpowiedzi problem+json, HTTP 400).</summary>
+public static class EmailVerificationErrors
+{
+    public static readonly Error Invalid = new("validation.verify_token_invalid",
+        "Link potwierdzający adres e-mail jest nieprawidłowy lub niepełny. Skopiuj go z wiadomości w całości.");
+    public static readonly Error Expired = new("validation.verify_token_expired",
+        "Link potwierdzający adres e-mail wygasł. Wyślij nowy link.");
+    /// <summary>Link zużyty albo adres potwierdzony już inaczej — w obu przypadkach nic więcej nie trzeba robić.</summary>
+    public static readonly Error Used = new("validation.verify_token_used",
+        "Ten adres e-mail jest już potwierdzony.");
+}
+
 /// <summary>
 /// Przypadki użycia modułu Identity. Publikacja zdarzeń idzie przez outbox
 /// (zapis w tej samej transakcji co zmiana danych).
@@ -32,7 +44,6 @@ public sealed class IdentityService
     private readonly IPasswordHasher _hasher;
     private readonly ITokenService _tokens;
     private readonly IIntegrationEventTypeRegistry _eventRegistry;
-    private readonly IEmailSender _email;
     private readonly IEmailQueue _emailQueue;
     private readonly IdentityOptions _options;
     private readonly IGoogleTokenValidator _google;
@@ -46,7 +57,6 @@ public sealed class IdentityService
         IPasswordHasher hasher,
         ITokenService tokens,
         IIntegrationEventTypeRegistry eventRegistry,
-        IEmailSender email,
         IEmailQueue emailQueue,
         IOptions<IdentityOptions> options,
         IGoogleTokenValidator google,
@@ -56,7 +66,6 @@ public sealed class IdentityService
         _hasher = hasher;
         _tokens = tokens;
         _eventRegistry = eventRegistry;
-        _email = email;
         _emailQueue = emailQueue;
         _options = options.Value;
         _google = google;
@@ -81,22 +90,44 @@ public sealed class IdentityService
         var auth = IssueTokens(user);
         await _db.SaveChangesAsync(ct);
 
-        await SendVerificationEmailAsync(user.Email, rawVerify, ct);
+        QueueVerificationEmail(user.Email, rawVerify);
         return auth;
     }
 
-    public async Task<Result> VerifyEmailAsync(string rawToken, CancellationToken ct)
+    /// <summary>
+    /// Potwierdza adres tokenem z linku <c>{PublicUrl}/verify-email#token=…</c> (starsze maile: <c>?token=…</c>);
+    /// zwraca zamaskowany adres konta. Token jest zużywany atomowo (równoległe kliknięcia — tylko jedno się uda),
+    /// a pozostałe niewykorzystane linki potwierdzające konta przestają działać. Rozróżnienie „wygasł / użyty /
+    /// nieprawidłowy" jest bezpieczne — zna je tylko posiadacz tokenu (256 bitów losowych).
+    /// </summary>
+    public async Task<Result<string>> VerifyEmailAsync(string? rawToken, CancellationToken ct)
     {
-        var token = await FindValidTokenAsync(rawToken, UserTokenType.EmailVerification, ct);
-        if (token is null) return Result.Failure(Error.Validation("Nieprawidłowy lub wygasły token weryfikacji."));
-
+        if (string.IsNullOrWhiteSpace(rawToken) || rawToken.Length > 128) return EmailVerificationErrors.Invalid;
+        var hash = _tokens.HashRefreshToken(rawToken.Trim());
+        var token = await _db.UserTokens.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TokenHash == hash && t.Type == UserTokenType.EmailVerification, ct);
+        if (token is null) return EmailVerificationErrors.Invalid;
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == token.UserId, ct);
-        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
+        if (user is null) return EmailVerificationErrors.Invalid;
+        // Adres już potwierdzony (tym albo innym linkiem) — link nie jest potrzebny, niezależnie od terminu ważności.
+        if (token.UsedAtUtc is not null || user.IsEmailVerified) return EmailVerificationErrors.Used;
+        if (DateTime.UtcNow >= token.ExpiresAtUtc) return EmailVerificationErrors.Expired;
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        var now = DateTime.UtcNow;
+        var claimed = await _db.UserTokens
+            .Where(t => t.Id == token.Id && t.UsedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UsedAtUtc, now), ct);
+        if (claimed == 0) return EmailVerificationErrors.Used;
+
+        await _db.UserTokens
+            .Where(t => t.UserId == user.Id && t.Type == UserTokenType.EmailVerification && t.UsedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UsedAtUtc, now), ct);
 
         user.MarkEmailVerified();
-        token.Use();
         await _db.SaveChangesAsync(ct);
-        return Result.Success();
+        await tx.CommitAsync(ct);
+        return EmailLog.Mask(user.Email);
     }
 
     public async Task<Result> ResendVerificationAsync(Guid userId, CancellationToken ct)
@@ -107,7 +138,7 @@ public sealed class IdentityService
 
         var raw = CreateToken(user.Id, UserTokenType.EmailVerification, _options.EmailVerificationHours);
         await _db.SaveChangesAsync(ct);
-        await SendVerificationEmailAsync(user.Email, raw, ct);
+        QueueVerificationEmail(user.Email, raw);
         return Result.Success();
     }
 
@@ -238,12 +269,23 @@ public sealed class IdentityService
         return token is not null && token.IsValid ? token : null;
     }
 
-    private Task SendVerificationEmailAsync(string email, string rawToken, CancellationToken ct)
-    {
-        var link = $"{PublicBaseUrl(_options.PublicUrl)}/verify-email?token={rawToken}";
-        return _email.SendAsync(new EmailMessage(email, "Dowózka.pl — potwierdź adres e-mail",
-            $"Witaj w Dowózka.pl! Potwierdź adres e-mail: {link}\nLink wygasa za {_options.EmailVerificationHours} h."), ct);
-    }
+    /// <summary>
+    /// Adres strony potwierdzenia (wspólny dla kont panelu i klientów aplikacji). Token we fragmencie adresu nie jest
+    /// wysyłany do serwera WWW (brak w logach dostępowych i nagłówku Referer).
+    /// </summary>
+    public string EmailVerificationLink(string rawToken) => $"{PublicBaseUrl(_options.PublicUrl)}/verify-email#token={rawToken}";
+
+    /// <summary>E-mail idzie przez kolejkę z ponowieniami — awaria dostawcy nie psuje rejestracji już zapisanego konta.</summary>
+    private void QueueVerificationEmail(string email, string rawToken)
+        => _emailQueue.Enqueue(new EmailMessage(email, "Dowózka.pl — potwierdź adres e-mail",
+            $"""
+            Dzień dobry,
+
+            dziękujemy za założenie konta w Dowózka.pl. Potwierdź adres e-mail: {EmailVerificationLink(rawToken)}
+
+            Link jest ważny {_options.EmailVerificationHours} h.
+            Jeśli konto zostało założone bez Twojej wiedzy — zignoruj tę wiadomość.
+            """));
 
     public async Task<Result<LoginResult>> LoginAsync(string email, string password, CancellationToken ct)
     {
@@ -451,7 +493,7 @@ public sealed class IdentityService
         var auth = IssueTokens(user);
         await _db.SaveChangesAsync(ct);
 
-        await SendVerificationEmailAsync(user.Email, rawVerify, ct);
+        QueueVerificationEmail(user.Email, rawVerify);
         return auth;
     }
 

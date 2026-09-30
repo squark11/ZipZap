@@ -48,6 +48,13 @@ znacznikiem „PODGLĄD" w rogu każdego ekranu.
   (obecny panel na `panel.dowózka.pl` działa po HTTPS, ale nie ma jeszcze strony resetu — link z e-maila pokazałby
   logowanie). `panel.dowozka.pl` (bez „ó") ma inny IP i nieprawidłowy certyfikat — nie używać. Aktualnej wartości w
   Render nie widać z repo: panel → Konfiguracja → Status i sekrety → „Link resetu hasła".
+- **Potwierdzenie adresu e-mail** (lokalnie, NIEWDROŻONE): link z e-maila po rejestracji (klient aplikacji i właściciel
+  sklepu) to `{IDENTITY__PUBLICURL}/verify-email#token=…` (już wysłane maile z `?token=` nadal działają) → publiczna
+  strona w panelu, która woła istniejące `POST /api/identity/email/verify`. Stany: potwierdzono / już potwierdzony /
+  wygasł / nieprawidłowy / błąd sieci z ponowieniem. Kody API: `validation.verify_token_invalid|expired|used` (400).
+  E-mail idzie przez kolejkę w tle — awaria poczty nie psuje rejestracji. Nowy link po wygaśnięciu: tylko istniejące
+  `POST /api/identity/email/resend-verification` (zalogowany) — ani panel, ani aplikacja nie mają jeszcze przycisku.
+  Wymaga tego samego wdrożenia panelu co reset hasła.
 - **Poczta:** bez `EMAIL__HTTP__APIKEY` i SMTP poczta jest **atrapą** — API loguje ostrzeżenie w trybie publicznym, panel
   i aplikacja pokazują ostrzeżenie na formularzu, „Status" pokazuje atrapę. Render blokuje SMTP → HTTP API (Resend/Brevo).
 - **Bezpieczeństwo:** ta sama odpowiedź i ten sam czas dla istniejącego i nieistniejącego konta (prośba i e-mail w
