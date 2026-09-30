@@ -24,6 +24,8 @@ public static class CatalogModule
         services.AddModuleOutbox<CatalogDbContext>(); // procesor + wgląd administratora
         services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<CatalogDbContext>>();
         services.AddScoped<CatalogService>();
+        // Retencja liczników wejść (dzienne > 90 dni → sumy miesięczne), raz na dobę.
+        services.AddHostedService<StoreEntryRetentionService>();
 
         services.RegisterIntegrationEventType<StoreRegistered>();
         services.RegisterIntegrationEventType<StoreUpdated>();

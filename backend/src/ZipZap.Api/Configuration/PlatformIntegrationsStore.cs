@@ -37,7 +37,11 @@ public sealed record PlatformIntegrationsUpdate(
 
 /// <summary>
 /// Adres aplikacji klienta (web/PWA) — baza stałych linków do sklepów i kodów QR (<c>{adres}/s/{slug}</c>).
-/// Wymagany HTTPS (HTTP tylko dla localhost — testy lokalne), bez parametrów i fragmentu; końcowy „/" usuwany.
+/// Wymagany HTTPS (HTTP tylko dla localhost — testy lokalne), bez parametrów i fragmentu i BEZ ŚCIEŻKI: build aplikacji
+/// jest przygotowany dla katalogu głównego domeny (<c>--base-href /</c>, service worker w zakresie „/"), więc kod QR
+/// z adresem pod ścieżką (np. https://dowózka.pl/app) prowadziłby na trasę, której build nie obsługuje.
+/// Domena IDN jest zapisywana w punycode (np. app.dowózka.pl → app.xn--dowzka-dxa.pl) — tak jak w kodzie QR i w
+/// nagłówku Origin przeglądarki.
 /// </summary>
 public static class CustomerAppUrl
 {
@@ -46,14 +50,20 @@ public static class CustomerAppUrl
         var v = raw?.Trim();
         if (string.IsNullOrEmpty(v)) return (null, null);
         if (!Uri.TryCreate(v, UriKind.Absolute, out var uri))
-            return (null, "Adres aplikacji klienta musi być pełnym adresem, np. https://sklep.example.pl");
+            return (null, "Adres aplikacji klienta musi być pełnym adresem, np. https://app.example.pl");
         var local = uri.IsLoopback;
         if (uri.Scheme != Uri.UriSchemeHttps && !(local && uri.Scheme == Uri.UriSchemeHttp))
             return (null, "Adres aplikacji klienta musi używać HTTPS (HTTP tylko dla localhost).");
         if (!string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment) || !string.IsNullOrEmpty(uri.UserInfo))
             return (null, "Adres aplikacji klienta nie może zawierać parametrów (?), fragmentu (#) ani danych logowania.");
-        return (uri.GetLeftPart(UriPartial.Path).TrimEnd('/'), null);
+        if (uri.AbsolutePath != "/")
+            return (null, "Adres aplikacji klienta musi być katalogiem głównym (sub)domeny, bez ścieżki — np. https://app.example.pl. "
+                          + "Aplikacja jest budowana dla „/”; adres z podścieżką dałby kody QR na nieobsługiwaną trasę.");
+        return (Origin(uri), null);
     }
+
+    /// <summary>„schemat://host[:port]" z hostem w punycode (bez końcowego „/").</summary>
+    public static string Origin(Uri uri) => $"{uri.Scheme}://{uri.IdnHost}{(uri.IsDefaultPort ? "" : ":" + uri.Port)}";
 }
 
 /// <summary>Konfiguracja captchy po stronie serwera (z odszyfrowanym sekretem) — do weryfikacji.</summary>

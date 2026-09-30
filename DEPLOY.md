@@ -7,37 +7,78 @@ frontendu. Adresy bez `#` (path URL strategy); stały link do oferty sklepu: **`
 zliczeniu znika z adresu. Kod QR generuje panel (Start sklepu / Sklepy → „Kod QR", PNG i SVG do druku, opcjonalna
 etykieta miejsca, np. `qr-kasa`). Landing `dowózka.pl` kieruje „Zamów online" i swój QR do aplikacji web, nie do APK.
 
-**Adres aplikacji NIE jest wybrany** — w dokumentacji są różne hosty (Azure SWA `yellow-sea-…`, Netlify, dawniej Fly).
-Zanim wydrukujesz kody, właściciel wybiera JEDEN kanoniczny host (np. subdomenę na `dowózka.pl` albo istniejący SWA).
-Zmiana hosta po wydruku unieważnia wydrukowane kody (chyba że stary host przekierowuje `/s/*` na nowy).
+**Kanoniczny adres aplikacji: `https://app.dowózka.pl`** (decyzja właściciela, 2026-09-29) — w DNS, certyfikacie,
+kodach QR i nagłówku `Origin` występuje jako punycode **`app.xn--dowzka-dxa.pl`** (to ten sam adres). Aplikacja działa
+**tylko w katalogu głównym** tej subdomeny (build z `--base-href /`, `sw.js` w `/`, zakres service workera `/`): API
+odrzuca adres aplikacji ze ścieżką (np. `https://dowózka.pl/app`), panel nie wygeneruje z takim adresem kodu QR, a landing
+nie pokaże linku. Zmiana hosta po wydruku unieważnia wydrukowane kody (chyba że stary host przekierowuje `/s/*` na nowy).
+Konfiguracja jest przygotowana w kodzie; **DNS, hosting, Render i adres produkcyjny NIE są zmienione**.
 
 **Uruchomienie QR w pilotażu (kolejność):**
-1. **DNS** — rekord dla wybranego hosta:
-   - subdomena na lh.pl (obsługuje IDN): rekord `A` → `185.135.90.143` (jak `dowózka.pl` i `panel.dowózka.pl`) i katalog
-     w `public_html/<folder>/` przypisany do subdomeny w panelu lh.pl;
-   - albo Azure SWA: dla domeny IDN tylko przez Cloudflare (proxy + Host Header Override, patrz niżej) — SWA odrzuca IDN.
-2. **TLS** — certyfikat Let's Encrypt wystawiony dokładnie na ten host (panel lh.pl). Sprawdź w przeglądarce, że nie ma
-   ostrzeżenia (dla `panel.dowózka.pl` certyfikat NIE był wystawiony — ten sam błąd zablokuje aplikację i kody QR).
-3. **Build aplikacji:** `cd mobile; flutter build web --release --dart-define=API_BASE_URL=https://dowozka-api.onrender.com/api`
-   (host w katalogu głównym; pod ścieżką dodaj `--base-href /<ścieżka>/` — niezalecane).
-4. **SPA-fallback** — każda nieznana ścieżka (`/s/...`, `/checkout`) ma zwracać `index.html`, inaczej link z QR i
-   odświeżenie strony dadzą 404:
-   - Apache/lh.pl: `.htaccess` z `RewriteRule ^ index.html [L]` — gotowy jest nieśledzony plik właściciela
-     `mobile/web/.htaccess` (główny checkout); przed wysyłką upewnij się, że leży w `build/web/` (w razie potrzeby
-     skopiuj). Zalecane dopisać, żeby po wdrożeniu telefony nie trzymały starej wersji:
-     `<FilesMatch "^(index\.html|flutter_bootstrap\.js|sw\.js|version\.json|manifest\.json)$">Header set Cache-Control "no-cache"</FilesMatch>`;
-   - Azure SWA: `staticwebapp.config.json`; Netlify: `_redirects` (oba w `mobile/web/`, kopiowane do buildu).
-5. **Upload** zawartości `mobile/build/web/` do katalogu hosta (FTP jak dla landingu/panelu).
-6. **API (Render):** `PUBLICAPP__CUSTOMERAPPURL=https://<host aplikacji>`; w trybie hartowanym także
-   `CORS__ALLOWEDORIGINS__<n>=https://<host aplikacji>`. W panelu: Konfiguracja → „Aplikacja klienta i kody QR" — ten sam
-   adres (panel pokazuje, skąd pochodzi aktywna wartość).
-7. **Landing:** w `public_html/dowozka.pl/config.js` ustaw `appUrl: "https://<host aplikacji>"` (plik jest w
-   `web-landing/config.js`; puste = sekcja „Zamów online" pokazuje „wkrótce", bez QR). Plik APK na serwerze
-   (`/pobierz/dowozka.apk`) nie jest już linkowany — usunięcie decyzją właściciela.
+1. **DNS** — rekord dla `app.xn--dowzka-dxa.pl` u dostawcy hostingu aplikacji. Jeśli będzie to lh.pl (jak `dowózka.pl`
+   i `panel.dowózka.pl`): rekord `A` → `185.135.90.143` i katalog w `public_html/<folder>/` przypisany do subdomeny
+   `app` jako jej **katalog główny** (nie podkatalog landingu). Azure SWA odrzuca IDN (tylko przez Cloudflare, patrz niżej).
+2. **TLS** — certyfikat (Let's Encrypt w panelu lh.pl) wystawiony dokładnie na `app.xn--dowzka-dxa.pl`. Sprawdź, że
+   przeglądarka nie pokazuje ostrzeżenia (dla `panel.dowózka.pl` certyfikat NIE był wystawiony — ten sam błąd zablokuje
+   aplikację i kody QR). Przekierowanie HTTP→HTTPS włącz opcją hostingu („wymuś SSL"), nie edycją `.htaccess` aplikacji.
+3. **Build aplikacji:** `cd mobile; flutter build web --release --base-href / --dart-define=API_BASE_URL=https://dowozka-api.onrender.com/api`
+4. **`.htaccess` (SPA-fallback + nagłówki pamięci podręcznej)** — wzorzec w repozytorium: **`mobile/hosting/app.htaccess`**.
+   Po buildzie **skopiuj go ręcznie jako `mobile/build/web/.htaccess`**:
+   `Copy-Item mobile/hosting/app.htaccess mobile/build/web/.htaccess -Force`.
+   - Flutter kopiuje do `build/web/` wszystko z `mobile/web/`, także pliki z kropką — ale `mobile/web/.htaccess` jest
+     tylko lokalnym, nieśledzonym plikiem właściciela (w czystym klonie go nie ma), a obecna wersja nie ma nagłówka
+     `Cache-Control`. Wzorzec = te same reguły przepisywania + `Header set Cache-Control "no-cache"`.
+   - Dlaczego nagłówek jest konieczny (sprawdzone 2026-09-30 na Apache 2.4 + Edge): pliki Fluttera nie mają wersji w
+     nazwach; bez `Cache-Control` przeglądarka uznaje `main.dart.js` heurystycznie za świeży i po wdrożeniu kolejny skan
+     QR dostaje **nowy `index.html` ze starym `main.dart.js`** (z pamięci podręcznej, z pominięciem service workera).
+     Z nagłówkiem `no-cache` każdy plik jest rewalidowany (tani 304) i po wdrożeniu od razu ładuje się nowa wersja.
+   - Sprawdzone lokalnie na Apache 2.4: `/s/<slug>`, `/s/<slug>?src=qr-kasa`, `/s/<slug>/`, `/login?from=…` i odświeżenie →
+     `index.html` (200); istniejące pliki (`sw.js`, `main.dart.js`, `manifest.json`, ikony) serwowane bez przepisywania,
+     `/.htaccess` i listing katalogów → 403. Uwaga: brakujący plik w `/assets/` też dostaje `index.html` (typowe dla SPA).
+   - Azure SWA (`staticwebapp.config.json`) i Netlify (`_redirects`) w `mobile/web/` to niekanoniczne alternatywy — bez
+     nagłówków `Cache-Control`; przy zmianie hosta trzeba je dodać analogicznie.
+5. **Upload** zawartości `mobile/build/web/` do katalogu głównego subdomeny (FTP jak dla landingu/panelu). Wiele klientów
+   FTP ukrywa pliki z kropką — sprawdź, że `.htaccess` jest na serwerze (`.last_build_id` można pominąć).
+6. **API (Render)** — po zatwierdzeniu przez właściciela: `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl` (API zapisuje
+   i zwraca `https://app.xn--dowzka-dxa.pl`); w trybie hartowanym także `CORS__ALLOWEDORIGINS__<n>=https://app.dowózka.pl`
+   (API dopisuje wersję punycode — przeglądarka wysyła `Origin` w punycode). W panelu: Konfiguracja → „Aplikacja klienta
+   i kody QR" — ten sam adres (panel pokazuje, skąd pochodzi aktywna wartość).
+7. **Landing:** w `public_html/dowozka.pl/config.js` ustaw `appUrl: "https://app.dowózka.pl"` — dopiero gdy aplikacja
+   działa (plik jest w `web-landing/config.js`; puste = sekcja „Zamów online" pokazuje „wkrótce", bez QR). Plik APK na
+   serwerze (`/pobierz/dowozka.apk`) nie jest już linkowany — usunięcie decyzją właściciela.
 8. **Sprawdzenie przed drukiem** (na prawdziwych telefonach): iPhone — **Safari** (App Store nie jest potrzebny), Android —
    Chrome: skan kodu z panelu → oferta sklepu → dodanie do koszyka → odświeżenie → logowanie/rejestracja → zamówienie
    (W1: konto testera). Opcjonalnie „Dodaj do ekranu głównego" (instrukcja w aplikacji, ikona w nagłówku sklepu).
-9. Dopiero potem: panel → Start sklepu → „Pobierz SVG (do druku)" / PNG.
+9. Dopiero potem: panel → sklep → „Miejsce kodu" (np. `kasa`) → „Pobierz SVG (do druku)" / PNG. Pobranie rejestruje
+   etykietę miejsca (`qr-kasa`) — tylko takie etykiety są liczone osobno (patrz „Licznik wejść" niżej).
+
+**Lista kontrolna przed pierwszym drukiem QR** (wszystko musi być ✓):
+- **DNS:** `nslookup app.xn--dowzka-dxa.pl` zwraca adres hostingu aplikacji; subdomena wskazuje katalog z zawartością
+  `build/web` jako katalog główny.
+- **TLS:** `https://app.dowózka.pl/` otwiera się bez ostrzeżenia w Safari (iPhone) i Chrome (Android); certyfikat obejmuje
+  `app.xn--dowzka-dxa.pl`; `http://` przekierowuje na `https://`.
+- **Hosting:** `curl -I https://app.xn--dowzka-dxa.pl/s/<slug>` → `200`, `text/html`, `cache-control: no-cache`;
+  `curl -I https://app.xn--dowzka-dxa.pl/main.dart.js` → `200`, JavaScript, `no-cache`; `/sw.js` → JavaScript.
+- **CORS/API:** `GET https://dowozka-api.onrender.com/api/config/public` zwraca `"customerAppUrl":"https://app.xn--dowzka-dxa.pl"`;
+  aplikacja z `https://app.dowózka.pl` ładuje ofertę sklepu (bez błędów CORS w konsoli). Tryb Development pilotażu
+  przyjmuje każdy origin; w trybie hartowanym origin musi być na liście `CORS__ALLOWEDORIGINS__*`.
+- **Integracje (jeśli włączone):** logowanie Google — `https://app.xn--dowzka-dxa.pl` w „Authorized JavaScript origins";
+  captcha — host `app.xn--dowzka-dxa.pl` na liście domen widżetu.
+- **Migracje:** `Catalog_StoreEntryStats` i `Catalog_QrSourcesAndEntryRetention` zastosowane (automatycznie przy starcie
+  API po scaleniu — dopiero po zgodzie właściciela i kopii bazy).
+- **Kod:** zeskanowany telefonem kod z panelu otwiera `https://app.xn--dowzka-dxa.pl/s/<slug>?src=qr-<miejsce>` (aparat
+  może pokazać adres w punycode — to ten sam adres), a licznik w panelu rośnie w zarejestrowanym miejscu.
+
+**Licznik wejść — limit i retencja** (bez danych osobowych; źródło niczego nie odblokowuje):
+- Stałe kubełki: `qr`, `landing`, `landing-qr`, `direct`, `qr-other`, `other` + maks. **20 zarejestrowanych etykiet
+  miejsc** (`qr-…`) na sklep. Etykietę rejestruje tylko obsługa sklepu/admin (panel robi to przy pobraniu/kopiowaniu/
+  otwarciu kodu; `POST /api/catalog/stores/{id}/qr-sources`, limit pilnowany blokadą wiersza sklepu — odporny na
+  równoległe żądania). Nieznana etykieta `qr-…` → `qr-other`, każde inne źródło → `other`. Publiczny licznik nie może więc
+  założyć nowych wierszy: najwyżej 26 wierszy na sklep dziennie.
+- Retencja: dzienne liczniki **90 dni** (panel pokazuje maks. 90 dni wstecz), starsze są raz dziennie zwijane w sumy
+  miesięczne `catalog.store_entry_monthly` (jedno polecenie SQL: usunięcie + dopisanie, bez podwójnego liczenia przy kilku
+  instancjach). 90 dni wystarcza do porównania miejsc kodów w pilotażu (kwartał), a sumy miesięczne zachowują trend
+  sezonowy bez rosnącej tabeli dziennej (maks. ~2 340 wierszy dziennych na sklep).
 
 ## ✅ Strona `dowózka.pl` na hostingu lh.pl + aplikacja jako APK — 2026-09-15 (stan wdrożony; QR→APK zastąpione w S2)
 > Właściciel ma domenę **dowózka.pl** (IDN, punycode `xn--dowzka-dxa.pl`) i hosting **lh.pl** — domena już wskazuje na lh.pl (A `185.135.90.143`), serwuje HTTP/HTTPS (SSL Let's Encrypt lh.pl). Architektura:

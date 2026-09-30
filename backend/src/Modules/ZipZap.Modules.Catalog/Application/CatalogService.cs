@@ -20,7 +20,8 @@ public sealed record ImportReport(bool Committed, int Total, int Created, int Up
 
 /// <summary>Wejścia na kartę sklepu wg źródła (np. „qr", „qr-kasa") — same liczby, bez danych osobowych.</summary>
 public sealed record StoreEntrySourceDto(string Source, int Count);
-public sealed record StoreEntryStatsDto(Guid StoreId, int Days, int Total, IReadOnlyList<StoreEntrySourceDto> BySource);
+public sealed record StoreEntryStatsDto(Guid StoreId, int Days, int Total, IReadOnlyList<StoreEntrySourceDto> BySource,
+    IReadOnlyList<string> RegisteredQrSources);
 
 /// <summary>
 /// Przypadki użycia Catalog. Odczyty publiczne (przeglądanie bez logowania),
@@ -96,8 +97,10 @@ public sealed class CatalogService
 
     /// <summary>
     /// Zlicza jedno wejście na kartę sklepu z danego źródła (publiczne, bez logowania). Zapisuje WYŁĄCZNIE dzienny
-    /// agregat (sklep, dzień UTC, znormalizowane źródło) — bez IP, użytkownika i urządzenia. Źródło to tylko etykieta
-    /// pomiaru: niczego nie odblokowuje.
+    /// agregat (sklep, dzień UTC, źródło) — bez IP, użytkownika i urządzenia. Źródło to tylko etykieta pomiaru:
+    /// niczego nie odblokowuje. Anonimowy klient nie tworzy nowych źródeł: liczone osobno są tylko stałe źródła
+    /// (<see cref="StoreEntrySource.Fixed"/>) i etykiety QR zarejestrowane przez obsługę sklepu; nieznana etykieta QR
+    /// trafia do „qr-other", każde inne źródło do „other" — maks. 6 + 20 wierszy na sklep i dzień.
     /// </summary>
     public async Task<Result> RecordEntryAsync(string idOrSlug, string? source, CancellationToken ct)
     {
@@ -107,23 +110,66 @@ public sealed class CatalogService
             : await query.Where(s => s.Slug == idOrSlug).Select(s => (Guid?)s.Id).FirstOrDefaultAsync(ct);
         if (storeId is not Guid sid) return Result.Failure(Error.NotFound("Sklep nie istnieje."));
 
-        var day = DateOnly.FromDateTime(DateTime.UtcNow);
         var label = StoreEntrySource.Normalize(source);
-        // Atomowy „upsert" — równoległe wejścia nie gubią się i nie dublują wierszy.
+        var bucket = StoreEntrySource.Fixed.Contains(label) ? label
+            : !label.StartsWith(StoreEntrySource.QrPrefix, StringComparison.Ordinal) ? StoreEntrySource.Other
+            : await _db.StoreQrSources.AnyAsync(q => q.StoreId == sid && q.Source == label, ct) ? label
+            : StoreEntrySource.QrOther;
+
+        var day = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Atomowy „upsert" na skończonej liście kluczy — równoległe wejścia nie gubią się, nie dublują wierszy
+        // i nie mogą utworzyć źródła spoza listy (klucz wybiera serwer, nie klient).
         await _db.Database.ExecuteSqlInterpolatedAsync($"""
             INSERT INTO catalog.store_entry_stats ("StoreId", "Day", "Source", "Count")
-            VALUES ({sid}, {day}, {label}, 1)
+            VALUES ({sid}, {day}, {bucket}, 1)
             ON CONFLICT ("StoreId", "Day", "Source") DO UPDATE SET "Count" = store_entry_stats."Count" + 1
             """, ct);
         return Result.Success();
     }
 
-    /// <summary>Wejścia na kartę sklepu z ostatnich <paramref name="days"/> dni wg źródła (obsługa sklepu / admin).</summary>
+    /// <summary>
+    /// Rejestruje etykietę miejsca kodu QR (np. „qr-kasa") — obsługa sklepu / admin, zanim kod trafi do druku.
+    /// Limit <see cref="StoreEntrySource.MaxRegisteredQrSources"/> na sklep; blokada wiersza sklepu serializuje równoległe
+    /// rejestracje, więc limitu nie da się przekroczyć wyścigiem. Ponowna rejestracja tej samej etykiety — bez zmian.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<string>>> RegisterQrSourceAsync(Guid storeId, string? source, CancellationToken ct)
+    {
+        var guard = EnsureCanManageStore(storeId);
+        if (guard.IsFailure) return guard.Error;
+        var label = (source ?? string.Empty).Trim().ToLowerInvariant();
+        if (!StoreEntrySource.IsRegistrable(label))
+            return Error.Validation("Etykieta kodu QR musi mieć postać „qr-miejsce” (małe litery, cyfry, myślniki, maks. 40 znaków).");
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        var locked = await _db.Database.SqlQuery<Guid>(
+            $"""SELECT "Id" AS "Value" FROM catalog.stores WHERE "Id" = {storeId} FOR UPDATE""").ToListAsync(ct);
+        if (locked.Count == 0) return Error.NotFound("Sklep nie istnieje.");
+
+        if (!await _db.StoreQrSources.AnyAsync(q => q.StoreId == storeId && q.Source == label, ct))
+        {
+            var count = await _db.StoreQrSources.CountAsync(q => q.StoreId == storeId, ct);
+            if (count >= StoreEntrySource.MaxRegisteredQrSources)
+                return Error.Conflict($"Sklep ma już {StoreEntrySource.MaxRegisteredQrSources} etykiet kodów QR — użyj istniejącej.");
+            _db.StoreQrSources.Add(new StoreQrSource(storeId, label, _currentUser.UserId));
+            await _db.SaveChangesAsync(ct);
+        }
+        await tx.CommitAsync(ct);
+        return Result.Success(await ListQrSourcesAsync(storeId, ct));
+    }
+
+    private async Task<IReadOnlyList<string>> ListQrSourcesAsync(Guid storeId, CancellationToken ct)
+        => await _db.StoreQrSources.AsNoTracking().Where(q => q.StoreId == storeId)
+            .OrderBy(q => q.Source).Select(q => q.Source).ToListAsync(ct);
+
+    /// <summary>
+    /// Wejścia na kartę sklepu z ostatnich <paramref name="days"/> dni wg źródła (obsługa sklepu / admin) + zarejestrowane
+    /// etykiety QR. Maks. <see cref="StoreEntrySource.DailyRetentionDays"/> dni (tyle trzymamy liczniki dzienne).
+    /// </summary>
     public async Task<Result<StoreEntryStatsDto>> GetEntryStatsAsync(Guid storeId, int days, CancellationToken ct)
     {
         var guard = EnsureCanManageStore(storeId);
         if (guard.IsFailure) return guard.Error;
-        days = Math.Clamp(days, 1, 365);
+        days = Math.Clamp(days, 1, StoreEntrySource.DailyRetentionDays);
         var since = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-(days - 1));
         var bySource = await _db.StoreEntryStats.AsNoTracking()
             .Where(s => s.StoreId == storeId && s.Day >= since)
@@ -131,8 +177,25 @@ public sealed class CatalogService
             .Select(g => new StoreEntrySourceDto(g.Key, g.Sum(x => x.Count)))
             .ToListAsync(ct);
         bySource = bySource.OrderByDescending(s => s.Count).ThenBy(s => s.Source).ToList();
-        return new StoreEntryStatsDto(storeId, days, bySource.Sum(s => s.Count), bySource);
+        return new StoreEntryStatsDto(storeId, days, bySource.Sum(s => s.Count), bySource,
+            await ListQrSourcesAsync(storeId, ct));
     }
+
+    /// <summary>
+    /// Retencja: liczniki dzienne starsze niż <paramref name="keepFrom"/> są dodawane do sum miesięcznych i usuwane —
+    /// jedną instrukcją (DELETE … RETURNING → INSERT … ON CONFLICT), więc równoległe uruchomienie (kilka instancji)
+    /// nie liczy niczego dwa razy. Zwraca liczbę dodanych/zaktualizowanych sum miesięcznych.
+    /// </summary>
+    public Task<int> CompactEntryStatsAsync(DateOnly keepFrom, CancellationToken ct)
+        => _db.Database.ExecuteSqlInterpolatedAsync($"""
+            WITH old AS (
+                DELETE FROM catalog.store_entry_stats WHERE "Day" < {keepFrom}
+                RETURNING "StoreId", "Day", "Source", "Count")
+            INSERT INTO catalog.store_entry_monthly ("StoreId", "Month", "Source", "Count")
+            SELECT "StoreId", date_trunc('month', "Day")::date, "Source", SUM("Count")::int FROM old
+            GROUP BY "StoreId", date_trunc('month', "Day")::date, "Source"
+            ON CONFLICT ("StoreId", "Month", "Source") DO UPDATE SET "Count" = store_entry_monthly."Count" + EXCLUDED."Count"
+            """, ct);
 
     /// <summary>Kod wsparcia sklepu (właściciel/Admin); generuje unikalny przy pierwszym pobraniu.</summary>
     public async Task<Result<string>> GetOrCreateSupportCodeAsync(Guid storeId, CancellationToken ct)

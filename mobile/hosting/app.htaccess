@@ -1,0 +1,22 @@
+# Dowózka.pl — aplikacja klienta (Flutter web) na hostingu Apache/LiteSpeed, w KATALOGU GŁÓWNYM subdomeny
+# (np. https://app.dowózka.pl/). Przy wdrożeniu wgraj ten plik jako build/web/.htaccess — patrz DEPLOY.md → S2.
+Options -Indexes
+AddType application/wasm .wasm
+AddType application/manifest+json .webmanifest
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  # Nie przepisuj istniejących plików/katalogów (assets, canvaskit, js, wasm...)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  # Reszta tras SPA (np. /s/{slug} z kodu QR, odświeżenie strony) -> index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Pliki Fluttera (index.html, flutter_bootstrap.js, main.dart.js, assets) nie mają wersji w nazwach.
+  # Bez tego nagłówka przeglądarka uznaje je heurystycznie za „świeże" i po wdrożeniu może podać stary
+  # main.dart.js z pamięci podręcznej — z pominięciem service workera. „no-cache" = zawsze rewalidacja (tani 304).
+  Header set Cache-Control "no-cache"
+</IfModule>

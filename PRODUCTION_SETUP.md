@@ -125,19 +125,26 @@ wykonują się automatycznie przy starcie.
 > `catalog.stores` i `catalog.products`) i `Ordering_CatalogProjectionVersion` (`SourceVersion int NOT NULL DEFAULT 0`
 > w `ordering.catalog_stores` i `ordering.catalog_products`), a S2 (kod QR → aplikacja web) dodaje
 > `Catalog_StoreEntryStats` (nowa tabela `catalog.store_entry_stats`: sklep, dzień, źródło, liczba — dzienny licznik
-> wejść bez danych osobowych). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
+> wejść bez danych osobowych) i `Catalog_QrSourcesAndEntryRetention` (nowe tabele `catalog.store_qr_sources` —
+> zarejestrowane etykiety miejsc kodów, maks. 20 na sklep — i `catalog.store_entry_monthly` — miesięczne sumy wejść
+> starszych niż 90 dni). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
 
 ### Aplikacja klienta (web) i kody QR — konfiguracja
 - **Adres aplikacji klienta** (baza linków `/s/{slug}` i kodów QR): panel → Konfiguracja → „Aplikacja klienta i kody QR";
-  rezerwa w zmiennej `PUBLICAPP__CUSTOMERAPPURL=https://<host aplikacji>` (zalecane ustawić OBIE — zapis panelu leży w
-  `App_Data`, które na Renderze bez trwałego dysku znika przy restarcie). Tylko HTTPS, bez `?`/`#`. Widoczny publicznie w
-  `GET /api/config/public` (`customerAppUrl`). Szczegóły DNS/hostingu: [DEPLOY.md](DEPLOY.md) → „S2".
-- **CORS:** w trybie hartowanym dopisz origin aplikacji: `CORS__ALLOWEDORIGINS__<n>=https://<host aplikacji>`
-  (tryb Development pilotażu przyjmuje każdy origin).
+  rezerwa w zmiennej `PUBLICAPP__CUSTOMERAPPURL` (zalecane ustawić OBIE — zapis panelu leży w `App_Data`, które na
+  Renderze bez trwałego dysku znika przy restarcie). Kanonicznie **`https://app.dowózka.pl`** — ustawić dopiero, gdy
+  aplikacja tam działa (DEPLOY.md → „S2", lista kontrolna). Tylko HTTPS, **katalog główny (sub)domeny** (adres ze ścieżką
+  jest odrzucany), bez `?`/`#`; domena IDN jest zapisywana i zwracana w punycode (`https://app.xn--dowzka-dxa.pl`).
+  Widoczny publicznie w `GET /api/config/public` (`customerAppUrl`).
+- **CORS:** w trybie hartowanym dopisz origin aplikacji: `CORS__ALLOWEDORIGINS__<n>=https://app.dowózka.pl` — API
+  samo dodaje wariant punycode, który wysyła przeglądarka (tryb Development pilotażu przyjmuje każdy origin).
 - **Licznik wejść:** `POST /api/catalog/stores/{slug|id}/entries` (publiczny, osobny limit 60/min na IP, źródło
   normalizowane do `a-z0-9-`, maks. 40 znaków); podgląd `GET /api/catalog/stores/{id}/entries?days=30` (obsługa sklepu,
-  admin). Źródło to tylko etykieta pomiaru — niczego nie odblokowuje.
+  admin; maks. 90 dni). Osobno liczone są tylko stałe kubełki (`qr`, `landing`, `landing-qr`, `direct`) i maks. 20
+  etykiet miejsc zarejestrowanych przez obsługę sklepu (`POST /api/catalog/stores/{id}/qr-sources`); reszta trafia do
+  `qr-other`/`other`. Dzienne liczniki starsze niż 90 dni usługa w tle zwija raz na dobę w sumy miesięczne. Brak nowych
+  zmiennych środowiskowych. Źródło to tylko etykieta pomiaru — niczego nie odblokowuje.
 
 ### Outbox: ponawianie i odłożone zdarzenia
 Brak nowych zmiennych środowiskowych. Reguły (decyzja właściciela, 2026-09-28):

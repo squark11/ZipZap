@@ -23,6 +23,8 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<StoreEntryStat> StoreEntryStats => Set<StoreEntryStat>();
+    public DbSet<StoreEntryMonthlyStat> StoreEntryMonthlyStats => Set<StoreEntryMonthlyStat>();
+    public DbSet<StoreQrSource> StoreQrSources => Set<StoreQrSource>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -90,6 +92,22 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
         {
             e.ToTable(StoreEntryStatsTable);
             e.HasKey(s => new { s.StoreId, s.Day, s.Source });
+            e.Property(s => s.Source).IsRequired().HasMaxLength(StoreEntrySource.MaxLength);
+        });
+
+        // Sumy miesięczne po zwinięciu liczników dziennych starszych niż okres retencji.
+        b.Entity<StoreEntryMonthlyStat>(e =>
+        {
+            e.ToTable("store_entry_monthly");
+            e.HasKey(s => new { s.StoreId, s.Month, s.Source });
+            e.Property(s => s.Source).IsRequired().HasMaxLength(StoreEntrySource.MaxLength);
+        });
+
+        // Etykiety miejsc kodów QR zarejestrowane przez obsługę sklepu (tylko one są liczone osobno).
+        b.Entity<StoreQrSource>(e =>
+        {
+            e.ToTable("store_qr_sources");
+            e.HasKey(s => new { s.StoreId, s.Source });
             e.Property(s => s.Source).IsRequired().HasMaxLength(StoreEntrySource.MaxLength);
         });
 

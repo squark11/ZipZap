@@ -33,6 +33,15 @@ public static class CatalogEndpoints
             return result.IsSuccess ? Results.NoContent() : Problem(result.Error);
         });
 
+        // Rejestracja etykiety miejsca kodu QR (np. „qr-kasa") — obsługa sklepu / admin, zanim kod trafi do druku.
+        // Tylko zarejestrowane etykiety są liczone osobno (limit 20 na sklep); anonimowy klient nie tworzy źródeł.
+        group.MapPost("/stores/{storeId:guid}/qr-sources", async (Guid storeId, StoreEntryRequest req, CatalogService svc,
+            CancellationToken ct) =>
+        {
+            var result = await svc.RegisterQrSourceAsync(storeId, req.Source, ct);
+            return result.IsSuccess ? Results.Ok(new { registeredQrSources = result.Value }) : Problem(result.Error);
+        }).RequireAuthorization();
+
         // Wejścia z ostatnich dni wg źródła — obsługa tego sklepu albo administrator.
         group.MapGet("/stores/{storeId:guid}/entries", async (Guid storeId, int? days, CatalogService svc, CancellationToken ct) =>
         {

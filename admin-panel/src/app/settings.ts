@@ -193,8 +193,9 @@ export interface PlatformIntegrations {
     <p class="muted" style="margin-top:0">Adres, pod którym działa aplikacja webowa dla klientów (bez instalacji ze sklepu). Z niego powstają stałe linki
       do sklepów i kody QR: <code>{{ (integrations.customerAppUrl || status?.customerAppUrl || 'https://adres-aplikacji') }}/s/&lt;identyfikator-sklepu&gt;?src=qr</code>.</p>
     <label class="lbl">Adres aplikacji klienta (HTTPS)</label>
-    <input type="url" name="custapp" [(ngModel)]="integrations.customerAppUrl" placeholder="https://adres-aplikacji-klienta" />
-    <p class="muted" style="font-size:12px;margin-top:6px">Tylko HTTPS (HTTP wyłącznie dla localhost), bez „?" i „#". Puste = użyj wartości z serwera
+    <input type="url" name="custapp" [(ngModel)]="integrations.customerAppUrl" placeholder="https://app.dowózka.pl" />
+    <p class="muted" style="font-size:12px;margin-top:6px">Tylko HTTPS (HTTP wyłącznie dla localhost) i <b>katalog główny (sub)domeny</b> — bez ścieżki,
+      „?" i „#" (aplikacja jest budowana dla „/"). Domena z polskimi znakami zapisze się w punycode. Puste = użyj wartości z serwera
       (zmienna <code>PUBLICAPP__CUSTOMERAPPURL</code>)@if (status?.customerAppUrlEnv) { — teraz: <code>{{ status?.customerAppUrlEnv }}</code> }.</p>
     @if (status?.customerAppUrlSource === 'env') {
       <p class="note">Aktywny adres pochodzi ze zmiennej środowiskowej serwera.</p>

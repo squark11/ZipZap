@@ -453,10 +453,16 @@
   // czytelną dla każdego skanera QR. Brak/niepoprawny adres = sekcja pokazuje „wkrótce" zamiast QR.
   function appLink(source){
     var raw = (window.DOWOZKA_CONFIG && window.DOWOZKA_CONFIG.appUrl) || '';
+    if(!raw) return null;
     try{
-      var u = new URL(String(raw).replace(/\/+$/, '') + '/');
+      var u = new URL(String(raw));
       var local = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
       if(u.protocol !== 'https:' && !(local && u.protocol === 'http:')) return null;
+      // Aplikacja działa tylko w katalogu głównym (sub)domeny — adres ze ścieżką dałby link/QR na nieobsługiwaną trasę.
+      if(u.pathname !== '/' || u.search || u.hash){
+        if(window.console) console.warn('config.js: appUrl musi być katalogiem głównym domeny, np. https://app.dowózka.pl');
+        return null;
+      }
       u.searchParams.set('src', source);
       return u.href;
     }catch(e){ return null; }

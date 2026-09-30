@@ -139,8 +139,8 @@ var hardened = publicPilot || builder.Environment.IsProduction();
 // CORS: panel/PWA wołają API cross-origin (JWT w nagłówku, bez ciasteczek).
 // Allowlista z konfiguracji (Cors:AllowedOrigins) wygrywa wszędzie; bez niej — otwarte tylko w dev.
 const string CorsPolicy = "app-cors";
-var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? Array.Empty<string>();
+var corsOrigins = CorsOrigins.WithPunycode(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>());
 builder.Services.AddCors(o => o.AddPolicy(CorsPolicy, p =>
 {
     if (corsOrigins.Length > 0)

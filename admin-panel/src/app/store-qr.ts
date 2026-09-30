@@ -2,6 +2,7 @@ import { Component, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 import * as QRCodeNS from 'qrcode';
 import { Api, StoreDto } from './api';
 
@@ -12,7 +13,15 @@ const QRCode: {
 } = (QRCodeNS as any).default ?? (QRCodeNS as any);
 
 interface EntrySource { source: string; count: number; }
-interface EntryStats { total: number; days: number; bySource: EntrySource[]; }
+interface EntryStats { total: number; days: number; bySource: EntrySource[]; registeredQrSources?: string[]; }
+
+/** Tyle etykiet miejsc może mieć jeden sklep (limit serwera). */
+export const MAX_QR_LABELS = 20;
+
+/** Adres aplikacji musi być katalogiem głównym (sub)domeny — build aplikacji obsługuje tylko „/". */
+export function isRootAppUrl(appUrl: string): boolean {
+  try { const u = new URL(appUrl); return u.pathname === '/' && !u.search && !u.hash; } catch { return false; }
+}
 
 /** Etykieta źródła jak na serwerze: a-z, 0-9 i „-" (maks. 40 znaków razem z przedrostkiem „qr-"). */
 export function qrSource(label: string): string {
@@ -52,6 +61,9 @@ export function storeQrUrl(appUrl: string, slug: string, source: string): string
     .stats b { font-size:18px; color:#0F2A2A; }
     .src { font-size:12px; color:#6B7280; }
     .missing { background:#FFF8EB; border:1px solid #F7D9B9; color:#6B3E09; border-radius:10px; padding:10px 14px; font-size:13px; }
+    .chips { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .chip { font-size:12px; border:1px solid #BFECEC; background:#EAF9F9; color:#0C7D7E; border-radius:999px; padding:3px 10px; }
+    .err { background:#FEECEC; color:#B4232A; border-radius:8px; padding:8px 10px; font-size:13px; }
   `],
   template: `
   @if (!loaded) {
@@ -59,6 +71,9 @@ export function storeQrUrl(appUrl: string, slug: string, source: string): string
   } @else if (!appUrl) {
     <div class="missing">Adres aplikacji klienta nie jest jeszcze ustawiony, więc nie da się wygenerować kodu QR.
       Administrator serwisu ustawia go w <b>Konfiguracja → Aplikacja klienta i kody QR</b>.</div>
+  } @else if (!rootOk) {
+    <div class="missing">Adres aplikacji <code>{{ appUrl }}</code> zawiera ścieżkę. Aplikacja działa tylko w katalogu głównym
+      (sub)domeny, np. <code>https://app.example.pl</code> — kod QR prowadziłby na nieobsługiwaną trasę. Popraw adres w Konfiguracji.</div>
   } @else if (!store) {
     <div class="muted">Nie udało się pobrać danych sklepu.</div>
   } @else {
@@ -71,11 +86,25 @@ export function storeQrUrl(appUrl: string, slug: string, source: string): string
                  maxlength="37" style="max-width:260px" />
         </div>
         <div class="url">{{ url }}</div>
+        @if (source !== 'qr') {
+          <div class="src">
+            @if (isRegistered) { ✓ Miejsce „{{ source }}” jest zarejestrowane — wejścia z tego kodu liczymy osobno. }
+            @else { Miejsce „{{ source }}” zostanie zarejestrowane przy pobraniu, skopiowaniu lub otwarciu kodu
+              ({{ registered.length }}/{{ maxLabels }}). }
+          </div>
+        }
+        @if (registered.length) {
+          <div class="chips">
+            <span class="src">Zarejestrowane miejsca:</span>
+            @for (r of registered; track r) { <button class="chip" (click)="useLabel(r)">{{ r }}</button> }
+          </div>
+        }
+        @if (actionError) { <div class="err">{{ actionError }}</div> }
         <div class="row">
-          <button class="btn primary sm" (click)="downloadPng()">Pobierz PNG</button>
-          <button class="btn ghost sm" (click)="downloadSvg()">Pobierz SVG (do druku)</button>
-          <button class="btn ghost sm" (click)="copy()">{{ copied ? '✓ Skopiowano' : 'Kopiuj link' }}</button>
-          <a class="btn ghost sm" [href]="url" target="_blank" rel="noopener" style="text-decoration:none">Otwórz</a>
+          <button class="btn primary sm" [disabled]="busy" (click)="downloadPng()">Pobierz PNG</button>
+          <button class="btn ghost sm" [disabled]="busy" (click)="downloadSvg()">Pobierz SVG (do druku)</button>
+          <button class="btn ghost sm" [disabled]="busy" (click)="copy()">{{ copied ? '✓ Skopiowano' : 'Kopiuj link' }}</button>
+          <button class="btn ghost sm" [disabled]="busy" (click)="open()">Otwórz</button>
         </div>
         <div class="stats">
           @if (stats) {
@@ -107,6 +136,10 @@ export class StoreQrComponent {
   svg: SafeHtml | null = null;
   copied = false;
   stats: EntryStats | null = null;
+  registered: string[] = [];
+  busy = false;
+  actionError = '';
+  readonly maxLabels = MAX_QR_LABELS;
 
   constructor() {
     effect(() => { const id = this.storeId(); if (id) this.load(id); });
@@ -114,6 +147,32 @@ export class StoreQrComponent {
 
   get qrSources(): EntrySource[] { return (this.stats?.bySource ?? []).filter(s => s.source === 'qr' || s.source.startsWith('qr-')); }
   get qrTotal(): number { return this.qrSources.reduce((a, s) => a + s.count, 0); }
+  get rootOk(): boolean { return !!this.appUrl && isRootAppUrl(this.appUrl); }
+  get source(): string { return qrSource(this.label); }
+  get isRegistered(): boolean { return this.source === 'qr' || this.registered.includes(this.source); }
+
+  useLabel(source: string) { this.label = source.slice(3); this.actionError = ''; this.render(); }
+
+  /**
+   * Etykieta miejsca musi być zarejestrowana, zanim kod opuści panel — inaczej wejścia z niego trafią do „qr-other".
+   * Anonimowy klient nie może rejestrować etykiet (limit {@link MAX_QR_LABELS} na sklep).
+   */
+  private async ensureRegistered(): Promise<boolean> {
+    this.actionError = '';
+    if (this.isRegistered) return true;
+    this.busy = true;
+    try {
+      const r = await firstValueFrom(this.api.post<{ registeredQrSources: string[] }>(
+        `/catalog/stores/${this.store!.id}/qr-sources`, { source: this.source }));
+      this.registered = r.registeredQrSources ?? [];
+      return true;
+    } catch (e: any) {
+      this.actionError = e?.error?.detail ?? 'Nie udało się zarejestrować miejsca kodu — spróbuj ponownie.';
+      return false;
+    } finally {
+      this.busy = false;
+    }
+  }
 
   private load(id: string) {
     this.loaded = false;
@@ -128,12 +187,13 @@ export class StoreQrComponent {
       error: () => { this.appUrl = null; this.loaded = true; },
     });
     this.api.get<EntryStats>(`/catalog/stores/${id}/entries?days=30`).subscribe({
-      next: s => this.stats = s, error: () => this.stats = null,
+      next: s => { this.stats = s; this.registered = s.registeredQrSources ?? []; },
+      error: () => this.stats = null,
     });
   }
 
   render() {
-    if (!this.appUrl || !this.store) return;
+    if (!this.appUrl || !this.rootOk || !this.store) return;
     try {
       this.url = storeQrUrl(this.appUrl, this.store.slug, qrSource(this.label));
     } catch {
@@ -149,16 +209,22 @@ export class StoreQrComponent {
     return `dowozka-qr-${this.store?.slug ?? 'sklep'}${src === 'qr' ? '' : '-' + src.slice(3)}.${ext}`;
   }
 
-  downloadSvg() {
-    QRCode.toString(this.url, { type: 'svg', margin: 4, errorCorrectionLevel: 'M' }).then(svg => {
-      const blob = new Blob([svg], { type: 'image/svg+xml' });
-      this.save(URL.createObjectURL(blob), this.fileName('svg'), true);
-    });
+  async downloadSvg() {
+    if (!await this.ensureRegistered()) return;
+    const svg = await QRCode.toString(this.url, { type: 'svg', margin: 4, errorCorrectionLevel: 'M' });
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    this.save(URL.createObjectURL(blob), this.fileName('svg'), true);
   }
 
-  downloadPng() {
-    QRCode.toDataURL(this.url, { width: 1200, margin: 4, errorCorrectionLevel: 'M' })
-      .then(data => this.save(data, this.fileName('png'), false));
+  async downloadPng() {
+    if (!await this.ensureRegistered()) return;
+    const data = await QRCode.toDataURL(this.url, { width: 1200, margin: 4, errorCorrectionLevel: 'M' });
+    this.save(data, this.fileName('png'), false);
+  }
+
+  async open() {
+    if (!await this.ensureRegistered()) return;
+    window.open(this.url, '_blank', 'noopener');
   }
 
   private save(href: string, name: string, revoke: boolean) {
@@ -168,7 +234,8 @@ export class StoreQrComponent {
     if (revoke) setTimeout(() => URL.revokeObjectURL(href), 1000);
   }
 
-  copy() {
+  async copy() {
+    if (!await this.ensureRegistered()) return;
     navigator.clipboard?.writeText(this.url).then(() => {
       this.copied = true; setTimeout(() => this.copied = false, 1500);
     }).catch(() => {});
