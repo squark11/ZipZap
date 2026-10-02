@@ -1,12 +1,16 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Xunit;
+using ZipZap.Api.Configuration;
 using ZipZap.BuildingBlocks.Inbox;
 using ZipZap.BuildingBlocks.Messaging;
 using ZipZap.BuildingBlocks.Outbox;
@@ -35,6 +39,13 @@ public class ApiFactory : WebApplicationFactory<Program>
 
     protected virtual string ConnectionString => BaseConnectionString;
 
+    /// <summary>
+    /// Osobne App_Data na każdy host testowy. Plikowe magazyny konfiguracji domyślnie leżą w content root
+    /// projektu API, wspólnym dla kolekcji uruchamianych RÓWNOLEGLE — captcha włączona na chwilę w jednej
+    /// kolekcji dawała 400 przy rejestracji w innej (sporadyczna porażka CI).
+    /// </summary>
+    private readonly string _appDataRoot = Path.Combine(Path.GetTempPath(), "zipzap-it", Guid.NewGuid().ToString("N"));
+
     /// <summary>Dodatkowe ustawienia wariantu (np. tryb publicznego pilotażu).</summary>
     protected virtual void ConfigureSettings(IWebHostBuilder builder) { }
 
@@ -42,7 +53,28 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development"); // tryb hartowany włącza Pilot:Public, nie nazwa środowiska
         builder.UseSetting("ConnectionStrings:Postgres", ConnectionString);
+        builder.ConfigureTestServices(IsolateAppData);
         ConfigureSettings(builder);
+    }
+
+    /// <summary>Każdy magazyn z App_Data dostaje content root w katalogu tego hosta (nowy magazyn dopisać tutaj).</summary>
+    private void IsolateAppData(IServiceCollection s)
+    {
+        IHostEnvironment Env(IServiceProvider sp) => new AppDataEnvironment(sp.GetRequiredService<IHostEnvironment>(), _appDataRoot);
+        s.AddSingleton(sp => new PlatformSettingsStore(Env(sp)));
+        s.AddSingleton(sp => new PlatformIntegrationsStore(Env(sp), sp.GetRequiredService<IDataProtectionProvider>()));
+        s.AddSingleton(sp => new StoreIntegrationStore(Env(sp), sp.GetRequiredService<IDataProtectionProvider>()));
+        s.AddSingleton(sp => new StoreBillingStore(Env(sp)));
+        s.AddSingleton(sp => new StoreLegalStore(Env(sp)));
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (!disposing) return;
+        try { Directory.Delete(_appDataRoot, recursive: true); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static string NextClientIp()
@@ -252,6 +284,15 @@ public class OutboxApiFactory : ApiFactory
             s.AddScoped<IInboxStore>(sp => new FaultInjectingInboxStore(sp.GetRequiredService<EfInboxStore>()));
             s.AddSingleton<ILoggerProvider>(Logs);
         });
+}
+
+/// <summary>Środowisko hosta z innym content rootem — tylko dla plikowych magazynów App_Data.</summary>
+internal sealed class AppDataEnvironment(IHostEnvironment inner, string contentRoot) : IHostEnvironment
+{
+    public string EnvironmentName { get => inner.EnvironmentName; set => inner.EnvironmentName = value; }
+    public string ApplicationName { get => inner.ApplicationName; set => inner.ApplicationName = value; }
+    public string ContentRootPath { get; set; } = contentRoot;
+    public IFileProvider ContentRootFileProvider { get => inner.ContentRootFileProvider; set => inner.ContentRootFileProvider = value; }
 }
 
 internal static class TestDatabases
