@@ -409,9 +409,10 @@ app.MapGet("/api/admin/config/status",
         // Kanał poczty z uwzględnieniem SMTP z panelu; „none" = atrapa (reset hasła i weryfikacja nie docierają).
         email = channel != ZipZap.Modules.Identity.Application.EmailChannel.None,
         emailChannel = channel,
+        // E-maile z linkami (reset, potwierdzenie adresu) od startu procesu; zadania czekające na ponowienie → „Zdarzenia".
         emailQueue = new
         {
-            sent = emailStatus.Sent, failed = emailStatus.Failed, dropped = emailStatus.Dropped,
+            sent = emailStatus.Sent, failed = emailStatus.Failed,
             lastSentAtUtc = emailStatus.LastSentAtUtc, lastFailureAtUtc = emailStatus.LastFailureAtUtc,
             lastFailureCategory = emailStatus.LastFailureCategory,
         },
@@ -525,7 +526,8 @@ app.MapPost("/api/merchant/stores",
 
 // Publiczny „Załóż sklep": tworzy sklep + konto właściciela (StoreEmployee) i loguje.
 app.MapPost("/api/register/store",
-    async (RegisterStoreRequest req, ICaptchaVerifier captcha, CatalogService catalog, IdentityService identity, CancellationToken ct) =>
+    async (RegisterStoreRequest req, ICaptchaVerifier captcha, CatalogService catalog, IdentityService identity,
+        ZipZap.BuildingBlocks.Outbox.OutboxSignal outbox, CancellationToken ct) =>
 {
     IResult Problem(Error e) => Results.Problem(detail: e.Message, statusCode: e.ToStatusCode(), title: e.Code);
 
@@ -543,6 +545,7 @@ app.MapPost("/api/register/store",
 
     var auth = await identity.RegisterStoreOwnerAsync(req.Email, req.Password, req.FullName, req.Phone, store.Value.Id, ct);
     if (auth.IsFailure) return Problem(auth.Error);
+    outbox.Notify(); // e-mail potwierdzający od razu, nie przy kolejnym odpytaniu outboxa
     return Results.Ok(auth.Value);
 }).WithTags("Registration");
 

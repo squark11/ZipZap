@@ -32,6 +32,9 @@ public static class EmailVerificationErrors
     /// <summary>Link zużyty albo adres potwierdzony już inaczej — w obu przypadkach nic więcej nie trzeba robić.</summary>
     public static readonly Error Used = new("validation.verify_token_used",
         "Ten adres e-mail jest już potwierdzony.");
+    /// <summary>Ponowna wysyłka linku: wyczerpany limit linków na konto w ciągu godziny.</summary>
+    public static readonly Error ResendLimit = new("validation.verify_resend_limit",
+        "Wysłaliśmy już kilka linków w ciągu ostatniej godziny. Sprawdź skrzynkę (także Spam) albo spróbuj później.");
 }
 
 /// <summary>
@@ -44,7 +47,6 @@ public sealed class IdentityService
     private readonly IPasswordHasher _hasher;
     private readonly ITokenService _tokens;
     private readonly IIntegrationEventTypeRegistry _eventRegistry;
-    private readonly IEmailQueue _emailQueue;
     private readonly IdentityOptions _options;
     private readonly IGoogleTokenValidator _google;
     private readonly ITotpService _totp;
@@ -57,7 +59,6 @@ public sealed class IdentityService
         IPasswordHasher hasher,
         ITokenService tokens,
         IIntegrationEventTypeRegistry eventRegistry,
-        IEmailQueue emailQueue,
         IOptions<IdentityOptions> options,
         IGoogleTokenValidator google,
         ITotpService totp)
@@ -66,7 +67,6 @@ public sealed class IdentityService
         _hasher = hasher;
         _tokens = tokens;
         _eventRegistry = eventRegistry;
-        _emailQueue = emailQueue;
         _options = options.Value;
         _google = google;
         _totp = totp;
@@ -85,12 +85,11 @@ public sealed class IdentityService
         var user = User.Register(email, _hasher.Hash(password), fullName, phone, Role.Customer);
         _db.Users.Add(user);
         _db.AddOutboxMessage(new CustomerRegistered(user.Id, user.Email, user.FullName), _eventRegistry);
+        // E-mail potwierdzający: zadanie w outboxie zapisane w tej samej transakcji co konto (trwałe, z ponowieniami).
+        _db.AddOutboxMessage(new VerificationEmailRequested(user.Id), _eventRegistry);
 
-        var rawVerify = CreateToken(user.Id, UserTokenType.EmailVerification, _options.EmailVerificationHours);
         var auth = IssueTokens(user);
         await _db.SaveChangesAsync(ct);
-
-        QueueVerificationEmail(user.Email, rawVerify);
         return auth;
     }
 
@@ -130,56 +129,43 @@ public sealed class IdentityService
         return EmailLog.Mask(user.Email);
     }
 
-    public async Task<Result> ResendVerificationAsync(Guid userId, CancellationToken ct)
-    {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return Result.Failure(Error.NotFound("Użytkownik nie istnieje."));
-        if (user.IsEmailVerified) return Result.Success();
-
-        var raw = CreateToken(user.Id, UserTokenType.EmailVerification, _options.EmailVerificationHours);
-        await _db.SaveChangesAsync(ct);
-        QueueVerificationEmail(user.Email, raw);
-        return Result.Success();
-    }
+    /// <summary>Czy adres e-mail konta jest potwierdzony (null — konto nie istnieje).</summary>
+    public async Task<bool?> IsEmailVerifiedAsync(Guid userId, CancellationToken ct)
+        => await _db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => (bool?)u.IsEmailVerified).FirstOrDefaultAsync(ct);
 
     /// <summary>
-    /// Przetwarza prośbę o link resetu hasła — wywoływane W TLE przez <c>PasswordResetRequestWorker</c> (endpoint tylko
-    /// kolejkuje adres), więc odpowiedź i jej czas są takie same dla istniejącego i nieistniejącego konta. E-mail idzie
-    /// przez kolejkę z ponowieniami (<see cref="IEmailQueue"/>); błąd dostawcy nie trafia do użytkownika.
-    /// Link: <c>{PublicUrl}/reset-password#token=…</c> — token we fragmencie adresu nie jest wysyłany do serwera WWW
-    /// (brak w logach dostępowych i nagłówku Referer). Maks. <see cref="IdentityOptions.PasswordResetMaxPerHour"/>
-    /// linków na konto na godzinę — ponad limit cicho bez wysyłki.
+    /// Ponowna wysyłka linku potwierdzającego (zalogowany użytkownik, z panelu albo aplikacji). Zapisuje zadanie w
+    /// outboxie; token powstaje dopiero przy wysyłce. Zwraca <c>false</c>, gdy adres jest już potwierdzony (nic nie
+    /// wysyłamy). Maks. <see cref="IdentityOptions.EmailVerificationMaxPerHour"/> linków na konto na godzinę.
     /// </summary>
-    public async Task ForgotPasswordAsync(string? email, CancellationToken ct)
+    public async Task<Result<bool>> ResendVerificationAsync(Guid userId, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(email)) return;
-        var normalized = User.Normalize(email);
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == normalized, ct);
-        if (user is null || !user.IsActive) return;
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Error.NotFound("Użytkownik nie istnieje.");
+        if (user.IsEmailVerified) return false;
 
         var since = DateTime.UtcNow.AddHours(-1);
         var recent = await _db.UserTokens.CountAsync(
-            t => t.UserId == user.Id && t.Type == UserTokenType.PasswordReset && t.CreatedAtUtc > since, ct);
-        if (recent >= _options.PasswordResetMaxPerHour) return;
+            t => t.UserId == user.Id && t.Type == UserTokenType.EmailVerification && t.CreatedAtUtc > since, ct);
+        if (recent >= _options.EmailVerificationMaxPerHour) return EmailVerificationErrors.ResendLimit;
 
-        var raw = CreateToken(user.Id, UserTokenType.PasswordReset, _options.PasswordResetHours);
+        _db.AddOutboxMessage(new VerificationEmailRequested(user.Id), _eventRegistry);
         await _db.SaveChangesAsync(ct);
-
-        var hours = _options.PasswordResetHours == 1 ? "1 godzinę" : $"{_options.PasswordResetHours} h";
-        _emailQueue.Enqueue(new EmailMessage(user.Email, "Dowózka.pl — ustaw nowe hasło",
-            $"""
-            Dzień dobry,
-
-            otrzymaliśmy prośbę o zmianę hasła do konta Dowózka.pl.
-            Ustaw nowe hasło: {PasswordResetLink(raw)}
-
-            Link jest ważny {hours} i działa jeden raz. Po zmianie hasła wylogujemy Cię ze wszystkich urządzeń.
-            Jeśli to nie Ty — zignoruj tę wiadomość, hasło pozostanie bez zmian.
-            """));
+        return true;
     }
 
-    /// <summary>Adres strony resetu (wspólny dla kont panelu i klientów aplikacji).</summary>
-    public string PasswordResetLink(string rawToken) => $"{PublicBaseUrl(_options.PublicUrl)}/reset-password#token={rawToken}";
+    /// <summary>
+    /// Prośba o link resetu hasła: zapisuje WYŁĄCZNIE zadanie w outboxie (ten sam zapis dla istniejącego i
+    /// nieistniejącego konta — odpowiedź i jej czas nie zdradzają, czy konto istnieje). Wyszukanie konta, limit na konto,
+    /// token i wysyłka dzieją się w handlerze <see cref="AccountEmails"/>; zadanie jest trwałe (przetrwa restart API,
+    /// przy awarii poczty outbox ponawia).
+    /// </summary>
+    public async Task RequestPasswordResetAsync(string? email, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(email) || email.Length > 320) return;
+        _db.AddOutboxMessage(new PasswordResetEmailRequested(email.Trim()), _eventRegistry);
+        await _db.SaveChangesAsync(ct);
+    }
 
     /// <summary>
     /// Baza linków w e-mailach z domeną IDN zapisaną w punycode (np. „panel.dowózka.pl" → „panel.xn--dowzka-dxa.pl") —
@@ -251,9 +237,6 @@ public sealed class IdentityService
         return (token, null);
     }
 
-    private string CreateToken(Guid userId, UserTokenType type, int hours)
-        => CreateToken(userId, type, TimeSpan.FromHours(hours));
-
     private string CreateToken(Guid userId, UserTokenType type, TimeSpan lifetime)
     {
         var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
@@ -268,24 +251,6 @@ public sealed class IdentityService
         var token = await _db.UserTokens.FirstOrDefaultAsync(t => t.TokenHash == hash && t.Type == type, ct);
         return token is not null && token.IsValid ? token : null;
     }
-
-    /// <summary>
-    /// Adres strony potwierdzenia (wspólny dla kont panelu i klientów aplikacji). Token we fragmencie adresu nie jest
-    /// wysyłany do serwera WWW (brak w logach dostępowych i nagłówku Referer).
-    /// </summary>
-    public string EmailVerificationLink(string rawToken) => $"{PublicBaseUrl(_options.PublicUrl)}/verify-email#token={rawToken}";
-
-    /// <summary>E-mail idzie przez kolejkę z ponowieniami — awaria dostawcy nie psuje rejestracji już zapisanego konta.</summary>
-    private void QueueVerificationEmail(string email, string rawToken)
-        => _emailQueue.Enqueue(new EmailMessage(email, "Dowózka.pl — potwierdź adres e-mail",
-            $"""
-            Dzień dobry,
-
-            dziękujemy za założenie konta w Dowózka.pl. Potwierdź adres e-mail: {EmailVerificationLink(rawToken)}
-
-            Link jest ważny {_options.EmailVerificationHours} h.
-            Jeśli konto zostało założone bez Twojej wiedzy — zignoruj tę wiadomość.
-            """));
 
     public async Task<Result<LoginResult>> LoginAsync(string email, string password, CancellationToken ct)
     {
@@ -488,12 +453,11 @@ public sealed class IdentityService
 
         var user = User.Register(email, _hasher.Hash(password), fullName, phone, Role.StoreEmployee, storeId);
         _db.Users.Add(user);
+        // E-mail potwierdzający: zadanie w outboxie zapisane w tej samej transakcji co konto (trwałe, z ponowieniami).
+        _db.AddOutboxMessage(new VerificationEmailRequested(user.Id), _eventRegistry);
 
-        var rawVerify = CreateToken(user.Id, UserTokenType.EmailVerification, _options.EmailVerificationHours);
         var auth = IssueTokens(user);
         await _db.SaveChangesAsync(ct);
-
-        QueueVerificationEmail(user.Email, rawVerify);
         return auth;
     }
 

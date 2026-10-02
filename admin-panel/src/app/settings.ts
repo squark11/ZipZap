@@ -17,7 +17,7 @@ export interface ConfigStatus {
   /** Problem z adresem linków w e-mailach (reset hasła) — null = OK. */
   identityPublicUrlProblem?: string | null;
   /** Kolejka e-maili w tle (reset hasła) — liczniki i ostatni błąd (sama kategoria, bez treści). */
-  emailQueue?: { sent: number; failed: number; dropped: number; lastFailureAtUtc?: string | null; lastFailureCategory?: string | null };
+  emailQueue?: { sent: number; failed: number; lastFailureAtUtc?: string | null; lastFailureCategory?: string | null };
   adminSeedEmail: string;
   jwtUsingDevSecret: boolean;
   /** Efektywny adres aplikacji klienta (web) i jego źródło: „panel" / „env"; null = nieustawiony. */
@@ -300,8 +300,8 @@ export interface PlatformIntegrations {
           (np. <code>https://panel.dowozka.pl</code>) — tam działa wspólna strona resetu dla wszystkich kont.</p>
       }
       @if (status.emailQueue?.failed) {
-        <p class="warn">⚠ Nieudane wysyłki z kolejki: {{ status.emailQueue?.failed }} (ostatnia: {{ status.emailQueue?.lastFailureAtUtc | date:'short' }},
-          {{ status.emailQueue?.lastFailureCategory }}). Sprawdź konfigurację poczty — „Wyślij test".</p>
+        <p class="warn">⚠ Nieudane próby wysyłki e-maili z linkami od startu API: {{ status.emailQueue?.failed }} (ostatnia: {{ status.emailQueue?.lastFailureAtUtc | date:'short' }},
+          {{ status.emailQueue?.lastFailureCategory }}). Zadania nie przepadają — czekają na ponowienie (zakładka „Zdarzenia"). Sprawdź konfigurację poczty — „Wyślij test".</p>
       }
       @if (status.jwtUsingDevSecret) {
         <p class="warn">⚠ Klucz JWT to wartość deweloperska — ustaw własny <code>JWT__SIGNINGKEY</code> (min. 32 znaki) przed produkcją.</p>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ZipZap.BuildingBlocks.Auditing;
 using ZipZap.BuildingBlocks.Domain;
+using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.BuildingBlocks.Security;
 using ZipZap.Modules.Identity.Application;
 using ZipZap.Modules.Identity.Domain;
@@ -16,11 +17,12 @@ public static class IdentityEndpoints
     {
         var group = app.MapGroup("/api/identity").WithTags("Identity");
 
-        group.MapPost("/register", async (RegisterRequest req, IdentityService svc, ICaptchaVerifier captcha, CancellationToken ct) =>
+        group.MapPost("/register", async (RegisterRequest req, IdentityService svc, ICaptchaVerifier captcha, OutboxSignal outbox, CancellationToken ct) =>
         {
             if (!await captcha.VerifyAsync(req.CaptchaToken, ct))
                 return Problem(Error.Validation("Weryfikacja captcha nie powiodła się."));
             var result = await svc.RegisterCustomerAsync(req.Email, req.Password, req.FullName, req.Phone, ct);
+            if (result.IsSuccess) outbox.Notify(); // e-mail potwierdzający od razu, nie przy kolejnym odpytaniu outboxa
             return result.IsSuccess ? Results.Ok(ToResponse(result.Value)) : Problem(result.Error);
         });
 
@@ -54,13 +56,15 @@ public static class IdentityEndpoints
         })
         .WithSummary("Logowanie Google — klient przesyła zweryfikowany ID token.");
 
-        group.MapGet("/me", (ClaimsPrincipal principal) =>
+        group.MapGet("/me", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
         {
             var id = principal.FindFirstValue("sub") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
             var email = principal.FindFirstValue("email") ?? principal.FindFirstValue(ClaimTypes.Email);
             var name = principal.FindFirstValue("name");
             var roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToArray();
-            return Results.Ok(new { id, email, name, roles });
+            // Aktualny stan z bazy (nie z tokenu) — po kliknięciu linku na innym urządzeniu baner/karta znika od razu.
+            var isEmailVerified = CurrentUserId(principal) is Guid userId ? await svc.IsEmailVerifiedAsync(userId, ct) : null;
+            return Results.Ok(new { id, email, name, roles, isEmailVerified });
         })
         .RequireAuthorization()
         .WithSummary("Dane bieżącego użytkownika (wymaga JWT).");
@@ -247,19 +251,23 @@ public static class IdentityEndpoints
         })
         .WithSummary("Potwierdzenie adresu e-mail tokenem z wiadomości (kody: validation.verify_token_invalid/expired/used).");
 
-        group.MapPost("/email/resend-verification", async (ClaimsPrincipal principal, IdentityService svc, CancellationToken ct) =>
+        group.MapPost("/email/resend-verification", async (ClaimsPrincipal principal, IdentityService svc, OutboxSignal outbox, CancellationToken ct) =>
         {
             if (CurrentUserId(principal) is not Guid userId) return Problem(Error.Unauthorized("Brak tożsamości."));
             var result = await svc.ResendVerificationAsync(userId, ct);
-            return result.IsSuccess ? Ok() : Problem(result.Error);
+            if (!result.IsSuccess) return Problem(result.Error);
+            if (result.Value) outbox.Notify();
+            // sent=false → adres jest już potwierdzony, nic nie wysłano.
+            return Results.Ok(new { status = "ok", sent = result.Value });
         })
         .RequireAuthorization()
-        .WithSummary("Ponowne wysłanie e-maila weryfikacyjnego.");
+        .WithSummary("Ponowne wysłanie e-maila weryfikacyjnego (limit na konto: validation.verify_resend_limit).");
 
-        group.MapPost("/password/forgot", (ForgotPasswordRequest req, IPasswordResetRequestQueue queue) =>
+        group.MapPost("/password/forgot", async (ForgotPasswordRequest req, IdentityService svc, OutboxSignal outbox, CancellationToken ct) =>
         {
-            // Zawsze ta sama odpowiedź w tym samym czasie — konto, token i e-mail obsługuje kolejka w tle.
-            queue.Enqueue(req.Email);
+            // Zawsze ta sama odpowiedź i ten sam zapis (zadanie w outboxie) — konto, token i e-mail obsługuje handler w tle.
+            await svc.RequestPasswordResetAsync(req.Email, ct);
+            outbox.Notify();
             return Ok();
         })
         .WithSummary("Wysyła link resetu hasła (jeśli konto istnieje).");

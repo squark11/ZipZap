@@ -11,22 +11,6 @@ public interface IEmailSender
     Task SendAsync(EmailMessage message, CancellationToken ct = default);
 }
 
-/// <summary>
-/// Kolejka e-maili wysyłanych w tle (link resetu hasła). Odpowiedź API nie czeka na dostawcę poczty, więc czas
-/// odpowiedzi i ewentualny błąd wysyłki nie zdradzają, czy konto istnieje. Kolejka jest w pamięci procesu —
-/// po restarcie niewysłana wiadomość przepada (użytkownik może poprosić o link ponownie).
-/// </summary>
-public interface IEmailQueue
-{
-    void Enqueue(EmailMessage message);
-}
-
-/// <summary>Przyjmuje prośbę o link resetu hasła do przetworzenia w tle (stały czas odpowiedzi endpointu).</summary>
-public interface IPasswordResetRequestQueue
-{
-    void Enqueue(string? email);
-}
-
 /// <summary>Którym kanałem idzie poczta: <c>http:&lt;dostawca&gt;</c>, <c>smtp</c> albo <c>none</c> (atrapa — nic nie jest wysyłane).</summary>
 public interface IEmailChannelInfo
 {

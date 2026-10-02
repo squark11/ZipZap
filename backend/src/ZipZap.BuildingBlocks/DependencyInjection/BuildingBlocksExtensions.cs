@@ -55,6 +55,7 @@ public static class BuildingBlocksExtensions
         services.AddScoped<CurrentTenant>();
         services.AddScoped<ICurrentTenant>(sp => sp.GetRequiredService<CurrentTenant>());
 
+        services.AddSingleton<OutboxSignal>();
         services.AddHostedService<OutboxDispatcherHostedService>();
 
         return services;

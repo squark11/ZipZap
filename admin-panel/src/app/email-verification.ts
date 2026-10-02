@@ -63,7 +63,8 @@ export function verifyErrorView(e: unknown): 'invalid' | 'expired' | 'used' | nu
       @case ('expired') {
         <div class="badge warn" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9.5"/></svg></div>
         <h2>Ten link wygasł</h2>
-        <p class="lead">Link potwierdzający działa przez ograniczony czas i ten już stracił ważność. Konto działa normalnie — możesz się zalogować.</p>
+        <p class="lead">Link potwierdzający działa przez ograniczony czas i ten już stracił ważność. Konto działa normalnie —
+          zaloguj się, a nowy link wyślesz jednym kliknięciem: w panelu z paska u góry, w aplikacji z ekranu „Konto".</p>
         <p class="center"><button type="button" class="back" (click)="back.emit()">{{ panelLabel }}</button></p>
       }
       @default {

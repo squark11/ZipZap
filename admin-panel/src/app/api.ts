@@ -146,6 +146,17 @@ export class Api {
     return this.http.post<{ status: string; email: string }>(`${this.base}/identity/email/verify`, { token });
   }
 
+  /// Bieżące konto z aktualnym stanem potwierdzenia adresu (z bazy, nie z tokenu).
+  me() {
+    return this.get<{ email: string; isEmailVerified: boolean | null }>('/identity/me');
+  }
+
+  /// Ponowna wysyłka linku potwierdzającego (zalogowany). sent=false → adres jest już potwierdzony.
+  /// Limit na konto: błąd 400 z kodem validation.verify_resend_limit w polu „title".
+  resendVerification() {
+    return this.post<{ status: string; sent: boolean }>('/identity/email/resend-verification', {});
+  }
+
   logout() { this.token.set(null); this.refreshToken.set(null); this.userEmail.set(''); this.roles.set([]); this.storeIds.set([]); }
 
   private opts() { return { headers: { Authorization: `Bearer ${this.token()}` } }; }

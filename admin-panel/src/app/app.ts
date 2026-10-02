@@ -6,6 +6,7 @@ import { Api, StoreDto, isTwoFactorChallenge } from './api';
 import { PANEL_MODULES } from './modules';
 import { PasswordRecoveryComponent } from './password-recovery';
 import { EmailVerificationComponent } from './email-verification';
+import { VerifyEmailBannerComponent } from './verify-email-banner';
 
 /** Publiczna strona resetu hasła (link z e-maila) — pokazywana także zalogowanym, zamiast powłoki panelu. */
 const isResetPath = (url: string) => url.split(/[?#]/)[0] === '/reset-password';
@@ -14,7 +15,8 @@ const isVerifyPath = (url: string) => url.split(/[?#]/)[0] === '/verify-email';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, PasswordRecoveryComponent, EmailVerificationComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, PasswordRecoveryComponent, EmailVerificationComponent,
+    VerifyEmailBannerComponent],
   template: `
   @if (!api.isLoggedIn() || resetRoute() || verifyRoute()) {
     <div class="auth">
@@ -211,6 +213,7 @@ const isVerifyPath = (url: string) => url.split(/[?#]/)[0] === '/verify-email';
         </div>
 
         <div class="content">
+          <app-verify-email-banner />
           <router-outlet></router-outlet>
         </div>
       </div>

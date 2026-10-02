@@ -16,7 +16,9 @@ znacznikiem „PODGLĄD" w rogu każdego ekranu.
 | `.htaccess` (SPA-fallback + `Cache-Control: no-cache`) | ✓ `mobile/hosting/app.htaccess` (w paczce) | ✓ Apache 2.4 | ✗ | ✗ |
 | Trasy `/s/{slug}`, `?src=`, odświeżenie, `/login?from=`, `/forgot-password` → `index.html` | ✓ | ✓ Apache 2.4 | ✗ | ✗ |
 | Service worker (zakres `/`, nowa wersja po wdrożeniu) | ✓ | ✓ Edge headless + Apache | ✗ | ✗ |
-| Osobne testowe API + baza | ✓ opis niżej | ✓ lokalne API na osobnej bazie | ✗ | ✗ |
+| Osobne testowe API + baza | ✓ szablon `deploy/preview/preview.env.example` | ✓ próba 2026-10-02: API w trybie publicznym na osobnej bazie i roli | ✗ | ✗ |
+| Konto administratora podglądu (seed pomijany w trybie publicznym) | ✓ `deploy/preview/bootstrap-admin.ps1` | ✓ próba: konto założone, logowanie OK, domyślnego admina brak | ✗ | ✗ |
+| CORS tylko z `app.dowózka.pl` | ✓ | ✓ próba: punycode wpuszczony, obce originy bez nagłówka | ✗ | ✗ |
 | Blokada produkcyjnego API w paczce | ✓ | ✓ skrypt odmawia | — | — |
 | Znacznik „PODGLĄD" | ✓ `APP_ENV=preview` | ✓ | ✗ | ✗ |
 | Telefony (iPhone Safari, Android Chrome) | — | ✗ nie testowane | ✗ | ✗ |
@@ -24,10 +26,19 @@ znacznikiem „PODGLĄD" w rogu każdego ekranu.
 **Kroki (właściciel; niczego z tego nie wykonano):**
 1. **Testowe API** — osobna usługa Render (np. `dowozka-api-preview`, ten sam Dockerfile) z gałęzi wybranej przez
    właściciela (wymaga wypchnięcia gałęzi — decyzja właściciela) i **osobna baza** (Neon: nowa gałąź/baza, nie
-   produkcyjna). Zmienne jak dla publicznego pilotażu (tabela wyżej w PRODUCTION_SETUP.md, `PILOT__PUBLIC=true`), ale z
-   własnym `CONNECTIONSTRINGS__POSTGRES` i `JWT__SIGNINGKEY`, oraz: `CORS__ALLOWEDORIGINS__0=https://app.dowózka.pl`,
-   `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl`, `PILOT__PAYMENTMODE=test`. Poczty nie ustawiaj — podgląd ma
-   pocztę-atrapę (aplikacja pokaże ostrzeżenie; reset hasła testujemy lokalnie na Mailpit, bo testowego panelu nie ma).
+   produkcyjna). Kolejność:
+   a. utwórz bazę podglądu (hasło inne niż domyślne);
+   b. **konto administratora** — tryb publiczny celowo pomija seed, więc świeża baza nie ma żadnego konta. Uruchom raz,
+      lokalnie: `powershell -ExecutionPolicy Bypass -File deploy/preview/bootstrap-admin.ps1 -ConnectionString "<baza
+      podglądu>" -AdminEmail <e-mail> -ConfirmDatabase <nazwa bazy>` (pyta o hasło, min. 12 znaków; API startuje tylko
+      na `127.0.0.1`, wykonuje migracje, zakłada konto, sprawdza logowanie i się zamyka). NIE na bazie produkcyjnej;
+   c. w usłudze ustaw zmienne z `deploy/preview/preview.env.example` (`PILOT__PUBLIC=true`, własne
+      `CONNECTIONSTRINGS__POSTGRES` i `JWT__SIGNINGKEY`, `CORS__ALLOWEDORIGINS__0=https://app.dowózka.pl`,
+      `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl`, `PILOT__PAYMENTMODE=test`), health check `/health/ready`;
+   d. po starcie: panel nie jest częścią podglądu — dane demo załóż wywołaniem `POST /api/admin/seed/pilot` (admin).
+   Poczty nie ustawiaj — podgląd ma pocztę-atrapę (aplikacja pokaże ostrzeżenie; reset hasła i potwierdzanie adresu
+   testujemy lokalnie na Mailpit, bo testowego panelu nie ma). Dwa ostrzeżenia w logu startu (poczta-atrapa,
+   `Identity:PublicUrl`) są w podglądzie oczekiwane.
 2. **Paczka:** `powershell -ExecutionPolicy Bypass -File mobile/hosting/build-preview.ps1 -ApiBaseUrl https://<testowe-api>/api`
    — buduje z `--base-href /`, kopiuje `mobile/hosting/app.htaccess` jako `build/web/.htaccess`, sprawdza paczkę
    (base href, pliki, `.htaccess`, adres API w `main.dart.js`, brak produkcyjnego API) i tworzy
@@ -52,17 +63,27 @@ znacznikiem „PODGLĄD" w rogu każdego ekranu.
   sklepu) to `{IDENTITY__PUBLICURL}/verify-email#token=…` (już wysłane maile z `?token=` nadal działają) → publiczna
   strona w panelu, która woła istniejące `POST /api/identity/email/verify`. Stany: potwierdzono / już potwierdzony /
   wygasł / nieprawidłowy / błąd sieci z ponowieniem. Kody API: `validation.verify_token_invalid|expired|used` (400).
-  E-mail idzie przez kolejkę w tle — awaria poczty nie psuje rejestracji. Nowy link po wygaśnięciu: tylko istniejące
-  `POST /api/identity/email/resend-verification` (zalogowany) — ani panel, ani aplikacja nie mają jeszcze przycisku.
+  Awaria poczty nie psuje rejestracji (zadanie w outboxie, patrz „Trwałość"). **Ponowna wysyłka z interfejsu**
+  (istniejące `POST /api/identity/email/resend-verification`, zalogowany; maks. 3 linki/h na konto →
+  `validation.verify_resend_limit`): panel — pasek „Potwierdź adres e-mail" u góry po zalogowaniu; aplikacja — karta
+  na ekranie „Konto". Stan potwierdzenia: `GET /api/identity/me` → `isEmailVerified` (z bazy). Strona wygasłego linku
+  kieruje do logowania (sesja panelu żyje tylko w karcie, więc link z e-maila zawsze otwiera się bez sesji).
   Wymaga tego samego wdrożenia panelu co reset hasła.
+- **Trwałość e-maili z linkami (2026-10-02):** prośba o reset i link potwierdzający to **zadania w outboxie modułu
+  Identity** (`PasswordResetEmailRequested`, `VerificationEmailRequested`) — zapisane w bazie w tej samej transakcji co
+  operacja, więc przetrwają restart API; przy awarii poczty outbox ponawia bez limitu (10 s → maks. co 30 min), a
+  zadania czekające widać w panelu „Zdarzenia". Ładunek zadania nie zawiera tokenu (token powstaje przy wysyłce; po
+  nieudanej wysyłce jest usuwany). Gwarancja „co najmniej raz": w rzadkim przypadku awarii tuż po wysyłce użytkownik
+  może dostać dwa e-maile (oba linki działają do pierwszego użycia). Brak nowej migracji. Przy włączonym RabbitMQ
+  (`RabbitMq:Host`; dziś nieużywany) ponowienia idą wg polityki brokera — ograniczona liczba prób, potem kolejka martwych.
 - **Poczta:** bez `EMAIL__HTTP__APIKEY` i SMTP poczta jest **atrapą** — API loguje ostrzeżenie w trybie publicznym, panel
   i aplikacja pokazują ostrzeżenie na formularzu, „Status" pokazuje atrapę. Render blokuje SMTP → HTTP API (Resend/Brevo).
-- **Bezpieczeństwo:** ta sama odpowiedź i ten sam czas dla istniejącego i nieistniejącego konta (prośba i e-mail w
-  kolejce w tle); maks. 3 linki/h na konto + limit 10/min na IP; token 256 bitów, w bazie tylko hash, ważny 1 h,
+- **Bezpieczeństwo:** ta sama odpowiedź i ten sam czas dla istniejącego i nieistniejącego konta (endpoint zapisuje
+  tylko zadanie w outboxie; konto, token i wysyłka — w tle); maks. 3 linki/h na konto + limit 10/min na IP; token 256 bitów, w bazie tylko hash, ważny 1 h,
   jednorazowy (zużycie atomowe); po zmianie hasła wszystkie sesje i pozostałe linki są unieważniane; token we
   fragmencie `#` (nie trafia do logów serwera WWW ani nagłówka Referer), od razu usuwany z paska adresu; logi zawierają
   tylko zamaskowany adres i kategorię błędu; stany linku: nieprawidłowy / wygasł / użyty (kody
-  `validation.reset_token_*`). Kolejka jest w pamięci — po restarcie API niewysłany link przepada (użytkownik prosi ponownie).
+  `validation.reset_token_*`).
 - **Test lokalny na atrapowym serwerze pocztowym (Mailpit):**
   `docker run -d --name zz-mailpit -p 127.0.0.1:1025:1025 -p 127.0.0.1:8025:8025 axllent/mailpit`, API z
   `--Email:Smtp:Host=127.0.0.1 --Email:Smtp:Port=1025 --Email:Smtp:UseSsl=false --Email:Smtp:FromEmail=no-reply@dowozka.test`

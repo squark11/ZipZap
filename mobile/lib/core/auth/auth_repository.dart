@@ -54,6 +54,19 @@ class AuthRepository {
   Future<void> forgotPassword(String email) =>
       _api.post('/identity/password/forgot', body: {'email': email});
 
+  /// Czy adres e-mail zalogowanego konta jest potwierdzony (stan z bazy; null — starsze API bez tego pola).
+  Future<bool?> isEmailVerified() async {
+    final data = await _api.get('/identity/me');
+    return (data as Map<String, dynamic>)['isEmailVerified'] as bool?;
+  }
+
+  /// Ponowna wysyłka linku potwierdzającego. `false` — adres jest już potwierdzony (nic nie wysłano).
+  /// Limit na konto: [ApiException] z kodem `validation.verify_resend_limit`.
+  Future<bool> resendVerification() async {
+    final data = await _api.post('/identity/email/resend-verification', body: const {});
+    return (data as Map<String, dynamic>)['sent'] != false;
+  }
+
   /// Zmiana hasła zalogowanego użytkownika (backend unieważnia pozostałe sesje).
   Future<void> changePassword(String currentPassword, String newPassword) =>
       _api.post('/identity/password/change',

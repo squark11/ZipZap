@@ -22,7 +22,6 @@ public class GoogleLoginTests
             new Pbkdf2PasswordHasher(),
             new FakeTokenService(),
             new IntegrationEventTypeRegistry(),
-            new FakeEmailQueue(),
             Options.Create(new IdentityOptions()),
             new FakeGoogleTokenValidator(googlePayload),
             new TotpService());

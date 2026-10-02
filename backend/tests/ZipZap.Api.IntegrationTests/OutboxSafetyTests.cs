@@ -120,7 +120,7 @@ public sealed class OutboxChannelLogSafetyTests
         await using var sp = services.BuildServiceProvider();
 
         var dispatcher = new OutboxDispatcherHostedService(sp.GetRequiredService<IServiceScopeFactory>(),
-            sp.GetRequiredService<ILogger<OutboxDispatcherHostedService>>());
+            new OutboxSignal(), sp.GetRequiredService<ILogger<OutboxDispatcherHostedService>>());
         await dispatcher.StartAsync(CancellationToken.None);
         await called.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await dispatcher.StopAsync(CancellationToken.None);

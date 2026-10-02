@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Xunit;
+using ZipZap.BuildingBlocks.Outbox;
 using ZipZap.Modules.Identity.Application;
 using ZipZap.Modules.Identity.Infrastructure;
 
@@ -225,10 +226,15 @@ public class PasswordResetTests
     }
 
     [Fact]
-    public async Task A_mail_provider_failure_is_invisible_to_the_caller_and_is_logged_without_the_link()
+    public async Task A_mail_provider_failure_is_invisible_to_the_caller_and_the_job_waits_in_the_outbox_until_delivered()
     {
-        var email = (await _f.RegisterCustomerAsync()).user.email;
+        var account = await _f.RegisterCustomerAsync();
+        var email = account.user.email;
+        var userId = Guid.Parse(account.user.id);
         var unknown = $"nikt-{Guid.NewGuid():N}@test.pl";
+        (await MailsToAsync(email, 0)).Should().BeEmpty();
+
+        OutboxMessage? job = null;
         _f.Mail.Fail = true;
         try
         {
@@ -237,17 +243,59 @@ public class PasswordResetTests
             a.Should().Be(b);
             a.Status.Should().Be(200);
 
-            var until = DateTime.UtcNow.AddSeconds(5);
-            while (DateTime.UtcNow < until && !_f.Logs.Snapshot().Any(l => l.Message.Contains("[EMAIL:queue] wysyłka nieudana")))
-                await Task.Delay(50);
+            var until = DateTime.UtcNow.AddSeconds(10);
+            while (DateTime.UtcNow < until && (job = await ResetJobAsync(email)) is not { Attempts: > 0 }) await Task.Delay(50);
         }
         finally { _f.Mail.Fail = false; }
 
-        var failure = _f.Logs.Snapshot().Where(l => l.Message.Contains("[EMAIL:queue] wysyłka nieudana")).ToList();
+        // Zadanie jest trwałe: leży w bazie (przetrwa restart API), czeka na ponowienie i nie zawiera tokenu.
+        job.Should().NotBeNull();
+        job!.Attempts.Should().Be(1);
+        job.ProcessedAtUtc.Should().BeNull();
+        job.DeadLetteredAtUtc.Should().BeNull("awaria poczty jest przejściowa — outbox ponawia bez limitu");
+        job.NextAttemptAtUtc.Should().NotBeNull();
+        job.Error.Should().NotBeNullOrEmpty();
+        job.Payload.Should().NotContain("token").And.NotContain("reset-password");
+        (await ResetTokensAsync(userId)).Should().Be(0, "token z nieudanej wysyłki jest usuwany — nie zużywa limitu konta");
+
+        var failure = _f.Logs.Snapshot().Where(l => l.Message.Contains(nameof(PasswordResetEmailRequested))
+            && l.Message.Contains("Nie udało się wysłać wiadomości outboxa")).ToList();
         failure.Should().NotBeEmpty();
         failure.Should().OnlyContain(l => l.Message.Contains("InvalidOperationException") && l.Exception == null);
         AssertNeverLogged("#token=");
-        _f.Logs.Snapshot().Should().NotContain(l => l.Message.Contains(email), "adres w logach jest maskowany");
+        _f.Logs.Snapshot().Should().NotContain(l => l.Message.Contains(email), "adres nie trafia do logów");
+
+        // Poczta wraca — ponowienie (tu przyspieszone: termin „na teraz" + sygnał) doręcza działający link.
+        await using (var scope = _f.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"""UPDATE identity.outbox_messages SET "NextAttemptAtUtc" = now() - interval '1 second' WHERE "Id" = {job.Id}""");
+        }
+        _f.Services.GetRequiredService<OutboxSignal>().Notify();
+
+        var mail = (await MailsToAsync(email, 1, timeoutMs: 15000)).Should().ContainSingle().Subject;
+        var token = LinkToken.Match(mail.Body).Groups[1].Value;
+        (await PostAsync("/api/identity/password/reset/check", new { token })).Status.Should().Be(HttpStatusCode.OK);
+        (await ResetJobAsync(email))!.ProcessedAtUtc.Should().NotBeNull();
+        (await ResetTokensAsync(userId)).Should().Be(1);
+    }
+
+    private async Task<OutboxMessage?> ResetJobAsync(string email)
+    {
+        await using var scope = _f.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        return await db.OutboxMessages.AsNoTracking()
+            .Where(m => m.Type.Contains(nameof(PasswordResetEmailRequested)) && m.Payload.Contains(email))
+            .OrderByDescending(m => m.OccurredAtUtc).FirstOrDefaultAsync();
+    }
+
+    private async Task<int> ResetTokensAsync(Guid userId)
+    {
+        await using var scope = _f.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        return await db.UserTokens.AsNoTracking()
+            .CountAsync(t => t.UserId == userId && t.Type == ZipZap.Modules.Identity.Domain.UserTokenType.PasswordReset);
     }
 
     [Fact]

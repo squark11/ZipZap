@@ -208,18 +208,60 @@ public class EmailVerificationTests
                 new { email, password = "Passw0rd!", fullName = "IT User" });
             resp.StatusCode.Should().Be(HttpStatusCode.OK, "konto jest już zapisane — awaria poczty nie może zwrócić błędu rejestracji");
 
-            var until = DateTime.UtcNow.AddSeconds(5);
-            while (DateTime.UtcNow < until && !_f.Logs.Snapshot().Any(l => l.Message.Contains("[EMAIL:queue] wysyłka nieudana")))
+            var until = DateTime.UtcNow.AddSeconds(10);
+            while (DateTime.UtcNow < until && !_f.Logs.Snapshot().Any(IsVerificationJobFailure))
                 await Task.Delay(50);
         }
         finally { _f.Mail.Fail = false; }
 
-        var failure = _f.Logs.Snapshot().Where(l => l.Message.Contains("[EMAIL:queue] wysyłka nieudana")).ToList();
+        // Zadanie zostaje w outboxie (trwałe) i będzie ponawiane; w logu tylko kategoria i typ błędu.
+        var failure = _f.Logs.Snapshot().Where(IsVerificationJobFailure).ToList();
         failure.Should().NotBeEmpty();
         failure.Should().OnlyContain(l => l.Message.Contains("InvalidOperationException") && l.Exception == null);
         AssertNeverLogged("#token=");
         _f.Logs.Snapshot().Should().NotContain(l => l.Message.Contains(email), "adres w logach jest maskowany");
     }
+
+    [Fact]
+    public async Task Resend_from_the_ui_uses_the_existing_endpoint_is_limited_per_account_and_me_reports_the_status()
+    {
+        var account = await _f.RegisterCustomerAsync();
+        var email = account.user.email;
+        var client = _f.Authed(account.accessToken);
+
+        (await client.GetFromJsonAsync<JsonElement>("/api/identity/me")).GetProperty("isEmailVerified").GetBoolean()
+            .Should().BeFalse();
+        (await _f.Anon().PostAsJsonAsync("/api/identity/email/resend-verification", new { })).StatusCode
+            .Should().Be(HttpStatusCode.Unauthorized, "ponowna wysyłka tylko dla zalogowanego właściciela konta");
+
+        // Rejestracja = 1. link; dwa ponowienia = razem 3 (limit na konto na godzinę).
+        await TokenFromMailAsync(email, 1);
+        for (var nth = 2; nth <= 3; nth++)
+        {
+            var resend = await client.PostAsJsonAsync("/api/identity/email/resend-verification", new { });
+            resend.StatusCode.Should().Be(HttpStatusCode.OK);
+            (await resend.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sent").GetBoolean().Should().BeTrue();
+            await TokenFromMailAsync(email, nth);
+        }
+
+        var limited = await client.PostAsJsonAsync("/api/identity/email/resend-verification", new { });
+        limited.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await limited.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("title").GetString()
+            .Should().Be("validation.verify_resend_limit");
+        await Task.Delay(300);
+        _f.Mail.Sent.Count(m => m.To == email && m.Subject == VerifySubject).Should().Be(3);
+
+        (await VerifyAsync(await TokenFromMailAsync(email, 3))).Status.Should().Be(HttpStatusCode.OK);
+        (await client.GetFromJsonAsync<JsonElement>("/api/identity/me")).GetProperty("isEmailVerified").GetBoolean()
+            .Should().BeTrue();
+        var already = await client.PostAsJsonAsync("/api/identity/email/resend-verification", new { });
+        already.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await already.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sent").GetBoolean()
+            .Should().BeFalse("adres jest już potwierdzony — nic nie wysyłamy");
+    }
+
+    private static bool IsVerificationJobFailure(CapturedLog l)
+        => l.Message.Contains(nameof(VerificationEmailRequested)) && l.Message.Contains("Nie udało się wysłać wiadomości outboxa");
 
     private void AssertNeverLogged(string secret)
         => _f.Logs.Snapshot().Should().NotContain(

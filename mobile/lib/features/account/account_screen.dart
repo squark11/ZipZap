@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme/theme_mode_controller.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/widgets/zz_icon.dart';
+import 'verify_email_card.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -47,6 +48,11 @@ class AccountScreen extends ConsumerWidget {
               ),
             ),
           ),
+          // Niepotwierdzony adres e-mail: przypomnienie + ponowna wysyłka linku (stan z API; brak danych = bez karty).
+          if (auth.isAuthenticated && ref.watch(emailVerifiedProvider).valueOrNull == false) ...[
+            const SizedBox(height: 16),
+            VerifyEmailCard(email: user?.email ?? ''),
+          ],
           const SizedBox(height: 16),
           Card(
             child: Column(

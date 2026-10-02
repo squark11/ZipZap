@@ -16,6 +16,9 @@ public sealed class IdentityOptions
     /// <summary>Ile linków resetu może dostać jedno konto w ciągu godziny (ponad limit — cicho bez wysyłki).</summary>
     public int PasswordResetMaxPerHour { get; set; } = 3;
 
+    /// <summary>Ile linków potwierdzających adres może dostać jedno konto w ciągu godziny (rejestracja + ponowne wysyłki).</summary>
+    public int EmailVerificationMaxPerHour { get; set; } = 3;
+
     /// <summary>
     /// Problem z <see cref="PublicUrl"/> dla środowiska publicznego (null = OK): brak HTTPS, localhost albo zły format.
     /// Link w e-mailu musi prowadzić na istniejącą stronę resetu po HTTPS.

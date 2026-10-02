@@ -13,13 +13,16 @@ public sealed class OutboxDispatcherHostedService : BackgroundService
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
 
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly OutboxSignal _signal;
     private readonly ILogger<OutboxDispatcherHostedService> _logger;
 
     public OutboxDispatcherHostedService(
         IServiceScopeFactory scopeFactory,
+        OutboxSignal signal,
         ILogger<OutboxDispatcherHostedService> logger)
     {
         _scopeFactory = scopeFactory;
+        _signal = signal;
         _logger = logger;
     }
 
@@ -50,9 +53,10 @@ public sealed class OutboxDispatcherHostedService : BackgroundService
 
             try
             {
-                await Task.Delay(PollInterval, stoppingToken);
+                // Kolejny cykl po odstępie albo od razu, gdy ktoś zgłosił pilną wiadomość (np. e-mail z linkiem).
+                await _signal.WaitAsync(PollInterval, stoppingToken);
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
                 // zamykanie aplikacji — wyjdź cicho
             }
