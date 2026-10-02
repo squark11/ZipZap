@@ -1,9 +1,10 @@
 # Deploy Dowózka.pl
 
-## Podgląd `app.dowózka.pl` na testowym API — 2026-10-01, przygotowane lokalnie, NIEWDROŻONE
-Host `app.dowózka.pl` (`app.xn--dowzka-dxa.pl`) utworzył właściciel. Podgląd = ta sama aplikacja Flutter web, ale
-zbudowana na **osobne testowe API i osobną bazę** (nigdy produkcyjne `dowozka-api.onrender.com` — skrypt odmawia), ze
-znacznikiem „PODGLĄD" w rogu każdego ekranu.
+## `app.dowózka.pl` na produkcji (bez podglądu) — decyzja właściciela 2026-10-03, przygotowane lokalnie, NIEWDROŻONE
+Bez osobnego podglądu i testowej bazy: aplikacja klienta (Flutter web) pod `https://app.dowózka.pl`
+(`app.xn--dowzka-dxa.pl`) działa od razu na **produkcyjnym API** `https://dowozka-api.onrender.com/api`. Kolejność jest
+ważna: **najpierw backend z tej gałęzi, potem aplikacja** — nowa aplikacja na starym backendzie nie ma m.in. licznika
+wejść z kodów QR, statusu poczty, resetu hasła ani potwierdzania adresu.
 
 **Tablica gotowości** (✓ tak · ✗ nie · — nie dotyczy):
 
@@ -12,43 +13,37 @@ znacznikiem „PODGLĄD" w rogu każdego ekranu.
 | DNS `app.xn--dowzka-dxa.pl` → `185.135.90.143` (lh.pl) | — | — | ✓ (właściciel) | ✓ odczyt 2026-09-30 |
 | Certyfikat TLS (Let's Encrypt, `app` + `www.app`, do 29.12.2026) | — | — | ✓ | ✓ łańcuch zaufany |
 | Przekierowanie HTTP → HTTPS | — | — | ✗ (HTTP zwraca 403) | ✗ |
-| Pliki aplikacji w katalogu głównym subdomeny | ✓ `build-preview.ps1` → `build/web` + ZIP | ✓ ZIP rozpakowany w Linuksie = 87/87 plików | ✗ (`/` zwraca 403 — pusty katalog) | ✗ |
+| Backend z tej gałęzi na produkcji (scalenie do `main`, migracje) | ✓ | ✓ testy backendu | ✗ (decyzja właściciela) | ✗ |
+| `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl` (baza kodów QR i landingu) | ✓ | ✓ | ✗ | ✗ |
+| Pliki aplikacji w katalogu głównym subdomeny | ✓ `build-app.ps1 -ConfirmProduction` → ZIP | ✓ ZIP rozpakowany w Linuksie = 87/87 plików | ✗ (`/` zwraca 403 — pusty katalog) | ✗ |
 | `.htaccess` (SPA-fallback + `Cache-Control: no-cache`) | ✓ `mobile/hosting/app.htaccess` (w paczce) | ✓ Apache 2.4 | ✗ | ✗ |
 | Trasy `/s/{slug}`, `?src=`, odświeżenie, `/login?from=`, `/forgot-password` → `index.html` | ✓ | ✓ Apache 2.4 | ✗ | ✗ |
 | Service worker (zakres `/`, nowa wersja po wdrożeniu) | ✓ | ✓ Edge headless + Apache | ✗ | ✗ |
-| Osobne testowe API + baza | ✓ szablon `deploy/preview/preview.env.example` | ✓ próba 2026-10-02: API w trybie publicznym na osobnej bazie i roli | ✗ | ✗ |
-| Konto administratora podglądu (seed pomijany w trybie publicznym) | ✓ `deploy/preview/bootstrap-admin.ps1` | ✓ próba: konto założone, logowanie OK, domyślnego admina brak | ✗ | ✗ |
-| CORS tylko z `app.dowózka.pl` | ✓ | ✓ próba: punycode wpuszczony, obce originy bez nagłówka | ✗ | ✗ |
-| Blokada produkcyjnego API w paczce | ✓ | ✓ skrypt odmawia | — | — |
-| Znacznik „PODGLĄD" | ✓ `APP_ENV=preview` | ✓ | ✗ | ✗ |
+| CORS dla `app.dowózka.pl` | ✓ (API dopisuje punycode) | ✓ próba w trybie hartowanym 2026-10-02 | — produkcja w trybie Development przyjmuje każdy origin; w trybie hartowanym `CORS__ALLOWEDORIGINS__<n>=https://app.dowózka.pl` | ✗ |
+| Poczta (reset hasła, potwierdzanie adresu) | ✓ | ✓ Mailpit | ✗ (`EMAIL__HTTP__APIKEY`, `IDENTITY__PUBLICURL`) | ✗ |
+| Panel z tej gałęzi (`/reset-password`, `/verify-email`, pasek potwierdzenia) | ✓ | ✓ | ✗ | ✗ |
 | Telefony (iPhone Safari, Android Chrome) | — | ✗ nie testowane | ✗ | ✗ |
 
 **Kroki (właściciel; niczego z tego nie wykonano):**
-1. **Testowe API** — osobna usługa Render (np. `dowozka-api-preview`, ten sam Dockerfile) z gałęzi wybranej przez
-   właściciela (wymaga wypchnięcia gałęzi — decyzja właściciela) i **osobna baza** (Neon: nowa gałąź/baza, nie
-   produkcyjna). Kolejność:
-   a. utwórz bazę podglądu (hasło inne niż domyślne);
-   b. **konto administratora** — tryb publiczny celowo pomija seed, więc świeża baza nie ma żadnego konta. Uruchom raz,
-      lokalnie: `powershell -ExecutionPolicy Bypass -File deploy/preview/bootstrap-admin.ps1 -ConnectionString "<baza
-      podglądu>" -AdminEmail <e-mail> -ConfirmDatabase <nazwa bazy>` (pyta o hasło, min. 12 znaków; API startuje tylko
-      na `127.0.0.1`, wykonuje migracje, zakłada konto, sprawdza logowanie i się zamyka). NIE na bazie produkcyjnej;
-   c. w usłudze ustaw zmienne z `deploy/preview/preview.env.example` (`PILOT__PUBLIC=true`, własne
-      `CONNECTIONSTRINGS__POSTGRES` i `JWT__SIGNINGKEY`, `CORS__ALLOWEDORIGINS__0=https://app.dowózka.pl`,
-      `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl`, `PILOT__PAYMENTMODE=test`), health check `/health/ready`;
-   d. po starcie: panel nie jest częścią podglądu — dane demo załóż wywołaniem `POST /api/admin/seed/pilot` (admin).
-   Poczty nie ustawiaj — podgląd ma pocztę-atrapę (aplikacja pokaże ostrzeżenie; reset hasła i potwierdzanie adresu
-   testujemy lokalnie na Mailpit, bo testowego panelu nie ma). Dwa ostrzeżenia w logu startu (poczta-atrapa,
-   `Identity:PublicUrl`) są w podglądzie oczekiwane.
-2. **Paczka:** `powershell -ExecutionPolicy Bypass -File mobile/hosting/build-preview.ps1 -ApiBaseUrl https://<testowe-api>/api`
-   — buduje z `--base-href /`, kopiuje `mobile/hosting/app.htaccess` jako `build/web/.htaccess`, sprawdza paczkę
-   (base href, pliki, `.htaccess`, adres API w `main.dart.js`, brak produkcyjnego API) i tworzy
-   `mobile/build/dowozka-app-preview.zip` (ścieżki z „/", razem z `.htaccess`).
-3. **Wgranie:** menedżer plików lh.pl → katalog główny subdomeny `app` → wgraj ZIP → „Rozpakuj" → usuń ZIP. Włącz
+1. **Zgoda na scalenie** `pilot-outbox-deadletter` do `main` (gałąź zawiera też niescalone etapy S0–S1c). Render wdraża
+   `main` automatycznie, a API przy starcie wykonuje migracje na bazie produkcyjnej — przed scaleniem zrób kopię bazy
+   (Neon: snapshot/gałąź); lista migracji: PRODUCTION_SETUP.md.
+2. **Zmienne Render** (przed wdrożeniem albo razem z nim): `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl`,
+   `IDENTITY__PUBLICURL=https://panel.xn--dowzka-dxa.pl`, poczta `EMAIL__HTTP__PROVIDER` / `EMAIL__HTTP__APIKEY` /
+   `EMAIL__HTTP__FROMEMAIL` (Render blokuje SMTP); w trybie hartowanym także `CORS__ALLOWEDORIGINS__<n>`.
+3. **Panel** z tej gałęzi na `panel.dowózka.pl` (strony resetu hasła i potwierdzenia adresu, pasek potwierdzenia).
+4. **Paczka aplikacji** (po wdrożeniu backendu):
+   `powershell -ExecutionPolicy Bypass -File mobile/hosting/build-app.ps1 -ConfirmProduction` — najpierw tylko czyta
+   `GET /api/config/public` produkcji: przerywa, jeśli backend nie jest jeszcze z tej wersji, ostrzega, gdy adres
+   aplikacji albo poczta nie są ustawione; potem buduje z `--base-href /`, wkłada `.htaccess`, sprawdza paczkę i tworzy
+   `mobile/build/dowozka-app.zip` (ścieżki z „/", razem z `.htaccess`). Bez `-ConfirmProduction` skrypt odmawia.
+5. **Wgranie:** menedżer plików lh.pl → katalog główny subdomeny `app` → wgraj ZIP → „Rozpakuj" → usuń ZIP. Włącz
    pokazywanie plików ukrytych i sprawdź, że jest `.htaccess` (przy FTP: włącz wysyłanie plików ukrytych).
-4. **HTTPS:** w panelu lh.pl włącz wymuszanie SSL dla `app.dowózka.pl` (ustawienie hostingu — nie w `.htaccess`).
-5. **Sprawdzenie na żywo:** `curl -I https://app.xn--dowzka-dxa.pl/s/<slug>` → `200 text/html`, `cache-control: no-cache`;
+6. **HTTPS:** w panelu lh.pl włącz wymuszanie SSL dla `app.dowózka.pl` (ustawienie hostingu — nie w `.htaccess`).
+7. **Sprawdzenie na żywo:** `curl -I https://app.xn--dowzka-dxa.pl/s/<slug>` → `200 text/html`, `cache-control: no-cache`;
    `curl -I https://app.xn--dowzka-dxa.pl/main.dart.js` → `200`, `no-cache`; `curl -I http://app.xn--dowzka-dxa.pl/` →
-   `301` na `https://`; potem telefony: skan QR z testowego sklepu → oferta → koszyk → odświeżenie → logowanie.
+   `301` na `https://`; potem telefony: skan QR → oferta → koszyk → odświeżenie → logowanie → zamówienie testowe (W1).
+   Dopiero wtedy `appUrl` w `config.js` landingu i druk kodów QR (lista kontrolna w sekcji S2 niżej).
 
 ## Odzyskiwanie hasła — 2026-10-01, lokalnie, NIEWDROŻONE
 - **Jeden wspólny adres dla wszystkich kont** (klient aplikacji Flutter, sklep, kierowca, admin):
@@ -110,9 +105,10 @@ Konfiguracja jest przygotowana w kodzie; **DNS, hosting, Render i adres produkcy
 2. **TLS** — certyfikat (Let's Encrypt w panelu lh.pl) wystawiony dokładnie na `app.xn--dowzka-dxa.pl`. Sprawdź, że
    przeglądarka nie pokazuje ostrzeżenia (dla `panel.dowózka.pl` certyfikat NIE był wystawiony — ten sam błąd zablokuje
    aplikację i kody QR). Przekierowanie HTTP→HTTPS włącz opcją hostingu („wymuś SSL"), nie edycją `.htaccess` aplikacji.
-3. **Build aplikacji:** `cd mobile; flutter build web --release --base-href / --dart-define=API_BASE_URL=https://dowozka-api.onrender.com/api`
+3. **Build aplikacji:** skryptem `mobile/hosting/build-app.ps1 -ConfirmProduction` (sekcja „app.dowózka.pl na
+   produkcji" wyżej) — robi build z `--base-href /` i kroki z punktu 4 automatycznie.
 4. **`.htaccess` (SPA-fallback + nagłówki pamięci podręcznej)** — wzorzec w repozytorium: **`mobile/hosting/app.htaccess`**.
-   Po buildzie **skopiuj go ręcznie jako `mobile/build/web/.htaccess`**:
+   Skrypt wkłada go do paczki jako `build/web/.htaccess`; przy ręcznym buildzie skopiuj go sam:
    `Copy-Item mobile/hosting/app.htaccess mobile/build/web/.htaccess -Force`.
    - Flutter kopiuje do `build/web/` wszystko z `mobile/web/`, także pliki z kropką — ale `mobile/web/.htaccess` jest
      tylko lokalnym, nieśledzonym plikiem właściciela (w czystym klonie go nie ma), a obecna wersja nie ma nagłówka
