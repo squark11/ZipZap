@@ -1,0 +1,25 @@
+# Wzorzec .htaccess panelu na lh.pl (public_html/panel.dowozka.pl/.htaccess) - stan serwera od 2026-10-03.
+# Deploy panelu (FTPS) NIE nadpisuje tego pliku na serwerze; zmiany wgrywaj osobno.
+# Dowózka.pl panel (Angular) na hostingu Apache/LiteSpeed (lh.pl)
+Options -Indexes
+AddType application/wasm .wasm
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  # HTTP -> HTTPS (301) przed trasami SPA; host z naglowka (IDN przychodzi w punycode).
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # Nie przepisuj istniejących plików/katalogów
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  # Reszta tras SPA -> index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # index.html bez wersji w nazwie - zawsze rewalidacja (nowy panel od razu po wdrozeniu); chunki maja hash w nazwie.
+  <FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

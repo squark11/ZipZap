@@ -1,0 +1,9 @@
+# Wzorzec .htaccess strony glownej na lh.pl (public_html/dowozka.pl/.htaccess) - stan serwera od 2026-10-03.
+AddType application/vnd.android.package-archive .apk
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # HTTP -> HTTPS (301); host z naglowka (IDN przychodzi w punycode).
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>

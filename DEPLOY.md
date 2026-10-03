@@ -19,7 +19,7 @@
 - **Brak nowych zmiennych środowiskowych.** Zmienne środowiskowe (np. `PUBLICAPP__CUSTOMERAPPURL`) działają jak dotąd jako
   rezerwa, gdy pole w panelu jest puste.
 
-## `app.dowózka.pl` na produkcji (bez podglądu) — decyzja właściciela 2026-10-03, WDROŻONE 2026-10-03 (bez poczty i HTTP→HTTPS)
+## `app.dowózka.pl` na produkcji (bez podglądu) — decyzja właściciela 2026-10-03, WDROŻONE 2026-10-03 (bez poczty)
 Bez osobnego podglądu i testowej bazy: aplikacja klienta (Flutter web) pod `https://app.dowózka.pl`
 (`app.xn--dowzka-dxa.pl`) działa od razu na **produkcyjnym API** `https://dowozka-api.onrender.com/api`. Kolejność jest
 ważna: **najpierw backend z tej gałęzi, potem aplikacja** — nowa aplikacja na starym backendzie nie ma m.in. licznika
@@ -31,7 +31,7 @@ wejść z kodów QR, statusu poczty, resetu hasła ani potwierdzania adresu.
 |---|---|---|---|---|
 | DNS `app.xn--dowzka-dxa.pl` → `185.135.90.143` (lh.pl) | — | — | ✓ (właściciel) | ✓ odczyt 2026-09-30 |
 | Certyfikat TLS (Let's Encrypt, `app` + `www.app`, do 29.12.2026) | — | — | ✓ | ✓ łańcuch zaufany |
-| Przekierowanie HTTP → HTTPS | — | — | ✗ (HTTP zwraca 200 bez przekierowania — wymuszenie SSL w panelu lh.pl) | ✗ |
+| Przekierowanie HTTP → HTTPS | ✓ reguła w `.htaccess` (`app.htaccess`, `admin-panel/hosting/panel.htaccess`, `web-landing/landing.htaccess`) | — | ✓ 2026-10-03 (aplikacja, panel, strona główna) | ✓ `http://` → 301 na `https://` ze ścieżką i `?src=` |
 | Backend na produkcji (`main` `f98a8aa`, migracje) | ✓ | ✓ testy + próba migracji na kopii | ✓ 2026-10-03 | ✓ `/health/ready` 200, schemat `platform` |
 | `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl` (baza kodów QR i landingu) | ✓ | ✓ | ✓ (właściciel) | ✓ `/api/config/public` |
 | Pliki aplikacji w katalogu głównym subdomeny | ✓ `build-app.ps1 -ConfirmProduction` → ZIP | ✓ ZIP rozpakowany w Linuksie = 87/87 plików | ✓ FTPS 87 plików → `public_html/app.xn--dowzka-dxa.pl` | ✓ 200 |
@@ -43,7 +43,7 @@ wejść z kodów QR, statusu poczty, resetu hasła ani potwierdzania adresu.
 | Panel z `main` (`/reset-password`, `/verify-email`, pasek potwierdzenia) | ✓ | ✓ | ✓ FTPS 2026-10-03 (`main-NB4FPU3Z.js`) | ✓ `/verify-email` z błędnym tokenem → „Nieprawidłowy link" |
 | Telefony (iPhone Safari, Android Chrome) | — | ✗ nie testowane | ✗ | ✗ |
 
-**Kroki (2026-10-03 wykonane 1–5 i część 7; zostały: 6 — wymuszenie HTTPS, poczta, telefony):**
+**Kroki (2026-10-03 wykonane 1–7 poza pocztą i telefonami; HTTPS wymuszone regułą w `.htaccess`, nie opcją panelu lh.pl):**
 1. **Zgoda na scalenie** `pilot-outbox-deadletter` do `main` (gałąź zawiera też niescalone etapy S0–S1c). Render wdraża
    `main` automatycznie, a API przy starcie wykonuje migracje na bazie produkcyjnej — przed scaleniem zrób kopię bazy
    (Neon: snapshot/gałąź); lista migracji: PRODUCTION_SETUP.md.
@@ -58,7 +58,9 @@ wejść z kodów QR, statusu poczty, resetu hasła ani potwierdzania adresu.
    `mobile/build/dowozka-app.zip` (ścieżki z „/", razem z `.htaccess`). Bez `-ConfirmProduction` skrypt odmawia.
 5. **Wgranie:** menedżer plików lh.pl → katalog główny subdomeny `app` → wgraj ZIP → „Rozpakuj" → usuń ZIP. Włącz
    pokazywanie plików ukrytych i sprawdź, że jest `.htaccess` (przy FTP: włącz wysyłanie plików ukrytych).
-6. **HTTPS:** w panelu lh.pl włącz wymuszanie SSL dla `app.dowózka.pl` (ustawienie hostingu — nie w `.htaccess`).
+6. **HTTPS:** przekierowanie 301 jest w `.htaccess` aplikacji (`mobile/hosting/app.htaccess`, trafia do paczki), panelu
+   (`admin-panel/hosting/panel.htaccess`) i strony głównej (`web-landing/landing.htaccess`) — `RewriteCond %{HTTPS} !=on`
+   przed trasami SPA. Alternatywa: opcja „wymuś SSL" w panelu lh.pl (wtedy reguła jest zbędna, ale nie szkodzi).
 7. **Sprawdzenie na żywo:** `curl -I https://app.xn--dowzka-dxa.pl/s/<slug>` → `200 text/html`, `cache-control: no-cache`;
    `curl -I https://app.xn--dowzka-dxa.pl/main.dart.js` → `200`, `no-cache`; `curl -I http://app.xn--dowzka-dxa.pl/` →
    `301` na `https://`; potem telefony: skan QR → oferta → koszyk → odświeżenie → logowanie → zamówienie testowe (W1).
@@ -123,7 +125,7 @@ Konfiguracja jest przygotowana w kodzie; **DNS, hosting, Render i adres produkcy
    `app` jako jej **katalog główny** (nie podkatalog landingu). Azure SWA odrzuca IDN (tylko przez Cloudflare, patrz niżej).
 2. **TLS** — certyfikat (Let's Encrypt w panelu lh.pl) wystawiony dokładnie na `app.xn--dowzka-dxa.pl`. Sprawdź, że
    przeglądarka nie pokazuje ostrzeżenia (dla `panel.dowózka.pl` certyfikat NIE był wystawiony — ten sam błąd zablokuje
-   aplikację i kody QR). Przekierowanie HTTP→HTTPS włącz opcją hostingu („wymuś SSL"), nie edycją `.htaccess` aplikacji.
+   aplikację i kody QR). Przekierowanie HTTP→HTTPS jest w `mobile/hosting/app.htaccess` (od 2026-10-03).
 3. **Build aplikacji:** skryptem `mobile/hosting/build-app.ps1 -ConfirmProduction` (sekcja „app.dowózka.pl na
    produkcji" wyżej) — robi build z `--base-href /` i kroki z punktu 4 automatycznie.
 4. **`.htaccess` (SPA-fallback + nagłówki pamięci podręcznej)** — wzorzec w repozytorium: **`mobile/hosting/app.htaccess`**.
