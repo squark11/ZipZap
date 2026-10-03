@@ -19,7 +19,7 @@
 - **Brak nowych zmiennych środowiskowych.** Zmienne środowiskowe (np. `PUBLICAPP__CUSTOMERAPPURL`) działają jak dotąd jako
   rezerwa, gdy pole w panelu jest puste.
 
-## `app.dowózka.pl` na produkcji (bez podglądu) — decyzja właściciela 2026-10-03, przygotowane lokalnie, NIEWDROŻONE
+## `app.dowózka.pl` na produkcji (bez podglądu) — decyzja właściciela 2026-10-03, WDROŻONE 2026-10-03 (bez poczty i HTTP→HTTPS)
 Bez osobnego podglądu i testowej bazy: aplikacja klienta (Flutter web) pod `https://app.dowózka.pl`
 (`app.xn--dowzka-dxa.pl`) działa od razu na **produkcyjnym API** `https://dowozka-api.onrender.com/api`. Kolejność jest
 ważna: **najpierw backend z tej gałęzi, potem aplikacja** — nowa aplikacja na starym backendzie nie ma m.in. licznika
@@ -31,19 +31,19 @@ wejść z kodów QR, statusu poczty, resetu hasła ani potwierdzania adresu.
 |---|---|---|---|---|
 | DNS `app.xn--dowzka-dxa.pl` → `185.135.90.143` (lh.pl) | — | — | ✓ (właściciel) | ✓ odczyt 2026-09-30 |
 | Certyfikat TLS (Let's Encrypt, `app` + `www.app`, do 29.12.2026) | — | — | ✓ | ✓ łańcuch zaufany |
-| Przekierowanie HTTP → HTTPS | — | — | ✗ (HTTP zwraca 403) | ✗ |
-| Backend z tej gałęzi na produkcji (scalenie do `main`, migracje) | ✓ | ✓ testy backendu | ✗ (decyzja właściciela) | ✗ |
-| `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl` (baza kodów QR i landingu) | ✓ | ✓ | ✗ | ✗ |
-| Pliki aplikacji w katalogu głównym subdomeny | ✓ `build-app.ps1 -ConfirmProduction` → ZIP | ✓ ZIP rozpakowany w Linuksie = 87/87 plików | ✗ (`/` zwraca 403 — pusty katalog) | ✗ |
-| `.htaccess` (SPA-fallback + `Cache-Control: no-cache`) | ✓ `mobile/hosting/app.htaccess` (w paczce) | ✓ Apache 2.4 | ✗ | ✗ |
-| Trasy `/s/{slug}`, `?src=`, odświeżenie, `/login?from=`, `/forgot-password` → `index.html` | ✓ | ✓ Apache 2.4 | ✗ | ✗ |
-| Service worker (zakres `/`, nowa wersja po wdrożeniu) | ✓ | ✓ Edge headless + Apache | ✗ | ✗ |
-| CORS dla `app.dowózka.pl` | ✓ (API dopisuje punycode) | ✓ próba w trybie hartowanym 2026-10-02 | — produkcja w trybie Development przyjmuje każdy origin; w trybie hartowanym `CORS__ALLOWEDORIGINS__<n>=https://app.dowózka.pl` | ✗ |
-| Poczta (reset hasła, potwierdzanie adresu) | ✓ | ✓ Mailpit | ✗ (`EMAIL__HTTP__APIKEY`, `IDENTITY__PUBLICURL`) | ✗ |
-| Panel z tej gałęzi (`/reset-password`, `/verify-email`, pasek potwierdzenia) | ✓ | ✓ | ✗ | ✗ |
+| Przekierowanie HTTP → HTTPS | — | — | ✗ (HTTP zwraca 200 bez przekierowania — wymuszenie SSL w panelu lh.pl) | ✗ |
+| Backend na produkcji (`main` `f98a8aa`, migracje) | ✓ | ✓ testy + próba migracji na kopii | ✓ 2026-10-03 | ✓ `/health/ready` 200, schemat `platform` |
+| `PUBLICAPP__CUSTOMERAPPURL=https://app.dowózka.pl` (baza kodów QR i landingu) | ✓ | ✓ | ✓ (właściciel) | ✓ `/api/config/public` |
+| Pliki aplikacji w katalogu głównym subdomeny | ✓ `build-app.ps1 -ConfirmProduction` → ZIP | ✓ ZIP rozpakowany w Linuksie = 87/87 plików | ✓ FTPS 87 plików → `public_html/app.xn--dowzka-dxa.pl` | ✓ 200 |
+| `.htaccess` (SPA-fallback + `Cache-Control: no-cache`) | ✓ `mobile/hosting/app.htaccess` (w paczce) | ✓ Apache 2.4 | ✓ | ✓ `no-cache` na `/`, `/s/…`, `main.dart.js` |
+| Trasy `/s/{slug}`, `?src=`, odświeżenie, `/login?from=`, `/forgot-password` → `index.html` | ✓ | ✓ Apache 2.4 | ✓ | ✓ `/s/{slug}?src=qr` → karta sklepu z produktami (widok telefonu) |
+| Service worker (zakres `/`, nowa wersja po wdrożeniu) | ✓ | ✓ Edge headless + Apache | ✓ | ✗ (sprawdzić przy kolejnym wdrożeniu) |
+| CORS dla `app.dowózka.pl` | ✓ (API dopisuje punycode) | ✓ próba w trybie hartowanym 2026-10-02 | — produkcja w trybie Development przyjmuje każdy origin; w trybie hartowanym `CORS__ALLOWEDORIGINS__<n>=https://app.dowózka.pl` | ✓ (Development) |
+| Poczta (reset hasła, potwierdzanie adresu) | ✓ | ✓ Mailpit | ✗ brak `EMAIL__HTTP__APIKEY` (LH ma tylko SMTP 465/587 — Render free blokuje; potrzebny Resend/Brevo); `IDENTITY__PUBLICURL` ✓ | ✗ |
+| Panel z `main` (`/reset-password`, `/verify-email`, pasek potwierdzenia) | ✓ | ✓ | ✓ FTPS 2026-10-03 (`main-NB4FPU3Z.js`) | ✓ `/verify-email` z błędnym tokenem → „Nieprawidłowy link" |
 | Telefony (iPhone Safari, Android Chrome) | — | ✗ nie testowane | ✗ | ✗ |
 
-**Kroki (właściciel; niczego z tego nie wykonano):**
+**Kroki (2026-10-03 wykonane 1–5 i część 7; zostały: 6 — wymuszenie HTTPS, poczta, telefony):**
 1. **Zgoda na scalenie** `pilot-outbox-deadletter` do `main` (gałąź zawiera też niescalone etapy S0–S1c). Render wdraża
    `main` automatycznie, a API przy starcie wykonuje migracje na bazie produkcyjnej — przed scaleniem zrób kopię bazy
    (Neon: snapshot/gałąź); lista migracji: PRODUCTION_SETUP.md.
