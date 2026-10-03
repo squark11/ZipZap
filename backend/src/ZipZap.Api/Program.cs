@@ -90,15 +90,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Konfiguracja edytowana w panelu + klucze Data Protection — w Postgresie (schemat `platform`), nie w App_Data:
+// hosting bez trwałego dysku (Render free) czyści App_Data przy każdym wdrożeniu.
+builder.Services.AddDbContext<PlatformConfigDbContext>(o => o.UseNpgsql(
+    builder.Configuration.GetConnectionString("Postgres") ?? throw new InvalidOperationException("Brak connection stringa 'Postgres'."),
+    npg => npg.MigrationsHistoryTable("__ef_migrations_history", PlatformConfigDbContext.Schema)));
+builder.Services.AddScoped<IModuleDbMigrator, EfCoreModuleMigrator<PlatformConfigDbContext>>();
+builder.Services.AddSingleton<IConfigDocuments, PostgresConfigDocuments>();
+
 builder.Services.AddSingleton<PlatformSettingsStore>();
 builder.Services.AddSingleton<StartupReadiness>();
 
-// Data Protection — szyfrowanie sekretów integracji at-rest; klucze utrwalane
-// (inaczej po restarcie nie odszyfrujemy zapisanych tokenów).
+// Data Protection — szyfrowanie sekretów integracji at-rest; pierścień kluczy w bazie (wspólny dla instancji,
+// przeżywa wdrożenia — inaczej po restarcie nie odszyfrujemy zapisanych tokenów).
 builder.Services.AddDataProtection()
     .SetApplicationName("ZipZap")
-    .PersistKeysToFileSystem(new DirectoryInfo(
-        Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys")));
+    .PersistKeysToDbContext<PlatformConfigDbContext>();
 builder.Services.AddSingleton<StoreIntegrationStore>();
 // Nadpisz domyślny (null) resolver realnym adapterem nad magazynem integracji sklepów.
 builder.Services.AddSingleton<ZipZap.Modules.Payments.Application.IStorePaymentGateway, StorePaymentGatewayAdapter>();
@@ -260,6 +267,21 @@ await using (var scope = app.Services.CreateAsyncScope())
             app.Logger.LogError(ex, "Migracja modułu {Module} nie powiodła się.", migrator.ModuleName);
             readiness.Report($"migration:{migrator.ModuleName}");
         }
+    }
+}
+
+// Dawne pliki App_Data → baza (jednorazowo; istniejące wpisy bez zmian). Przed pierwszym użyciem Data Protection.
+if (readiness.IsReady && app.Configuration.GetValue(LegacyAppDataImport.EnabledKey, true))
+{
+    try
+    {
+        await LegacyAppDataImport.RunAsync(app.Services,
+            Path.Combine(app.Environment.ContentRootPath, "App_Data"), app.Logger);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Import dawnych plików App_Data nie powiódł się.");
+        readiness.Report("appdata-import");
     }
 }
 

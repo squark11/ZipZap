@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace ZipZap.Api.Configuration;
@@ -80,34 +79,23 @@ public sealed record SmtpConfig(
 }
 
 /// <summary>
-/// Magazyn integracji platformy (App_Data JSON, wymienialny na DB). Google Client ID jawny;
-/// sekret captchy szyfrowany (IDataProtector), nigdy nie zwracany do klienta (write-only).
+/// Magazyn integracji platformy — dokument konfiguracji w bazie (<see cref="IConfigDocuments"/>). Google Client ID jawny;
+/// sekret captchy i hasło SMTP szyfrowane (IDataProtector), nigdy nie zwracane do klienta (write-only).
 /// </summary>
 public sealed class PlatformIntegrationsStore
 {
-    private readonly string _path;
+    public const string Key = "platform-integrations";
+    private readonly IConfigDocuments _docs;
     private readonly IDataProtector _dp;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private static readonly JsonSerializerOptions _json = new() { WriteIndented = true };
 
-    public PlatformIntegrationsStore(IHostEnvironment env, IDataProtectionProvider dpp)
+    public PlatformIntegrationsStore(IConfigDocuments docs, IDataProtectionProvider dpp)
     {
-        var dir = Path.Combine(env.ContentRootPath, "App_Data");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "platform-integrations.json");
+        _docs = docs;
         _dp = dpp.CreateProtector("ZipZap.PlatformIntegrations.v1");
     }
 
     private async Task<PlatformIntegrations> ReadAsync(CancellationToken ct)
-    {
-        if (!File.Exists(_path)) return new();
-        try
-        {
-            await using var s = File.OpenRead(_path);
-            return await JsonSerializer.DeserializeAsync<PlatformIntegrations>(s, _json, ct) ?? new();
-        }
-        catch { return new(); }
-    }
+        => await _docs.GetAsync<PlatformIntegrations>(Key, ct) ?? new();
 
     /// <summary>Surowy zapis (dla providera Google Client ID). Nie zwracać sekretu do klienta.</summary>
     public Task<PlatformIntegrations> GetAsync(CancellationToken ct = default) => ReadAsync(ct);
@@ -147,11 +135,10 @@ public sealed class PlatformIntegrationsStore
 
     public async Task<PlatformIntegrationsStatus> SaveAsync(PlatformIntegrationsUpdate u, CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
-        try
+        var clean = await _docs.UpdateAsync<PlatformIntegrations>(Key, stored =>
         {
-            var existing = await ReadAsync(ct);
-            var clean = new PlatformIntegrations
+            var existing = stored ?? new PlatformIntegrations();
+            return new PlatformIntegrations
             {
                 GoogleClientId = Norm(u.GoogleClientId),
                 CaptchaProvider = string.IsNullOrWhiteSpace(u.CaptchaProvider) ? null : u.CaptchaProvider.Trim().ToLowerInvariant(),
@@ -170,15 +157,12 @@ public sealed class PlatformIntegrationsStore
                 SmtpFromName = Norm(u.SmtpFromName),
                 CustomerAppUrl = CustomerAppUrl.Normalize(u.CustomerAppUrl).Value,
             };
-            await using var s = File.Create(_path);
-            await JsonSerializer.SerializeAsync(s, clean, _json, ct);
-            return new PlatformIntegrationsStatus(clean.GoogleClientId, clean.CaptchaProvider, clean.CaptchaSiteKey,
-                !string.IsNullOrEmpty(clean.CaptchaSecretEnc),
-                clean.SmtpHost, clean.SmtpPort, clean.SmtpUseSsl, clean.SmtpUsername,
-                clean.SmtpFromEmail, clean.SmtpFromName, !string.IsNullOrEmpty(clean.SmtpPasswordEnc),
-                clean.CustomerAppUrl);
-        }
-        finally { _lock.Release(); }
+        }, ct);
+        return new PlatformIntegrationsStatus(clean.GoogleClientId, clean.CaptchaProvider, clean.CaptchaSiteKey,
+            !string.IsNullOrEmpty(clean.CaptchaSecretEnc),
+            clean.SmtpHost, clean.SmtpPort, clean.SmtpUseSsl, clean.SmtpUsername,
+            clean.SmtpFromEmail, clean.SmtpFromName, !string.IsNullOrEmpty(clean.SmtpPasswordEnc),
+            clean.CustomerAppUrl);
     }
 
     private static string? Norm(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();

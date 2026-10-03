@@ -127,13 +127,14 @@ wykonują się automatycznie przy starcie.
 > `Catalog_StoreEntryStats` (nowa tabela `catalog.store_entry_stats`: sklep, dzień, źródło, liczba — dzienny licznik
 > wejść bez danych osobowych) i `Catalog_QrSourcesAndEntryRetention` (nowe tabele `catalog.store_qr_sources` —
 > zarejestrowane etykiety miejsc kodów, maks. 20 na sklep — i `catalog.store_entry_monthly` — miesięczne sumy wejść
-> starszych niż 90 dni). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
+> starszych niż 90 dni). Konfiguracja z panelu dodaje `Platform_Initial` (nowy schemat `platform`: tabele
+> `config_documents` i `data_protection_keys`). Wszystkie zmiany są addytywne (bez usuwania danych). Przed
 > scaleniem do `main` wykonaj kopię bazy (Neon: branch/snapshot) i scalaj dopiero po zatwierdzeniu.
 
 ### Aplikacja klienta (web) i kody QR — konfiguracja
 - **Adres aplikacji klienta** (baza linków `/s/{slug}` i kodów QR): panel → Konfiguracja → „Aplikacja klienta i kody QR";
-  rezerwa w zmiennej `PUBLICAPP__CUSTOMERAPPURL` (zalecane ustawić OBIE — zapis panelu leży w `App_Data`, które na
-  Renderze bez trwałego dysku znika przy restarcie). Kanonicznie **`https://app.dowózka.pl`** — ustawić dopiero, gdy
+  rezerwa w zmiennej `PUBLICAPP__CUSTOMERAPPURL` (od migracji `Platform_Initial` zapis panelu jest trwały w bazie —
+  schemat `platform`, patrz DEPLOY.md). Kanonicznie **`https://app.dowózka.pl`** — ustawić dopiero, gdy
   aplikacja tam działa (DEPLOY.md → „S2", lista kontrolna). Tylko HTTPS, **katalog główny (sub)domeny** (adres ze ścieżką
   jest odrzucany), bez `?`/`#`; domena IDN jest zapisywana i zwracana w punycode (`https://app.xn--dowzka-dxa.pl`).
   Widoczny publicznie w `GET /api/config/public` (`customerAppUrl`).

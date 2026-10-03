@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
 using Xunit;
 using ZipZap.Api.Configuration;
 using ZipZap.Modules.Catalog.Application;
@@ -63,24 +61,19 @@ public sealed class StoreQrEntryTests
     [Fact]
     public async Task Customer_app_url_comes_from_the_panel_and_falls_back_to_configuration()
     {
-        var root = Directory.CreateTempSubdirectory("zz-appurl-").FullName;
-        try
-        {
-            var store = new PlatformIntegrationsStore(new TestEnv(root), DataProtectionProvider.Create("zz-test"));
-            IConfiguration Cfg(string? v) => new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?> { [CustomerAppUrlProvider.ConfigKey] = v }).Build();
+        var store = new PlatformIntegrationsStore(new InMemoryConfigDocuments(), DataProtectionProvider.Create("zz-test"));
+        IConfiguration Cfg(string? v) => new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [CustomerAppUrlProvider.ConfigKey] = v }).Build();
 
-            (await new CustomerAppUrlProvider(store, Cfg(null)).GetAsync()).Should().Be(new EffectiveCustomerAppUrl(null, null));
-            (await new CustomerAppUrlProvider(store, Cfg("https://app.dowózka.pl/")).GetAsync())
-                .Should().Be(new EffectiveCustomerAppUrl("https://app.xn--dowzka-dxa.pl", "env"));
-            (await new CustomerAppUrlProvider(store, Cfg("https://dowózka.pl/app")).GetAsync())
-                .Should().Be(new EffectiveCustomerAppUrl(null, null), "adres z podścieżką z env jest ignorowany");
+        (await new CustomerAppUrlProvider(store, Cfg(null)).GetAsync()).Should().Be(new EffectiveCustomerAppUrl(null, null));
+        (await new CustomerAppUrlProvider(store, Cfg("https://app.dowózka.pl/")).GetAsync())
+            .Should().Be(new EffectiveCustomerAppUrl("https://app.xn--dowzka-dxa.pl", "env"));
+        (await new CustomerAppUrlProvider(store, Cfg("https://dowózka.pl/app")).GetAsync())
+            .Should().Be(new EffectiveCustomerAppUrl(null, null), "adres z podścieżką z env jest ignorowany");
 
-            await store.SaveAsync(new PlatformIntegrationsUpdate(null, null, null, null, CustomerAppUrl: "https://panel.example.pl"));
-            (await new CustomerAppUrlProvider(store, Cfg("https://env.example.pl")).GetAsync())
-                .Should().Be(new EffectiveCustomerAppUrl("https://panel.example.pl", "panel"), "panel ma pierwszeństwo");
-        }
-        finally { Directory.Delete(root, recursive: true); }
+        await store.SaveAsync(new PlatformIntegrationsUpdate(null, null, null, null, CustomerAppUrl: "https://panel.example.pl"));
+        (await new CustomerAppUrlProvider(store, Cfg("https://env.example.pl")).GetAsync())
+            .Should().Be(new EffectiveCustomerAppUrl("https://panel.example.pl", "panel"), "panel ma pierwszeństwo");
     }
 
     [Fact]
@@ -300,13 +293,5 @@ public sealed class StoreQrEntryTests
     {
         using var scope = _f.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<CatalogService>().CompactEntryStatsAsync(keepFrom, CancellationToken.None);
-    }
-
-    private sealed class TestEnv(string root) : IHostEnvironment
-    {
-        public string EnvironmentName { get; set; } = "Development";
-        public string ApplicationName { get; set; } = "zz-test";
-        public string ContentRootPath { get; set; } = root;
-        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }

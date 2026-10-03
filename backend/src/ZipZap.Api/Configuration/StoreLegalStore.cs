@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace ZipZap.Api.Configuration;
 
 /// <summary>
@@ -16,58 +14,28 @@ public sealed record StoreLegal
 
 /// <summary>
 /// Per-store magazyn dokumentów prawnych. Każdy sklep zamieszcza SWOJE linki i decyduje,
-/// czy akceptacja jest wymagana. Store pilotażowy w pliku JSON (wymienialny na DB).
+/// czy akceptacja jest wymagana. Jeden dokument konfiguracji na sklep (<see cref="IConfigDocuments"/>).
 /// </summary>
 public sealed class StoreLegalStore
 {
-    private readonly string _path;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private static readonly JsonSerializerOptions _json = new() { WriteIndented = true };
+    public const string KeyPrefix = "store-legal:";
+    private readonly IConfigDocuments _docs;
 
-    public StoreLegalStore(IHostEnvironment env)
-    {
-        var dir = Path.Combine(env.ContentRootPath, "App_Data");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "store-legal.json");
-    }
-
-    private async Task<Dictionary<string, StoreLegal>> ReadAllAsync(CancellationToken ct)
-    {
-        if (!File.Exists(_path)) return new();
-        try
-        {
-            await using var s = File.OpenRead(_path);
-            return await JsonSerializer.DeserializeAsync<Dictionary<string, StoreLegal>>(s, _json, ct) ?? new();
-        }
-        catch { return new(); }
-    }
+    public StoreLegalStore(IConfigDocuments docs) => _docs = docs;
 
     public async Task<StoreLegal> GetAsync(Guid storeId, CancellationToken ct = default)
-    {
-        var all = await ReadAllAsync(ct);
-        return all.TryGetValue(storeId.ToString(), out var l) ? l : new StoreLegal();
-    }
+        => await _docs.GetAsync<StoreLegal>(KeyPrefix + storeId, ct) ?? new StoreLegal();
 
-    public async Task<StoreLegal> SaveAsync(Guid storeId, StoreLegal update, CancellationToken ct = default)
+    public Task<StoreLegal> SaveAsync(Guid storeId, StoreLegal update, CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
-        try
+        var clean = new StoreLegal
         {
-            var all = await ReadAllAsync(ct);
-            var clean = new StoreLegal
-            {
-                TermsUrl = Normalize(update.TermsUrl),
-                PrivacyUrl = Normalize(update.PrivacyUrl),
-                GdprUrl = Normalize(update.GdprUrl),
-                RequiresAcceptance = update.RequiresAcceptance,
-            };
-            all[storeId.ToString()] = clean;
-
-            await using var s = File.Create(_path);
-            await JsonSerializer.SerializeAsync(s, all, _json, ct);
-            return clean;
-        }
-        finally { _lock.Release(); }
+            TermsUrl = Normalize(update.TermsUrl),
+            PrivacyUrl = Normalize(update.PrivacyUrl),
+            GdprUrl = Normalize(update.GdprUrl),
+            RequiresAcceptance = update.RequiresAcceptance,
+        };
+        return _docs.UpdateAsync<StoreLegal>(KeyPrefix + storeId, _ => clean, ct);
     }
 
     private static string? Normalize(string? url)

@@ -1,5 +1,24 @@
 # Deploy Dowózka.pl
 
+## Konfiguracja z panelu w bazie — 2026-10-03, lokalnie, NIEWDROŻONE
+- **Problem:** ustawienia z panelu (SMTP, captcha, Google Client ID, adres aplikacji, ustawienia platformy, dokumenty
+  prawne, plan rozliczeń i tokeny bramek sklepów) oraz klucze Data Protection leżały w plikach `App_Data`. Render free
+  nie ma trwałego dysku, więc **każde wdrożenie je czyściło** (razem z kluczami — zaszyfrowanych sekretów nie dało się
+  potem odczytać).
+- **Teraz:** Postgres, schemat `platform` — `config_documents` (jeden dokument JSON na ustawienie platformy albo na sklep,
+  klucz np. `store-legal:{storeId}`) i `data_protection_keys` (pierścień kluczy wspólny dla instancji). Nowa migracja
+  `Platform_Initial` (dwie nowe tabele, addytywna). Sekrety w dokumentach są dalej szyfrowane; klucze leżą w tej samej
+  bazie bez dodatkowego szyfrowania (tak jak wcześniej obok plików) — dostęp do bazy = dostęp do sekretów.
+- **Zapis i odczyt:** zapis to jedna transakcja pod blokadą doradczą klucza (równoległe zapisy nie giną). Błąd bazy albo
+  nieczytelny dokument kończy się błędem, a nie cichym „pustym" ustawieniem (dawniej np. captcha mogła się na moment
+  wyłączyć podczas zapisu pliku).
+- **Przeniesienie:** przy starcie, po migracjach, API jednorazowo importuje istniejące pliki `App_Data` (w tym klucze z
+  `App_Data/keys`) — tylko brakujące wpisy, baza nigdy nie jest nadpisywana, pliki zostają. Na Renderze `App_Data` jest po
+  wdrożeniu puste, więc ustawienia z panelu trzeba **raz wpisać ponownie** po wdrożeniu tej wersji (potem przetrwają).
+  Wyłącznik: `APPDATA__IMPORTLEGACY=false`.
+- **Brak nowych zmiennych środowiskowych.** Zmienne środowiskowe (np. `PUBLICAPP__CUSTOMERAPPURL`) działają jak dotąd jako
+  rezerwa, gdy pole w panelu jest puste.
+
 ## `app.dowózka.pl` na produkcji (bez podglądu) — decyzja właściciela 2026-10-03, przygotowane lokalnie, NIEWDROŻONE
 Bez osobnego podglądu i testowej bazy: aplikacja klienta (Flutter web) pod `https://app.dowózka.pl`
 (`app.xn--dowzka-dxa.pl`) działa od razu na **produkcyjnym API** `https://dowozka-api.onrender.com/api`. Kolejność jest

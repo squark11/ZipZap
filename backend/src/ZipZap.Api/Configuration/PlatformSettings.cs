@@ -1,11 +1,8 @@
-using System.Text.Json;
-
 namespace ZipZap.Api.Configuration;
 
 /// <summary>
-/// Ustawienia platformy edytowalne przez admina (NIE‑sekretne). Na pilotaż
-/// trzymane w pliku JSON (content root/App_Data); interfejs pozwala później
-/// podmienić na store w bazie bez zmian w API/panelu.
+/// Ustawienia platformy edytowalne przez admina (NIE‑sekretne) — dokument konfiguracji w bazie
+/// (<see cref="IConfigDocuments"/>).
 /// </summary>
 public sealed record PlatformSettings
 {
@@ -25,45 +22,18 @@ public sealed record PlatformSettings
 
 public sealed class PlatformSettingsStore
 {
-    private readonly string _path;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private static readonly JsonSerializerOptions _json = new() { WriteIndented = true };
+    public const string Key = "platform-settings";
+    private readonly IConfigDocuments _docs;
 
-    public PlatformSettingsStore(IHostEnvironment env)
-    {
-        var dir = Path.Combine(env.ContentRootPath, "App_Data");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "platform-settings.json");
-    }
+    public PlatformSettingsStore(IConfigDocuments docs) => _docs = docs;
 
     public async Task<PlatformSettings> GetAsync(CancellationToken ct = default)
-    {
-        if (!File.Exists(_path)) return new PlatformSettings();
-        try
-        {
-            await using var s = File.OpenRead(_path);
-            return await JsonSerializer.DeserializeAsync<PlatformSettings>(s, _json, ct) ?? new PlatformSettings();
-        }
-        catch
-        {
-            return new PlatformSettings();
-        }
-    }
+        => await _docs.GetAsync<PlatformSettings>(Key, ct) ?? new PlatformSettings();
 
-    public async Task<PlatformSettings> SaveAsync(PlatformSettings settings, CancellationToken ct = default)
+    public Task<PlatformSettings> SaveAsync(PlatformSettings settings, CancellationToken ct = default)
     {
         var clean = Sanitize(settings);
-        await _lock.WaitAsync(ct);
-        try
-        {
-            await using var s = File.Create(_path);
-            await JsonSerializer.SerializeAsync(s, clean, _json, ct);
-        }
-        finally
-        {
-            _lock.Release();
-        }
-        return clean;
+        return _docs.UpdateAsync<PlatformSettings>(Key, _ => clean, ct);
     }
 
     /// <summary>Normalizacja i walidacja wejścia (godziny, zakres prowizji, waluta).</summary>

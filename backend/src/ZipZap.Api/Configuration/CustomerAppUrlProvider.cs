@@ -5,8 +5,7 @@ public sealed record EffectiveCustomerAppUrl(string? Url, string? Source);
 
 /// <summary>
 /// Adres aplikacji klienta (web/PWA) — baza stałych linków do sklepów i kodów QR. Najpierw wartość z panelu
-/// (Konfiguracja → Integracje platformy), potem zmienna <c>PublicApp__CustomerAppUrl</c> jako rezerwa: zapis panelu
-/// leży w App_Data, które na hostingu bez trwałego dysku może zniknąć po restarcie — zmienna środowiskowa nie znika.
+/// (Konfiguracja → Integracje platformy, trwale w bazie), potem zmienna <c>PublicApp__CustomerAppUrl</c> jako rezerwa.
 /// Brak obu = aplikacja nie jest opublikowana (panel nie generuje kodów QR).
 /// </summary>
 public sealed class CustomerAppUrlProvider
