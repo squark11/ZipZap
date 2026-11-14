@@ -130,6 +130,13 @@ Bez nowych bibliotek (Lottie/Rive — decyzja F-4: nie teraz); wszystko w `Anima
 | 900–1199 | nawigacja boczna, produkty `auto-fill` min. 170 px, koszyk jako strona |
 | ≥ 1200 | nawigacja boczna + treść max 1100 + koszyk jako panel boczny |
 
+**Reguła ekranów jednokolumnowych na komputerze** (zaakceptowana przez właściciela 2026-11-14, zastępuje osobne makiety 1280 px):
+Konto (z adresami i ustawieniami) oraz Śledzenie zamówienia od 900 px zachowują układ z telefonu: jedna kolumna wyśrodkowana,
+maks. 640 px, nawigacja boczna po lewej. Logowanie — bez nawigacji, karta formularza maks. 440 px na środku; ilustracja obok
+karty, gdy szerokość ≥ 1100 px. Produkt od 900 px otwiera się jako okno dialogowe (maks. 560 px, wyśrodkowane, tło
+przyciemnione; zamykanie: ✕, Esc, kliknięcie tła) zamiast arkusza dolnego. Treść i kolejność elementów bez zmian względem
+makiet 375 px.
+
 Bezpieczne obszary (notch, pasek gestów) respektowane; w trybie ciemnym `theme-color` = kolor tła, nie turkus.
 
 ## 8. Teksty

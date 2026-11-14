@@ -24,7 +24,7 @@ FAIL, gdy fakt z audytu jest nieprawdziwy. Dopisać własne znaleziska.
 
 ## Etap 1
 
-Kontrast każdej pary z palety (własne wyliczenie); każda makieta ma 4 stany; dane na makietach istnieją w API
+Kontrast każdej pary z palety (własne wyliczenie); każdy ekran ma 4 stany (macierz stanów); wersje 1280 px dla Startu, Sklepu i Zamówienia, a dla Produktu, Logowania, Konta i Śledzenia — reguła jednokolumnowa z `design-system.md` §7 (zmiana zaakceptowana przez właściciela 2026-11-14); dane na makietach istnieją w API
 albo są oznaczone „wymaga backendu"; pliki SVG się otwierają, mają ≤ 12 KB, bez osadzonych bitmap i obcych licencji.
 Blokuje: obiecane dane bez pokrycia, kontrast tekstu poniżej 4,5:1.
 

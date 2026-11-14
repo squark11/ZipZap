@@ -121,3 +121,19 @@ ten raport. Kod aplikacji bez zmian — `flutter analyze` / `flutter test` jak w
 
 Pliki rundy 3: `docs/redesign/makiety/StanyEkranow.dc.html`, `canvas.json`, `stany-podglad.png`,
 `docs/redesign/gen-states.mjs`, ten raport, raport Codexa `etap-1-codex.md` (zapisany przez Codexa). Kod aplikacji bez zmian.
+
+---
+
+## Runda 4 — decyzja właściciela (2026-11-14)
+
+Właściciel zaakceptował regułę zamiast osobnych makiet 1280 px dla Produktu, Logowania, Konta i Śledzenia
+(„Tak, opisz regułą"). Zmieniono kryterium E1-3 w `02-plan-zadan-claude.md`, listę kontrolną Etapu 1 w
+`03-weryfikacja-codex.md` oraz dopisano regułę w `design-system.md` §7 (kolumna maks. 640 px, Logowanie jako karta 440 px,
+Produkt jako okno dialogowe 560 px od 900 px). Status „BLOCKED" z rundy 2 ma tym samym rozstrzygnięcie.
+
+**Poza Etapem 1 — dane produkcyjne (na polecenie właściciela „dodaj terminy dostaw"):** po kopii bazy
+(`neondb-przed-terminami-20261114-155554.dump`) dodano 48 terminów: Lewiatan — Podwawelskie i Rapacz — Rynek, strefa
+„Centrum", 16–28.11.2026, pon–sob, 13:00–15:00 i 17:00–19:00 (godzinę po rundach 12:00 i 16:00), limit 20 na termin.
+Wstawienie w jednej transakcji, idempotentne. Sprawdzone przez publiczne API: po 24 terminy na sklep, pierwszy
+16.11 13:00 = najwcześniejsza dostawa po rundzie 12:00. Na produkcji jest też sklep testowy „Zasieg Test e6bf"
+(pozostałość testów) — nie ruszany, do decyzji właściciela.

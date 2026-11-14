@@ -30,9 +30,9 @@ Każde zadanie ma pola: **Problem** · **Cel** · **Pliki** · **Jak** · **Akce
 - Akceptacja: każdy komponent z koncepcji ma warianty, stany i wymiary. Testy: przegląd Codexa pod kątem sprzeczności z marką.
 - Ryzyka: —. Zależy od: E1-1.
 
-**E1-3 Makiety 8 ekranów** (Start, Sklep, Produkt, Koszyk, Checkout w 3 krokach, Zamówienie, Logowanie, Konto) dla 375 i 1280 px.
+**E1-3 Makiety 8 ekranów** (Start, Sklep, Produkt, Koszyk, Checkout w 3 krokach, Zamówienie, Logowanie, Konto) dla 375 px; w 1280 px Start, Sklep (z koszykiem w panelu) i Zamówienie. **Zmiana kryterium zaakceptowana przez właściciela 2026-11-14:** Produkt, Logowanie, Konto i Śledzenie zamówienia mają na komputerze układ jednokolumnowy wyśrodkowany (maks. 640 px; Produkt jako okno dialogowe) — opisany regułą w `design-system.md` §7 zamiast osobnych makiet 1280 px.
 - Pliki: `docs/redesign/makiety/*` (Figma po decyzji F-3).
-- Akceptacja: każda makieta ma stany pusty/ładowanie/błąd i oznaczone dane, których dziś nie ma w API.
+- Akceptacja: każdy ekran ma stany ładowanie/pusty/błąd/brak internetu (macierz `StanyEkranow.dc.html`; „nie dotyczy" tylko z uzasadnieniem) i oznaczone dane, których dziś nie ma w API.
 - Testy: lista danych z makiet porównana z `lib/models`. Ryzyka: makiety obiecują dane wymagające backendu. Zależy od: E1-2.
 
 **E1-4 Ilustracje i ikony.**
