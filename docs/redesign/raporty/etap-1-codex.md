@@ -1,7 +1,34 @@
 # Raport weryfikacji Codexa — Etap 1: Koncepcja wizualna
 
+## Najnowsza ocena — runda 2
+
+Data weryfikacji: 2026-11-14. Sprawdzony commit: `65c74f9fd1755b8f5b6a6ad06f7eae2f0595a3e4` (`HEAD` = `origin/main`). Aktywna nazwa worktree to `pilot-outbox-deadletter`; lokalne `main` jest 8 commitów za `origin/main`.
+Wynik Codexa: **FAIL** — część zarzutów z rundy 1 została usunięta, ale nadal nie wszystkie kryteria E1-3 są spełnione ani formalnie zmienione.
+
+### Ponownie sprawdzone kontrole
+
+| Kontrola | Status | Wynik |
+|---|---|---|
+| `flutter analyze` | PASS | `No issues found!` |
+| `flutter test` | PASS | Wszystkie 79 testów przeszły. |
+| Logika biznesowa i testy | PASS | Commit rundy 2 zmienia wyłącznie dokumentację i makiety; brak zmian w `mobile/lib`, backendzie, panelu, `mobile/test` i `mobile/assets/svg`. Brak osłabionych testów. |
+| Diff | PASS | `git diff --check HEAD^ HEAD` czysty. |
+| E1-1, E1-2, E1-4 — paleta, Design System i SVG | PASS | Bez zmian w rundzie 2; kontrast, specyfikacja i 22 zasoby SVG przeszły kontrolę rundy 1. Ponowny pełny zestaw testów również przeszedł. |
+| Dane i terminy w makietach | PASS | Daty i godziny są oznaczone jako przykładowe w stopce checkoutu i notatce płótna; usunięto nieuzasadnioną deklarację braku dostaw w niedziele. Suma 22,46 zł odpowiada Jabłkom 2 kg (9,98 zł), Mleku (3,49 zł) i Szynce (8,99 zł). |
+| E1-5 — ruch | PASS | Animacja sukcesu ma 250 ms; pojedynczy przebieg połysku ma 250 ms i jest powtarzany co 1 s. Ograniczenie ruchu wyłącza połysk i zeruje pozostałe czasy. Interpretacja limitu dla powtarzanego przebiegu jest opisana w specyfikacji jako wymagająca akceptacji właściciela. |
+
+### Pozostałe kryteria E1-3
+
+1. **Stany ekranów — FAIL.** `Stany.dc.html` zawiera przykłady ładowania, pustego koszyka, błędu i offline, ale pozostałe makiety ekranów nie pokazują swoich czterech stanów. Checklista `03-weryfikacja-codex.md` wymaga czterech stanów na każdej makiecie; plan E1-3 wymaga co najmniej stanów pustego, ładowania i błędu na każdej z nich. Zdanie, że te same wzorce dotyczą pozostałych ekranów, nie zastępuje ich makiet.
+2. **Warianty 1280 px — BLOCKED do akceptacji właściciela.** Dodano szerokie makiety Startu, Sklepu i kroku zamówienia. Produkt, śledzenie, Logowanie i Konto nie mają osobnych wariantów 1280 px. `design-system.md` proponuje zamiast nich wspólną regułę układu jednokolumnowego/dialogu, ale plan E1-3 nadal wymaga 8 ekranów w 375 i 1280 px. Raport Claude Code sam oznacza tę zmianę kryterium jako oczekującą na akceptację właściciela; nie traktuję jej jako przyjętej.
+3. **Warianty mobilne — PASS.** Dodano brakujące makiety Produktu, śledzenia i Konta oraz przestawiono ekrany telefonu na 375 px. Checkout składa się z trzech ekranów o szerokości 375 px.
+
+Zmiany rundy 2 poprawiły dane, sumę koszyka i czasy animacji. Nie zmieniają jednak kryterium stanów ani nie zatwierdzają proponowanego wyjątku dla szerokości 1280 px. Etap 1 pozostaje **FAIL**; Etap 2 nie jest zaliczony.
+
+## Historia — runda 1
+
 Data weryfikacji: 2026-11-14. Sprawdzony commit: `ee055bd97e9b22aa107d22691fce2d8a1d131f81`.
-Wynik Codexa: **FAIL** — Etap 1 nie jest zaliczony; Etap 2 nie powinien się rozpocząć przed poprawkami i ponowną weryfikacją.
+Wynik rundy 1: **FAIL**. Poniżej zachowuję pierwotne ustalenia audytu.
 
 Raport Claude Code deklaruje gałąź `main`. W tym worktree aktywna nazwa gałęzi to `pilot-outbox-deadletter`, ale `HEAD` jest równy `origin/main` (`ee055bd`). Lokalna gałąź `main` wskazuje starszy commit `9a145d3` (7 commitów za `origin/main`).
 

@@ -109,3 +109,15 @@ terminów dostawy → klient nie może dziś złożyć zamówienia. Terminy doda
 Pliki rundy 2: `docs/redesign/makiety/{Produkt,Zamowienie,Konto,Stany,KomputerSklep,KomputerZamowienie}.dc.html` (nowe),
 `Start, Sklep, Koszyk, Logowanie, StartCiemny, Checkout, Main` + `canvas.json` (zmienione), `design-system.md` §4 i §6,
 ten raport. Kod aplikacji bez zmian — `flutter analyze` / `flutter test` jak w rundzie 1.
+
+---
+
+## Runda 3 — odpowiedź na weryfikację Codexa z rundy 2 (FAIL)
+
+| Kryterium | Status rundy 2 | Ocena Claude Code | Działanie |
+|---|---|---|---|
+| Stany każdego ekranu | FAIL | **słuszny** — kryterium z mojego planu; teksty stanów każdego ekranu są potrzebne do Etapu 3 | dodany `StanyEkranow.dc.html`: macierz **8 ekranów × 4 stany** (Start, Sklep, Produkt, Koszyk, Zamówienie-checkout, Zamówienia i śledzenie, Konto, Logowanie × ładowanie / pusty / błąd / brak internetu). Każda komórka ma tekst właściwy dla ekranu. Komunikaty błędów oparte na API: pełny termin („Wybrany slot dostawy jest już pełny.", „…przy dużym ruchu"), logowanie 401 „Nieprawidłowy e-mail lub hasło.", limit prób 429 (API bez tekstu — komunikat oznaczony jako propozycja). Logowanie / pusty: oznaczone „nie dotyczy" z uzasadnieniem (formularz zawsze widoczny). Brak internetu: koszyk jest na serwerze, więc zmiany ilości i „+" są wyłączone, nic nie trafia do kolejki. Generator: `docs/redesign/gen-states.mjs`, podgląd: `makiety/stany-podglad.png` |
+| Warianty 1280 px | BLOCKED | słuszny — wymaga decyzji właściciela | bez zmian; czeka na odpowiedź właściciela (reguła jednokolumnowa dla Produktu, Logowania, Konta, Śledzenia) |
+
+Pliki rundy 3: `docs/redesign/makiety/StanyEkranow.dc.html`, `canvas.json`, `stany-podglad.png`,
+`docs/redesign/gen-states.mjs`, ten raport, raport Codexa `etap-1-codex.md` (zapisany przez Codexa). Kod aplikacji bez zmian.
