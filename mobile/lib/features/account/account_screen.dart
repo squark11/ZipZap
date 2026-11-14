@@ -29,8 +29,8 @@ class AccountScreen extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 26,
-                    backgroundColor: context.zz.orangeTint,
-                    child: const ZzIcon('account', size: 26, color: ZzColors.orange),
+                    backgroundColor: context.zz.brandTint,
+                    child: const ZzIcon('account', size: 26, color: context.zz.brandStrong),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -127,7 +127,7 @@ class AccountScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: ZzColors.danger),
+            style: OutlinedButton.styleFrom(foregroundColor: context.zz.danger),
             icon: const Icon(Icons.logout),
             label: const Text('Wyloguj się'),
             onPressed: () async {

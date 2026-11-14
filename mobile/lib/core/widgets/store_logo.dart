@@ -15,15 +15,15 @@ class StoreLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: context.zz.orangeTint,
-        borderRadius: BorderRadius.circular(ZzRadius.md),
+        color: context.zz.brandTint,
+        borderRadius: BorderRadius.circular(ZzRadius.field),
       ),
       alignment: Alignment.center,
-      child: ZzIcon('store', size: size * 0.5, color: ZzColors.orange),
+      child: ZzIcon('store', size: size * 0.5, color: context.zz.brandStrong),
     );
     if (logoUrl == null) return fallback;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(ZzRadius.md),
+      borderRadius: BorderRadius.circular(ZzRadius.field),
       child: Image.network(
         logoUrl!,
         width: size,

@@ -34,7 +34,7 @@ class ZzLogo extends StatelessWidget {
             style: base,
             children: [
               const TextSpan(text: 'Dowózka'),
-              TextSpan(text: '.pl', style: TextStyle(color: mono ? (wordmarkColor ?? Colors.white) : ZzColors.orange)),
+              TextSpan(text: '.pl', style: TextStyle(color: mono ? (wordmarkColor ?? Colors.white) : context.zz.brandStrong)),
             ],
           ),
         ),

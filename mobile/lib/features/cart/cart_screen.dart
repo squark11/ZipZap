@@ -35,9 +35,9 @@ class CartScreen extends ConsumerWidget {
                 if (cart.error != null)
                   Container(
                     width: double.infinity,
-                    color: const Color(0xFFFEECEC),
+                    color: context.zz.dangerTint,
                     padding: const EdgeInsets.all(12),
-                    child: Text(cart.error!, style: const TextStyle(color: ZzColors.danger)),
+                    child: Text(cart.error!, style: const TextStyle(color: context.zz.danger)),
                   ),
                 Expanded(
                   child: ListView.separated(
@@ -81,7 +81,7 @@ class CartScreen extends ConsumerWidget {
                               const SizedBox(height: 8),
                               InkWell(
                                 onTap: () => controller.remove(it.productId),
-                                borderRadius: BorderRadius.circular(ZzRadius.sm),
+                                borderRadius: BorderRadius.circular(ZzRadius.pill),
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: ZzIcon('trash',
@@ -133,7 +133,7 @@ class _QtyStepper extends StatelessWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Anuluj')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: ZzColors.orange),
+            style: FilledButton.styleFrom(backgroundColor: context.zz.brandStrong),
             onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text)),
             child: const Text('OK'),
           ),
@@ -148,7 +148,7 @@ class _QtyStepper extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: context.zz.border),
-        borderRadius: BorderRadius.circular(ZzRadius.sm),
+        borderRadius: BorderRadius.circular(ZzRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -156,7 +156,7 @@ class _QtyStepper extends StatelessWidget {
           _btn('minus', onMinus),
           InkWell(
             onTap: () => _editQuantity(context),
-            borderRadius: BorderRadius.circular(ZzRadius.sm),
+            borderRadius: BorderRadius.circular(ZzRadius.pill),
             child: SizedBox(
               width: 40,
               height: 32,
@@ -174,7 +174,7 @@ class _QtyStepper extends StatelessWidget {
 
   Widget _btn(String icon, VoidCallback onTap) => InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(ZzRadius.sm),
+        borderRadius: BorderRadius.circular(ZzRadius.pill),
         child: Padding(
           padding: const EdgeInsets.all(7),
           child: ZzIcon(icon, size: 18),
@@ -220,12 +220,12 @@ class _CartFooter extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: context.zz.orangeTint,
-                borderRadius: BorderRadius.circular(ZzRadius.sm),
+                color: context.zz.brandTint,
+                borderRadius: BorderRadius.circular(ZzRadius.pill),
               ),
               child: Text(
                 'Minimalna wartość zamówienia to ${zl(minOrder)}. Dodaj jeszcze ${zl(minOrder - subtotal)}.',
-                style: const TextStyle(color: ZzColors.orange600, fontSize: 13),
+                style: const TextStyle(color: context.zz.brandStrong, fontSize: 13),
               ),
             ),
           ],

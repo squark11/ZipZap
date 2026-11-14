@@ -72,16 +72,16 @@ class StoreHeader extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: context.zz.orangeTint,
-                borderRadius: BorderRadius.circular(ZzRadius.md),
+                color: context.zz.brandTint,
+                borderRadius: BorderRadius.circular(ZzRadius.field),
               ),
               child: Row(
                 children: [
-                  const ZzIcon('delivery', size: 18, color: ZzColors.orange600),
+                  const ZzIcon('delivery', size: 18, color: context.zz.brandStrong),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text('Dostawa — opłatę i termin dostawy wybierzesz przy zamówieniu.',
-                        style: TextStyle(color: ZzColors.orange600, fontSize: 13)),
+                        style: TextStyle(color: context.zz.brandStrong, fontSize: 13)),
                   ),
                 ],
               ),
@@ -103,11 +103,11 @@ class _StatusPill extends StatelessWidget {
     final label = open
         ? 'Otwarte'
         : (status == 'TemporarilyUnavailable' ? 'Niedostępne' : 'Zamknięte');
-    final bg = open ? ZzColors.green50 : const Color(0xFFFEECEC);
-    final fg = open ? const Color(0xFF128040) : ZzColors.danger;
+    final bg = open ? context.zz.successTint : context.zz.dangerTint;
+    final fg = open ? context.zz.success : context.zz.danger;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.sm)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.pill)),
       child: Text(label,
           style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
     );
@@ -125,7 +125,7 @@ class _InfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: context.zz.surface,
-        borderRadius: BorderRadius.circular(ZzRadius.sm),
+        borderRadius: BorderRadius.circular(ZzRadius.pill),
         border: Border.all(color: context.zz.border),
       ),
       child: Row(

@@ -246,7 +246,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                     dense: true,
-                    activeColor: ZzColors.orange,
+                    activeColor: context.zz.brandStrong,
                     title: const Text(
                         'Akceptuję regulamin i politykę prywatności sklepu',
                         style: TextStyle(fontSize: 13)),
@@ -284,7 +284,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 style: TextStyle(
                     color: missing == null || _submitting
                         ? context.zz.textMuted
-                        : ZzColors.orange600,
+                        : context.zz.brandStrong,
                     fontSize: 12),
               ),
             ],
@@ -337,9 +337,9 @@ class _SlotPicker extends ConsumerWidget {
     return slots.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
-        child: LinearProgressIndicator(color: ZzColors.orange),
+        child: LinearProgressIndicator(color: context.zz.brandStrong),
       ),
-      error: (e, _) => Text(e.toString(), style: const TextStyle(color: ZzColors.danger)),
+      error: (e, _) => Text(e.toString(), style: const TextStyle(color: context.zz.danger)),
       data: (list) {
         if (list.isEmpty) {
           return Text('Brak dostępnych terminów w tej strefie.',
@@ -385,22 +385,22 @@ class _SlotCard extends StatelessWidget {
     final disabled = soldOut || tooEarlyNote != null;
     return InkWell(
       onTap: disabled ? null : onTap,
-      borderRadius: BorderRadius.circular(ZzRadius.md),
+      borderRadius: BorderRadius.circular(ZzRadius.field),
       child: Opacity(
         opacity: disabled ? 0.5 : 1,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: selected ? context.zz.orangeTint : context.zz.surface,
+            color: selected ? context.zz.brandTint : context.zz.surface,
             border: Border.all(
-                color: selected ? ZzColors.orange : context.zz.border,
+                color: selected ? context.zz.brandStrong : context.zz.border,
                 width: selected ? 1.5 : 1),
-            borderRadius: BorderRadius.circular(ZzRadius.md),
+            borderRadius: BorderRadius.circular(ZzRadius.field),
           ),
           child: Row(
             children: [
               ZzIcon('clock',
-                  size: 18, color: selected ? ZzColors.orange : context.zz.textMuted),
+                  size: 18, color: selected ? context.zz.brandStrong : context.zz.textMuted),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -409,7 +409,7 @@ class _SlotCard extends StatelessWidget {
                     Text(slot.label,
                         style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: selected ? ZzColors.orange600 : context.zz.text)),
+                            color: selected ? context.zz.brandStrong : context.zz.text)),
                     const SizedBox(height: 2),
                     Text(
                         tooEarlyNote ??
@@ -421,7 +421,7 @@ class _SlotCard extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const ZzIcon('check_circle', size: 20, color: ZzColors.orange),
+                const ZzIcon('check_circle', size: 20, color: context.zz.brandStrong),
             ],
           ),
         ),
@@ -442,7 +442,7 @@ class _RoundCard extends StatelessWidget {
     return round.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
-        child: LinearProgressIndicator(color: ZzColors.orange),
+        child: LinearProgressIndicator(color: context.zz.brandStrong),
       ),
       error: (e, _) => _box(
         context,
@@ -497,14 +497,14 @@ class _RoundCard extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: warn ? context.zz.surface : context.zz.orangeTint,
-          border: Border.all(color: warn ? ZzColors.orange600 : ZzColors.orange),
-          borderRadius: BorderRadius.circular(ZzRadius.md),
+          color: warn ? context.zz.surface : context.zz.brandTint,
+          border: Border.all(color: warn ? context.zz.brandStrong : context.zz.brandStrong),
+          borderRadius: BorderRadius.circular(ZzRadius.field),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ZzIcon(warn ? 'info' : 'cart', size: 20, color: ZzColors.orange600),
+            ZzIcon(warn ? 'info' : 'cart', size: 20, color: context.zz.brandStrong),
             const SizedBox(width: 10),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
@@ -538,12 +538,12 @@ class _LegalLinks extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(children: [
-                const Icon(Icons.open_in_new, size: 16, color: ZzColors.orange),
+                const Icon(Icons.open_in_new, size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(it.$1,
                       style: const TextStyle(
-                          color: ZzColors.orange600,
+                          color: context.zz.brandStrong,
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.underline)),
                 ),

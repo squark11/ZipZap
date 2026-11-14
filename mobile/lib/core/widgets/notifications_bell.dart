@@ -34,7 +34,7 @@ class NotificationsBell extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: ZzColors.orange,
+                color: context.zz.brandStrong,
                 borderRadius: BorderRadius.circular(10),
               ),
               constraints: const BoxConstraints(minWidth: 16),

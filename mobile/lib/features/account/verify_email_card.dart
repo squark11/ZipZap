@@ -86,15 +86,15 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
   @override
   Widget build(BuildContext context) {
     final mailIsMock = ref.watch(publicConfigProvider).valueOrNull?.mailIsMock ?? false;
-    const accent = Color(0xFFB45309);
-    const body = TextStyle(color: Color(0xFF6B3E09), height: 1.4);
+    const accent = context.zz.warning;
+    const body = TextStyle(color: context.zz.text, height: 1.4);
     return Container(
       key: const Key('verify-email-card'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8EB),
-        borderRadius: BorderRadius.circular(ZzRadius.lg),
-        border: Border.all(color: const Color(0xFFF7D9B9)),
+        color: context.zz.warningTint,
+        borderRadius: BorderRadius.circular(ZzRadius.card),
+        border: Border.all(color: context.zz.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,7 +114,7 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_error!, style: const TextStyle(color: ZzColors.danger))),
+            Semantics(liveRegion: true, child: Text(_error!, style: const TextStyle(color: context.zz.danger))),
           ],
           const SizedBox(height: 12),
           OutlinedButton(

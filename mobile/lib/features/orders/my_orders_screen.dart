@@ -34,7 +34,7 @@ class MyOrdersScreen extends ConsumerWidget {
             );
           }
           return RefreshIndicator(
-            color: ZzColors.orange,
+            color: context.zz.brandStrong,
             onRefresh: () async => ref.invalidate(myOrdersProvider),
             child: ListView.separated(
               padding: const EdgeInsets.all(16),

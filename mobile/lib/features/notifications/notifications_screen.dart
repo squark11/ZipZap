@@ -31,7 +31,7 @@ class NotificationsScreen extends ConsumerWidget {
             );
           }
           return RefreshIndicator(
-            color: ZzColors.orange,
+            color: context.zz.brandStrong,
             onRefresh: () async => ref.invalidate(notificationsProvider),
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -43,7 +43,7 @@ class NotificationsScreen extends ConsumerWidget {
                   child: ListTile(
                     leading: Icon(
                       n.isRead ? Icons.notifications_none : Icons.notifications_active,
-                      color: n.isRead ? context.zz.textMuted : ZzColors.orange,
+                      color: n.isRead ? context.zz.textMuted : context.zz.brandStrong,
                     ),
                     title: Text(n.title,
                         style: TextStyle(
@@ -56,7 +56,7 @@ class NotificationsScreen extends ConsumerWidget {
                             width: 10,
                             height: 10,
                             decoration: const BoxDecoration(
-                                color: ZzColors.orange, shape: BoxShape.circle),
+                                color: context.zz.brandStrong, shape: BoxShape.circle),
                           ),
                     onTap: n.isRead
                         ? null

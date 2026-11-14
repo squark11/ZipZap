@@ -36,7 +36,7 @@ class _ZzSkeletonState extends State<ZzSkeleton>
     final radius = widget.borderRadius ??
         (widget.height <= 20
             ? BorderRadius.circular(widget.height / 2)
-            : BorderRadius.circular(ZzRadius.md));
+            : BorderRadius.circular(ZzRadius.field));
     return AnimatedBuilder(
       animation: _c,
       builder: (_, _) {

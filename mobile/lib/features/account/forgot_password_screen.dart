@@ -86,7 +86,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           if (sentTo != null) ...[
             const SizedBox(height: 8),
-            const Icon(Icons.mark_email_read_outlined, size: 56, color: ZzColors.orange),
+            const Icon(Icons.mark_email_read_outlined, size: 56, color: context.zz.brandStrong),
             const SizedBox(height: 12),
             Text('Sprawdź skrzynkę', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
@@ -165,18 +165,18 @@ class _MockMailNotice extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8EB),
-        borderRadius: BorderRadius.circular(ZzRadius.md),
+        color: context.zz.warningTint,
+        borderRadius: BorderRadius.circular(ZzRadius.field),
       ),
       child: const Text.rich(
         TextSpan(children: [
           TextSpan(
             text: 'Poczta w tym środowisku to atrapa\n',
-            style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFFB45309)),
+            style: TextStyle(fontWeight: FontWeight.w600, color: context.zz.warning),
           ),
           TextSpan(
             text: 'Wiadomości nie są wysyłane, więc link nie dotrze. Skontaktuj się z obsługą Dowózka.pl.',
-            style: TextStyle(color: Color(0xFF6B3E09), height: 1.4),
+            style: TextStyle(color: context.zz.text, height: 1.4),
           ),
         ]),
       ),
@@ -195,7 +195,7 @@ class _InfoBox extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: context.zz.border),
-        borderRadius: BorderRadius.circular(ZzRadius.md),
+        borderRadius: BorderRadius.circular(ZzRadius.field),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +222,7 @@ class _ErrorText extends StatelessWidget {
         padding: const EdgeInsets.only(top: 12),
         child: Semantics(
           liveRegion: true,
-          child: Text(text, style: const TextStyle(color: ZzColors.danger)),
+          child: Text(text, style: const TextStyle(color: context.zz.danger)),
         ),
       );
 }

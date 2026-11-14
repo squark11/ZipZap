@@ -120,7 +120,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               style: Theme.of(context)
                   .textTheme
                   .displaySmall
-                  ?.copyWith(color: ZzColors.orange)),
+                  ?.copyWith(color: context.zz.brandStrong)),
           const SizedBox(height: 6),
           Text('w tym dostawa ${zl(p.deliveryFee)}',
               style: TextStyle(color: context.zz.textMuted)),
@@ -135,14 +135,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.zz.surface,
-              borderRadius: BorderRadius.circular(ZzRadius.md),
+              borderRadius: BorderRadius.circular(ZzRadius.field),
             ),
             child: Row(
               children: [
                 const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: ZzColors.orange),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.brandStrong),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

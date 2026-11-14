@@ -41,7 +41,7 @@ class _OfflineContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: ZzColors.danger,
+      color: context.zz.danger,
       child: SafeArea(
         bottom: false,
         child: Padding(

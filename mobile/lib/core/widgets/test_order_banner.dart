@@ -33,15 +33,15 @@ class TestOrderBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: context.zz.orangeTint,
-          border: Border.all(color: ZzColors.orange),
-          borderRadius: BorderRadius.circular(ZzRadius.md),
+          color: context.zz.brandTint,
+          border: Border.all(color: context.zz.brandStrong),
+          borderRadius: BorderRadius.circular(ZzRadius.field),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(blocked ? Icons.lock_outline : Icons.science_outlined,
-                color: ZzColors.orange600, size: 22),
+                color: context.zz.brandStrong, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -49,7 +49,7 @@ class TestOrderBanner extends StatelessWidget {
                 children: [
                   Text(title,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, color: ZzColors.orange600)),
+                          fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
                   const SizedBox(height: 4),
                   Text(body, style: TextStyle(color: context.zz.text, fontSize: 13)),
                 ],

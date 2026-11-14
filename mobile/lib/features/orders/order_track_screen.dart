@@ -116,7 +116,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
       timestamps[h.toStatus] = h.changedAtUtc;
     }
     return RefreshIndicator(
-      color: ZzColors.orange,
+      color: context.zz.brandStrong,
       onRefresh: () => _load(),
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -139,8 +139,8 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           const SizedBox(height: 20),
           if (cancelled)
             const _Banner(
-              color: Color(0xFFFEECEC),
-              textColor: ZzColors.danger,
+              color: context.zz.dangerTint,
+              textColor: context.zz.danger,
               text: 'To zamówienie zostało anulowane.',
             )
           else
@@ -168,7 +168,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           if (o.deliveryWindowLabel != null) ...[
             Row(
               children: [
-                const ZzIcon('clock', size: 16, color: ZzColors.orange),
+                const ZzIcon('clock', size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 6),
                 Text('Termin: ${o.deliveryWindowLabel}',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -179,7 +179,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           if (o.purchasingRound != null) ...[
             Row(
               children: [
-                const ZzIcon('cart', size: 16, color: ZzColors.orange),
+                const ZzIcon('cart', size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text('Zakupy w sklepie: ${o.purchasingRound!.label}',
@@ -239,11 +239,11 @@ class OrderTimeline extends StatelessWidget {
         final isLast = i == _statusFlow.length - 1;
 
         final fill = current
-            ? ZzColors.orange
-            : (done ? ZzColors.green : context.zz.surface);
+            ? context.zz.brandStrong
+            : (done ? context.zz.success : context.zz.surface);
         final border = current
-            ? ZzColors.orange
-            : (done ? ZzColors.green : context.zz.border);
+            ? context.zz.brandStrong
+            : (done ? context.zz.success : context.zz.border);
         final iconColor = reached ? Colors.white : context.zz.textMuted;
         final ts = timestamps[step];
 
@@ -264,7 +264,7 @@ class OrderTimeline extends StatelessWidget {
                     Expanded(
                       child: Container(
                         width: 2,
-                        color: done ? ZzColors.green : context.zz.border,
+                        color: done ? context.zz.success : context.zz.border,
                       ),
                     ),
                 ],
@@ -280,7 +280,7 @@ class OrderTimeline extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: reached ? FontWeight.w600 : FontWeight.w400,
                         color: current
-                            ? ZzColors.orange600
+                            ? context.zz.brandStrong
                             : (done ? context.zz.text : context.zz.textMuted),
                       ),
                     ),
@@ -294,7 +294,7 @@ class OrderTimeline extends StatelessWidget {
                       const Padding(
                         padding: EdgeInsets.only(top: 2),
                         child: Text('W trakcie',
-                            style: TextStyle(color: ZzColors.orange600, fontSize: 12)),
+                            style: TextStyle(color: context.zz.brandStrong, fontSize: 12)),
                       ),
                   ],
                 ),
@@ -399,7 +399,7 @@ class _Banner extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(ZzRadius.md)),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(ZzRadius.field)),
         child: Text(text, style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
       );
 }

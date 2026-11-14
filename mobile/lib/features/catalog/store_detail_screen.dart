@@ -147,7 +147,7 @@ class _StoreOfferState extends ConsumerState<_StoreOffer> {
           onRetry: () => ref.invalidate(productsProvider(s.id)),
         ),
         data: (list) => RefreshIndicator(
-          color: ZzColors.orange,
+          color: context.zz.brandStrong,
           onRefresh: refresh,
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -224,12 +224,12 @@ class StoreClosedNotice extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: context.zz.orangeTint,
-          borderRadius: BorderRadius.circular(ZzRadius.md),
+          color: context.zz.brandTint,
+          borderRadius: BorderRadius.circular(ZzRadius.field),
         ),
         child: Text(
           '$_reason Możesz przejrzeć ofertę — zamówienie złożysz, gdy sklep wznowi przyjmowanie zamówień.',
-          style: const TextStyle(color: ZzColors.orange600, fontSize: 13.5),
+          style: const TextStyle(color: context.zz.brandStrong, fontSize: 13.5),
         ),
       );
 }
@@ -253,7 +253,7 @@ class _ProductRow extends ConsumerWidget {
       height: 46,
       decoration: BoxDecoration(
         color: context.zz.surface,
-        borderRadius: BorderRadius.circular(ZzRadius.md),
+        borderRadius: BorderRadius.circular(ZzRadius.field),
       ),
       child: Icon(Icons.local_grocery_store_outlined, color: context.zz.textMuted),
     );
@@ -265,7 +265,7 @@ class _ProductRow extends ConsumerWidget {
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(ZzRadius.md),
+              borderRadius: BorderRadius.circular(ZzRadius.field),
               child: SizedBox(
                 width: 46,
                 height: 46,
@@ -294,7 +294,7 @@ class _ProductRow extends ConsumerWidget {
                       style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
                   if (!available)
                     const Text('Niedostępny',
-                        style: TextStyle(color: ZzColors.danger, fontSize: 12)),
+                        style: TextStyle(color: context.zz.danger, fontSize: 12)),
                 ],
               ),
             ),
@@ -366,7 +366,7 @@ class _ProductRow extends ConsumerWidget {
               ...product.unitOptions.map((o) => ListTile(
                     title: Text('1 ${o.unit}'),
                     trailing: Text(zl(o.price),
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: ZzColors.orange600)),
+                        style: const TextStyle(fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
                     onTap: () => Navigator.pop(ctx, o.unit),
                   )),
               const SizedBox(height: 8),
@@ -387,7 +387,7 @@ class _Stepper extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: context.zz.border),
-        borderRadius: BorderRadius.circular(ZzRadius.md),
+        borderRadius: BorderRadius.circular(ZzRadius.field),
       ),
       child: Row(
         children: [
@@ -408,7 +408,7 @@ class _Stepper extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(icon, size: 18, color: ZzColors.orange),
+          child: Icon(icon, size: 18, color: context.zz.brandStrong),
         ),
       );
 }

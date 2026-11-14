@@ -24,7 +24,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.zz.bg,
+      backgroundColor: context.zz.card,
       body: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -34,7 +34,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             SizedBox(
               width: 26,
               height: 26,
-              child: CircularProgressIndicator(strokeWidth: 3, color: ZzColors.orange),
+              child: CircularProgressIndicator(strokeWidth: 3, color: context.zz.brandStrong),
             ),
           ],
         ),

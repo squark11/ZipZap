@@ -13,7 +13,7 @@ class LoadingView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: ZzColors.orange),
+            const CircularProgressIndicator(color: context.zz.brandStrong),
             if (label != null) ...[
               const SizedBox(height: 12),
               Text(label!, style: TextStyle(color: context.zz.textMuted)),
@@ -107,7 +107,7 @@ class StatusPill extends StatelessWidget {
     final (bg, fg, label, icon) = _style(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.sm)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.pill)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -123,23 +123,23 @@ class StatusPill extends StatelessWidget {
   static (Color, Color, String, String) _style(String s) {
     switch (s) {
       case 'Placed':
-        return (ZzColors.orange50, ZzColors.orange600, 'Złożone', 'clock');
+        return (context.zz.brandTint, context.zz.brandStrong, 'Złożone', 'clock');
       case 'Confirmed':
-        return (ZzColors.orange50, ZzColors.orange600, 'Potwierdzone', 'check');
+        return (context.zz.brandTint, context.zz.brandStrong, 'Potwierdzone', 'check');
       case 'Picking':
-        return (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Kompletowane', 'cart');
+        return (context.zz.infoTint, context.zz.info, 'Kompletowane', 'cart');
       case 'ReadyForPickup':
-        return (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Gotowe do odbioru', 'package');
+        return (context.zz.infoTint, context.zz.info, 'Gotowe do odbioru', 'package');
       case 'InDelivery':
-        return (ZzColors.orange50, ZzColors.orange600, 'W dostawie', 'delivery');
+        return (context.zz.brandTint, context.zz.brandStrong, 'W dostawie', 'delivery');
       case 'Delivered':
-        return (ZzColors.green50, const Color(0xFF128040), 'Dostarczone', 'check_circle');
+        return (context.zz.successTint, context.zz.success, 'Dostarczone', 'check_circle');
       case 'Completed':
-        return (ZzColors.green50, const Color(0xFF128040), 'Zakończone', 'check_circle');
+        return (context.zz.successTint, context.zz.success, 'Zakończone', 'check_circle');
       case 'Cancelled':
-        return (const Color(0xFFFEECEC), ZzColors.danger, 'Anulowane', 'x_circle');
+        return (context.zz.dangerTint, context.zz.danger, 'Anulowane', 'x_circle');
       default:
-        return (ZzColors.surface, ZzColors.textMuted, s, 'info');
+        return (context.zz.surface, context.zz.textMuted, s, 'info');
     }
   }
 }

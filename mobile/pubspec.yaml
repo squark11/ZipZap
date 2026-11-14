@@ -48,8 +48,6 @@ dependencies:
   dio: ^5.7.0
   # Bezpieczne przechowywanie refresh tokenu
   flutter_secure_storage: ^9.2.2
-  # Typografia marki (Poppins / Inter)
-  google_fonts: ^6.2.1
   # Formatowanie walut/dat (PLN, pl_PL)
   intl: ^0.19.0
   # Otwieranie URL płatności dostawcy
@@ -85,6 +83,30 @@ flutter:
   assets:
     - assets/svg/
     - assets/svg/icons/
+    - assets/svg/illustrations/
+    - assets/svg/categories/
+
+  # Czcionki marki w paczce (bez pobierania z Google przy starcie). Odchudzone do łaciny z polskimi znakami —
+  # skrypt: docs/redesign/build_fonts.py. Licencja: assets/fonts/OFL-*.txt (SIL Open Font License 1.1).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

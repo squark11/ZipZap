@@ -18,13 +18,13 @@ class AddressesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Moje adresy')),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: ZzColors.orange,
+        backgroundColor: context.zz.brandStrong,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('Dodaj adres', style: TextStyle(color: Colors.white)),
         onPressed: () => _openForm(context, ref, null),
       ),
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: ZzColors.orange)),
+        loading: () => const Center(child: CircularProgressIndicator(color: context.zz.brandStrong)),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (list) {
           if (list.isEmpty) {
@@ -85,9 +85,9 @@ class _AddressCard extends ConsumerWidget {
                 if (address.isDefault)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: context.zz.orangeTint, borderRadius: BorderRadius.circular(6)),
+                    decoration: BoxDecoration(color: context.zz.brandTint, borderRadius: BorderRadius.circular(6)),
                     child: const Text('Domyślny',
-                        style: TextStyle(color: ZzColors.orange600, fontSize: 11, fontWeight: FontWeight.w700)),
+                        style: TextStyle(color: context.zz.brandStrong, fontSize: 11, fontWeight: FontWeight.w700)),
                   ),
               ],
             ),
@@ -113,7 +113,7 @@ class _AddressCard extends ConsumerWidget {
                   child: const Text('Edytuj'),
                 ),
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: ZzColors.danger),
+                  style: TextButton.styleFrom(foregroundColor: context.zz.danger),
                   onPressed: () async {
                     await ref.read(orderingRepositoryProvider).deleteAddress(address.id);
                     ref.invalidate(addressesProvider);
@@ -246,7 +246,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
               onChanged: (v) => setState(() => _default = v ?? false),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
-              activeColor: ZzColors.orange,
+              activeColor: context.zz.brandStrong,
               title: const Text('Ustaw jako domyślny'),
             ),
             const SizedBox(height: 12),

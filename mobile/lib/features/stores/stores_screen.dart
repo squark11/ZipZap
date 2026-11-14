@@ -89,7 +89,7 @@ class StoresScreen extends ConsumerWidget {
                   );
                 }
                 return RefreshIndicator(
-                  color: ZzColors.orange,
+                  color: context.zz.brandStrong,
                   onRefresh: () async => ref.invalidate(storesProvider),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
@@ -118,15 +118,15 @@ class _PostalBanner extends ConsumerWidget {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-        color: ZzColors.green50,
+        color: context.zz.successTint,
         child: Row(
           children: [
-            const Icon(Icons.local_shipping_outlined, size: 18, color: Color(0xFF128040)),
+            const Icon(Icons.local_shipping_outlined, size: 18, color: context.zz.success),
             const SizedBox(width: 8),
             Expanded(
               child: Text('Sklepy dowożące pod ${_fmt(postal)}',
                   style: const TextStyle(
-                      color: Color(0xFF128040), fontSize: 13, fontWeight: FontWeight.w600)),
+                      color: context.zz.success, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
             TextButton(onPressed: () => _edit(context, ref, postal), child: const Text('Zmień')),
           ],
@@ -138,16 +138,16 @@ class _PostalBanner extends ConsumerWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: context.zz.orangeTint,
+        color: context.zz.brandTint,
         child: const Row(
           children: [
-            Icon(Icons.markunread_mailbox_outlined, size: 18, color: ZzColors.orange),
+            Icon(Icons.markunread_mailbox_outlined, size: 18, color: context.zz.brandStrong),
             SizedBox(width: 8),
             Expanded(
               child: Text('Podaj kod pocztowy — pokaż tylko sklepy, które dowożą',
-                  style: TextStyle(color: ZzColors.orange600, fontSize: 14, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: context.zz.brandStrong, fontSize: 14, fontWeight: FontWeight.w600)),
             ),
-            Icon(Icons.chevron_right, color: ZzColors.orange),
+            Icon(Icons.chevron_right, color: context.zz.brandStrong),
           ],
         ),
       ),
@@ -180,7 +180,7 @@ class _PostalBanner extends ConsumerWidget {
             ),
           TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Anuluj')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: ZzColors.orange),
+            style: FilledButton.styleFrom(backgroundColor: context.zz.brandStrong),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('Pokaż'),
           ),
@@ -216,14 +216,14 @@ class _LocationBanner extends ConsumerWidget {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-        color: context.zz.orangeTint,
+        color: context.zz.brandTint,
         child: Row(
           children: [
-            const Icon(Icons.location_on, size: 18, color: ZzColors.orange600),
+            const Icon(Icons.location_on, size: 18, color: context.zz.brandStrong),
             const SizedBox(width: 8),
             const Expanded(
               child: Text('Sklepy w Twojej okolicy — najbliższe na górze',
-                  style: TextStyle(color: ZzColors.orange600, fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: context.zz.brandStrong, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
             TextButton(onPressed: () => ref.invalidate(myLocationProvider), child: const Text('Wyłącz')),
           ],
@@ -235,16 +235,16 @@ class _LocationBanner extends ConsumerWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: context.zz.orangeTint,
+        color: context.zz.brandTint,
         child: const Row(
           children: [
-            Icon(Icons.location_on, size: 18, color: ZzColors.orange),
+            Icon(Icons.location_on, size: 18, color: context.zz.brandStrong),
             SizedBox(width: 8),
             Expanded(
               child: Text('Pokaż sklepy najbliżej Ciebie',
-                  style: TextStyle(color: ZzColors.orange600, fontSize: 14, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: context.zz.brandStrong, fontSize: 14, fontWeight: FontWeight.w600)),
             ),
-            Icon(Icons.chevron_right, color: ZzColors.orange),
+            Icon(Icons.chevron_right, color: context.zz.brandStrong),
           ],
         ),
       ),
@@ -273,7 +273,7 @@ class _StoreCard extends StatelessWidget {
     final open = store.isAcceptingOrders;
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(ZzRadius.lg),
+        borderRadius: BorderRadius.circular(ZzRadius.card),
         onTap: () => context.push('/stores/${store.id}'),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -299,12 +299,12 @@ class _StoreCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: open ? ZzColors.green50 : const Color(0xFFFEECEC),
-                  borderRadius: BorderRadius.circular(ZzRadius.sm),
+                  color: open ? context.zz.successTint : context.zz.dangerTint,
+                  borderRadius: BorderRadius.circular(ZzRadius.pill),
                 ),
                 child: Text(open ? 'Otwarte' : 'Zamknięte',
                     style: TextStyle(
-                        color: open ? const Color(0xFF128040) : ZzColors.danger,
+                        color: open ? context.zz.success : context.zz.danger,
                         fontSize: 12,
                         fontWeight: FontWeight.w600)),
               ),
