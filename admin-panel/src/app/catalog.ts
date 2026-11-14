@@ -6,6 +6,16 @@ import { Api, CategoryDto, ProductDto } from './api';
 interface ImportRow { row: number; name: string; action: string; error?: string; }
 interface ImportReport { committed: boolean; total: number; created: number; updated: number; failed: number; rows: ImportRow[]; }
 
+/** Plik CSV: UTF-8 (także z BOM), a gdy to nie UTF-8 — Windows-1250 (polski Excel „CSV rozdzielany średnikami",
+ *  eksporty programów kasowych). Bez tego polskie litery z takich plików zamieniłyby się w znaki „�". */
+export function decodeCsv(buf: ArrayBuffer): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder('windows-1250').decode(buf);
+  }
+}
+
 @Component({
   selector: 'app-catalog',
   imports: [CommonModule, FormsModule],
@@ -210,9 +220,9 @@ export class CatalogComponent {
     if (!file) { this.importText = null; this.importFileName = ''; return; }
     this.importFileName = file.name;
     const reader = new FileReader();
-    reader.onload = () => { this.importText = String(reader.result ?? ''); };
+    reader.onload = () => { this.importText = decodeCsv(reader.result as ArrayBuffer); };
     reader.onerror = () => { alert('Nie udało się odczytać pliku.'); this.clearImport(); };
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsArrayBuffer(file);
     input.value = ''; // pozwól wybrać ten sam plik ponownie
   }
 
