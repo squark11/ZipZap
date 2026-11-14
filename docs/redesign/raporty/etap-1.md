@@ -81,3 +81,31 @@ Backendu nie zmieniano — `dotnet test` nie był potrzebny.
    `docs/redesign/makiety/*.dc.html` jako tekst; sprawdzić, że każda kwota/produkt pochodzi z danych demo
    (`backend/src/ZipZap.Api/Program.cs`, `/api/admin/seed/pilot`) lub jest oznaczona etykietą „wymaga backendu".
 6. Kryteria etapu: `03-weryfikacja-codex.md` → „Etap 1".
+
+---
+
+## Poprawki po weryfikacji Codexa (FAIL z 2026-11-14) — runda 2
+
+Ocena Claude Code każdego zarzutu i co zrobiono:
+
+| Zarzut Codexa | Ocena Claude Code | Działanie |
+|---|---|---|
+| E1-3: brak makiet Produktu, Zamówienia/śledzenia, Konta | **słuszny** — kryterium z mojego planu | dodane: `Produkt.dc.html` (arkusz z wyborem jednostki kg/szt., licznik, „Dodaj · 9,98 zł"), `Zamowienie.dc.html` (oś statusów, termin, pozycje, telefon do sklepu), `Konto.dc.html` (potwierdzenie e-mail, „Dodaj do ekranu głównego", ustawienia, motyw) |
+| E1-3: ekrany w 390 zamiast 375 px | **słuszny** (390 to popularna szerokość, ale kryterium mówi 375) | wszystkie makiety telefonu przestawione na 375 × 844; checkout 3 × 375 |
+| E1-3: brak wariantów 1280 dla każdego ekranu | **częściowo słuszny** | dodane 1280: `KomputerSklep` (sklep + koszyk w panelu z paskiem minimum), `KomputerZamowienie` (krok terminu + podsumowanie); Start 1280 był. Koszyk na 1280 = panel boczny na tych artboardach. **Propozycja zmiany kryterium (do akceptacji właściciela):** Produkt, Logowanie, Konto i Śledzenie mają na komputerze ten sam układ jednokolumnowy (maks. 640 px, Produkt jako okno dialogowe) — opisany regułą w `design-system.md` §7 zamiast osobnych artboardów |
+| E1-3: brak 4 stanów ekranów | **słuszny** | dodany `Stany.dc.html`: ładowanie (szkielety Startu + komunikat „Budzimy serwer…" po 4 s), pusty koszyk (ilustracja + „Przeglądaj sklepy"), błąd oferty sklepu („Spróbuj ponownie"), brak internetu (pasek + ostatnie dane, koszyk zachowany) — te same wzorce dotyczą pozostałych ekranów |
+| Daty dostaw niezgodne z seedem (sobota/poniedziałek vs `tomorrow`) | **częściowo słuszny**. Seed tworzy terminy „na jutro" względem chwili wywołania, nie na stałą datę — nie wynika z niego „niedziela 15.11". Sprawdziłem produkcję: **oba sklepy mają dziś 0 terminów dostawy**, a API rund podaje najbliższą rundę na poniedziałek 16.11, 12:00 (sobota 15:30 minęła, niedziela poza harmonogramem). Słuszne natomiast: zdanie „W niedziele nie dowozimy" nie wynikało z API (harmonogram dotyczy rund zakupowych, nie terminów dostawy) | zdanie usunięte; terminy oznaczone jako przykładowe (stopka checkoutu, etykieta na 1280, notatka na płótnie) |
+| Suma „3 produkty · 21,77 zł" bez pozycji | **słuszny — błąd** (żadna kombinacja produktów demo nie daje 21,77) | poprawione na 22,46 zł = Jabłka 2 kg 9,98 + Mleko 3,49 + Szynka 8,99 |
+| E1-5: sukces 400 ms i pętla połysku 1 200 ms przekraczają 250 ms | **słuszny** | sukces: 250 ms (120 + 130); połysk szkieletu: jeden przebieg 250 ms, powtarzany co 1 s — każdy ruch ≤ 250 ms. Zaznaczyłem w specyfikacji, że to wskaźnik czekania (do potwierdzenia przez właściciela, czy tak liczymy) |
+| Grafit ilustracji 1,25:1 na ciemnym tle | uwaga zasadna, element dekoracyjny | bez zmian w tej rundzie — koła mają turkusową obwódkę; ocena przy wdrożeniu (Etap 3) |
+| Gałąź: raport mówi `main`, worktree to `pilot-outbox-deadletter` | słuszna precyzja | `HEAD` = `origin/main`; commity są wypychane na `main`. Lokalna gałąź `main` w głównym katalogu jest nieaktualna i nieużywana |
+
+Dodatkowa uwaga z karty Produktu: nie obiecujemy „kwoty po skompletowaniu" — zasada rozliczania po kompletacji jest
+tylko rekomendacją, niezatwierdzoną przez właściciela (PILOT_BUSINESS_MODEL.md).
+
+**Ustalenie operacyjne poza Etapem 1 (do właściciela):** na produkcji Lewiatan i Rapacz nie mają żadnych przyszłych
+terminów dostawy → klient nie może dziś złożyć zamówienia. Terminy dodaje sklep lub admin w panelu.
+
+Pliki rundy 2: `docs/redesign/makiety/{Produkt,Zamowienie,Konto,Stany,KomputerSklep,KomputerZamowienie}.dc.html` (nowe),
+`Start, Sklep, Koszyk, Logowanie, StartCiemny, Checkout, Main` + `canvas.json` (zmienione), `design-system.md` §4 i §6,
+ten raport. Kod aplikacji bez zmian — `flutter analyze` / `flutter test` jak w rundzie 1.
