@@ -1,16 +1,18 @@
 # F. Decyzje wymagające akceptacji właściciela
 
-| # | Decyzja | Rekomendacja | Skutek odmowy |
+Stan na 2026-11-14.
+
+| # | Decyzja | Status | Ustalenie |
 |---|---|---|---|
-| F-1 | Zostajemy przy Flutterze jako PWA (zamiast pisać osobny front w HTML) | **Tak** — jeden kod na web, Androida i iOS; start odchudzamy | osobny front to 2–3 miesiące i dwa kody do utrzymania |
-| F-2 | Paleta: turkus marki + ciemniejszy turkus na przyciski + ciepły żółty akcent | **Tak**; alternatywa: zieleń jak w inspiracji, czyli zmiana marki, logo i strony głównej | bez ciemniejszego turkusu przyciski nie spełnią wymogu kontrastu |
-| F-3 | Figma: ponowna autoryzacja integracji i ewentualnie płatny plan (Starter kończy limit po kilku wywołaniach) | makiety jako HTML/SVG w repo; Figma opcjonalnie | brak pliku w Figmie, reszta bez zmian |
-| F-4 | Dodatkowa biblioteka animacji (Lottie/Rive) | **Nie teraz** — wystarczą animacje Fluttera | — |
-| F-5 | Okładka sklepu oraz „sposób i termin dostawy" na karcie (nowe pola w API i panelu) | **Tak** — bez tego karty sklepów zostaną bez zdjęć | wariant z samym logo |
-| F-6 | Wspólna lista kategorii platformy (Pieczywo, Nabiał, Owoce…) obok kategorii sklepu | **Tak**, 10–12 pozycji zarządzanych w panelu | kategorie tylko wewnątrz sklepu |
-| F-7 | Wyszukiwarka produktów we wszystkich sklepach (nowy endpoint) oraz ulubione | wyszukiwarka **tak** (Etap 3), ulubione później | szukanie tylko sklepów po nazwie |
-| F-8 | Baner promocyjny i „Zamów ponownie" — skąd treść | „Zamów ponownie" z historii zamówień; baner edytowany w panelu | sekcje pominięte |
-| F-9 | Hosting API: płatny Render (ok. 7 USD miesięcznie), koniec usypiania | **Tak** przed publicznym startem — największy pojedynczy zysk dla pierwszego wrażenia | komunikat „Budzimy serwer…" i 30–60 s czekania |
-| F-10 | Redesign panelu Angular osobno, po aplikacji klienta | **Tak** | — |
-| F-11 | Obieg z Codexem: raporty w `docs/redesign/raporty/`, praca na gałęzi `redesign/*`, scalenie do `main` po PASS | **Tak**; potrzebne potwierdzenie, czy Codex czyta lokalne repo, czy GitHub | — |
-| F-12 | Ilustracje (maskotka, stany, kategorie) rysowane w SVG przez Claude Code, do akceptacji przed użyciem | **Tak**; alternatywa: zlecenie grafikowi | — |
+| F-1 | Flutter jako aplikacja webowa (PWA) | **Przyjęte** 2026-11-14 | Tylko aplikacja webowa instalowana z przeglądarki (Android i iOS). **Bez Google Play i App Store** — brak budżetu na konta deweloperskie. Budowa APK wypada z planu. |
+| F-2 | Paleta: turkus marki + mocny turkus `#097778` na przyciski + słoneczny akcent `#FFB703` | **Przyjęte** 2026-11-14 („akceptuję kierunek") | — |
+| F-3 | Figma | otwarte | Makiety powstały na płótnie projektowym Claude: https://claude.ai/artifact/U4EWEdpwyYuvHgDuvi8ymj (kopie w `makiety/`). Figma niepotrzebna, chyba że właściciel zechce. |
+| F-4 | Biblioteka animacji (Lottie/Rive) | rekomendacja: nie teraz | Animacje wbudowane we Flutter (design-system.md §6). |
+| F-5 | Okładka sklepu oraz sposób i termin dostawy na karcie (nowe pola w API i panelu) | **Przyjęte** 2026-11-14 | Wchodzi do Etapu 3 (E3-1) jako zmiana backendu + panelu. |
+| F-6 | Wspólna lista kategorii platformy obok kategorii sklepu | **Przyjęte** 2026-11-14 | 12 kategorii z ikonami (`assets/svg/categories/`), zarządzanie w panelu; wchodzi do Etapu 3. |
+| F-7 | Wyszukiwarka produktów we wszystkich sklepach; ulubione | otwarte | Rekomendacja: wyszukiwarka tak (E3-10), ulubione później. |
+| F-8 | Baner promocyjny i „Zamów ponownie" | otwarte | Makiety używają banera najbliższej rundy (dane są w API); baner promocyjny z panelu — do decyzji. |
+| F-9 | Płatny Render (~7 USD/mies.), koniec usypiania API | otwarte | Rekomendacja: tak przed publicznym startem. |
+| F-10 | Redesign panelu Angular osobno, po aplikacji klienta | rekomendacja: tak | — |
+| F-11 | Obieg z Codexem (raporty w `docs/redesign/raporty/`) | otwarte | Potrzebne: czy Codex czyta lokalne repo, czy GitHub. Raporty są commitowane do `main`. |
+| F-12 | Ilustracje rysowane w SVG przez Claude Code | **Przyjęte** razem z kierunkiem | 10 ilustracji + 12 ikon w Etapie 1; poprawki po uwagach właściciela. |

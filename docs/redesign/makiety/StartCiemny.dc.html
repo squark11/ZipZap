@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Start w trybie ciemnym — Dowózka.pl</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#E8F0F0;background:#0F1717}
+a{color:#3FD3D4}a:hover{color:#7FE3E4}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0F1717; font-family: Inter, sans-serif; color: #E8F0F0">
+
+  <div style="background: #182323; border-radius: 0 0 28px 28px; padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <button type="button" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: #E8F0F0; padding: 0; text-align: left">
+        <span style="width: 40px; height: 40px; border-radius: 999px; background: #0F2B2C; display: flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3FD3D4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg></span>
+        <span style="display: flex; flex-direction: column; min-width: 0"><span style="font: 500 12px Inter, sans-serif; color: #9FB0B0">Dostawa do</span><span style="font: 600 15px Inter, sans-serif">Dom · 31-042 Kraków ▾</span></span>
+      </button>
+      <button type="button" aria-label="Powiadomienia" style="width: 44px; height: 44px; border: 0; border-radius: 999px; background: #0F2B2C; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8F0F0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg></button>
+    </div>
+    <h1 style="margin: 0; font: 700 26px/1.2 Poppins, sans-serif; color: #F2F6F6">Co dziś kupujemy, Anno?</h1>
+    <label for="dark-search" style="display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 18px; border-radius: 999px; background: #0F1717; border: 1px solid #263636; color: #9FB0B0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input id="dark-search" type="search" placeholder="Szukaj: mleko, chleb, Lewiatan…" style="flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: 400 15px Inter, sans-serif; color: #E8F0F0">
+    </label>
+  </div>
+
+  <div style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 20px">
+    <div style="height: 112px; border-radius: 24px; background: #FFB703; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 20px">
+      <span style="font: 700 12px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #1F2A37">Najbliższa runda</span>
+      <span style="font: 700 20px/1.2 Poppins, sans-serif; color: #1F2A37; max-width: 230px">Zamów do 15:30, dostawa dziś od 17:00</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font: 600 18px Poppins, sans-serif; color: #F2F6F6">Sklepy w pobliżu</h2>
+      <div style="background: #182323; border-radius: 20px; padding: 14px; display: flex; gap: 12px; align-items: center">
+        <span style="width: 52px; height: 52px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font: 800 16px Poppins, sans-serif; color: #1D4ED8; font-style: italic; flex: none">L</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="font: 600 15px Poppins, sans-serif">Lewiatan — Podwawelskie</span>
+          <span style="font: 500 13px Inter, sans-serif; color: #9FB0B0"><span style="color: #3FD3D4; font-weight: 600">Dostawa dziś od 17:00</span> · min. 15,00 zł</span>
+        </div>
+      </div>
+      <div style="background: #182323; border-radius: 20px; padding: 14px; display: flex; gap: 12px; align-items: center">
+        <span style="width: 52px; height: 52px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font: 800 14px Poppins, sans-serif; color: #DC2626; font-style: italic; flex: none">R</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="font: 600 15px Poppins, sans-serif">Rapacz — Rynek</span>
+          <span style="font: 500 13px Inter, sans-serif; color: #9FB0B0"><span style="color: #3FD3D4; font-weight: 600">Dostawa dziś od 17:00</span> · min. 20,00 zł</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="border-radius: 16px; border: 1px dashed #2E4545; padding: 12px 14px; font: 500 13px/1.5 Inter, sans-serif; color: #9FB0B0">Poprawka z testu na telefonie: w trybie ciemnym pasek stanu i krawędź nawigacji dostają kolor tła (#0F1717), a nie turkus — dziś turkusowy pasek gryzie się z ciemnym ekranem.</div>
+  </div>
+
+  <nav aria-label="Nawigacja główna" style="position: absolute; left: 12px; right: 12px; bottom: 12px; height: 68px; border-radius: 24px; background: #182323; display: flex; align-items: center; justify-content: space-around">
+    <a href="#" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #3FD3D4; font: 700 11px Inter, sans-serif; padding: 6px 10px; border-radius: 16px; background: #0F2B2C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"></path></svg>Start</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #9FB0B0; font: 600 11px Inter, sans-serif; padding: 6px 10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Szukaj</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #9FB0B0; font: 600 11px Inter, sans-serif; padding: 6px 10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.5 11h11L21 7H6.5"></path><circle cx="9" cy="19.5" r="1.5"></circle><circle cx="17" cy="19.5" r="1.5"></circle></svg>Koszyk</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #9FB0B0; font: 600 11px Inter, sans-serif; padding: 6px 10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg>Zamówienia</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #9FB0B0; font: 600 11px Inter, sans-serif; padding: 6px 10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>Konto</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

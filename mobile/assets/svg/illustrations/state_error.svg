@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160" viewBox="0 0 200 160" role="img"><title>Coś poszło nie tak</title><circle cx="100" cy="78" r="70" fill="#14B9BA" fill-opacity="0.14"/><ellipse cx="98" cy="146" rx="70" ry="7" fill="#14B9BA" fill-opacity="0.22"/><g transform="translate(52 52) scale(1)">
+<path d="M0 6h14l12 52h58l12-38H22" stroke="#097778" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="34" cy="74" r="8" fill="#1F2A37" stroke="#14B9BA" stroke-width="3"/><circle cx="78" cy="74" r="8" fill="#1F2A37" stroke="#14B9BA" stroke-width="3"/>
+
+</g><g transform="rotate(-12 100 90)"><rect x="128" y="18" width="40" height="40" rx="20" fill="#FFB703"/><path d="M148 28v14" stroke="#1F2A37" stroke-width="6" stroke-linecap="round"/><circle cx="148" cy="50" r="3.5" fill="#1F2A37"/></g></svg>

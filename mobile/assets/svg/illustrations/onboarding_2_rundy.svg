@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" role="img"><title>Zakupy robimy o stałych godzinach</title><circle cx="120" cy="100" r="92" fill="#14B9BA" fill-opacity="0.14"/><ellipse cx="120" cy="186" rx="90" ry="7" fill="#14B9BA" fill-opacity="0.22"/><circle cx="104" cy="96" r="62" fill="#FFFFFF" stroke="#097778" stroke-width="8"/>
+<path d="M104 52v8M104 132v8M60 96h8M140 96h8" stroke="#1F2A37" stroke-width="5" stroke-linecap="round"/>
+<path d="M104 96 L104 64 M104 96 L128 108" stroke="#1F2A37" stroke-width="7" stroke-linecap="round"/><circle cx="104" cy="96" r="6" fill="#FFB703"/><g transform="translate(146 112) scale(0.8)">
+<path d="M0 6h14l12 52h58l12-38H22" stroke="#097778" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="34" cy="74" r="8" fill="#1F2A37" stroke="#14B9BA" stroke-width="3"/><circle cx="78" cy="74" r="8" fill="#1F2A37" stroke="#14B9BA" stroke-width="3"/>
+<circle cx="44" cy="12" r="11" fill="#22A35A"/><rect x="58" y="-6" width="14" height="28" rx="4" fill="#FFFFFF" stroke="#14B9BA" stroke-width="3"/><circle cx="84" cy="12" r="10" fill="#E5484D"/>
+</g></svg>

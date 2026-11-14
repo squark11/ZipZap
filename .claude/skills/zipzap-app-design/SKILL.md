@@ -11,9 +11,11 @@ description: >-
 # ZipZap — App Design System
 
 Build ZipZap so it feels like a top-tier delivery app (Wolt/Glovo/Bolt Food/Pyszne),
-but unmistakably ZipZap. **One accent color (orange), image-forward, rounded cards,
+but unmistakably ZipZap. **Brand teal + one warm accent, image-forward, rounded cards,
 generous whitespace, fast.** When in doubt, copy the *structure* competitors use and
 apply ZipZap's brand.
+
+**Scope (owner, 2026-11-14):** web app / PWA installed from the browser on Android and iOS — no Play Store / App Store. Mockups: `docs/redesign/makiety/`, illustrations: `mobile/assets/svg/illustrations/`.
 
 **Build to the roadmap.** Always work in line with **`ROADMAP.md`** (the single source
 of truth): take the next item from the current phase; when new work appears, **add it to
@@ -21,8 +23,8 @@ of truth): take the next item from the current phase; when new work appears, **a
 authority (how it looks/feels); `ROADMAP.md` is the *what & when*.
 
 ## 0. Non‑negotiables
-- Brand tokens only — never hardcode hex/spacing. Source of truth: `/branding`
-  (orange `#F97316`, green `#22C55E` success, graphite `#3A3F4B` text). Fonts:
+- Brand tokens only — never hardcode hex/spacing. Source of truth: **`docs/redesign/design-system.md`**
+  (Dowózka.pl, accepted 2026-11-14: brand teal `#14B9BA` for illustrations/tints, **brand-strong `#097778` for buttons and links** — white on `#14B9BA` fails contrast; sun accent `#FFB703` with dark text; graphite `#1F2A37` text). Fonts:
   **Poppins** headings, **Inter** UI/body.
 - Delivery fee is ALWAYS shown as a **separate line** from cart value (business rule).
 - **Show the store's delivery method + schedule** on the store card and store page (and
@@ -34,8 +36,8 @@ authority (how it looks/feels); `ROADMAP.md` is the *what & when*.
 - Money `pl_PL` (`23,50 zł`); one primary CTA per screen.
 
 ## 1. Design DNA (distilled from competitors)
-- **Single accent per brand** (Glovo=yellow, Deliveroo=teal, Wolt=blue → ZipZap=orange).
-  Use orange sparingly: primary CTA, active state, price/badge accents. Everything
+- **Single accent per brand** (Glovo=yellow, Wolt=blue → Dowózka=teal).
+  Brand-strong teal for primary CTA and active state; sun accent only for promos, round banner and cart badge. Everything
   else is graphite/neutral on white.
 - **Round category chips** in a horizontal scroller at the top of Home (Wolt): icon in a
   soft circle + short label (Sklepy, Restauracje, Pieczywo, Owoce, Napoje, Apteka…).
@@ -72,16 +74,16 @@ authority (how it looks/feels); `ROADMAP.md` is the *what & when*.
 | **Account** | Orders, addresses, notifications, payments, help. |
 
 ## 4. Components (spec)
-- **Buttons**: primary = orange fill, white text, 50px, radius md; secondary = outline;
+- **Buttons**: primary = brand-strong fill, white text, 52–56px, pill; secondary = outline;
   ghost = text; danger = red. One primary per view.
 - **Card**: white, 1px border `--zz-border`, radius lg, shadow-sm; tappable via InkWell.
-- **Category chip**: circle (56px) soft-orange bg + icon, label below (caption).
+- **Category chip**: circle (58–60px) brand-tint bg + icon (`assets/svg/categories/`), label below (caption).
 - **Store card**: 16:9 photo (top), body: name (titleMedium), ★ rating · czas · opłata
   (muted caption), status pill top-right.
 - **Product row**: 46–56px thumb, name + `cena / jednostka`, `Dodaj`/stepper on right.
-- **Qty stepper**: bordered pill `– n +`, orange glyphs.
+- **Qty stepper**: bordered pill `– n +`, brand-strong glyphs on brand tint.
 - **Status pill**: colored by status (see `orders`/tracking mapping); rounded sm.
-- **Bottom bar / cart bar**: orange full-width CTA showing count + subtotal + „→".
+- **Bottom bar / cart bar**: floating graphite pill with sun-accent CTA showing count + subtotal + „→".
 - **App bar**: white, graphite title (Poppins 700), actions (bell w/ unread, cart, account).
 
 ## 5. Imagery & illustrations

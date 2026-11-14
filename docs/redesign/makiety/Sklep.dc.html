@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Sklep — Dowózka.pl</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#1F2A37}
+a{color:#097778}a:hover{color:#065a5b}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F8F8; font-family: Inter, sans-serif; color: #1F2A37">
+
+  <div style="height: 150px; background: #CFEFEF; position: relative">
+    <svg width="390" height="150" viewBox="0 0 390 150" aria-hidden="true" style="position: absolute; inset: 0"><rect x="0" y="96" width="390" height="54" fill="#B5E5E5"></rect><rect x="150" y="30" width="200" height="86" rx="8" fill="#FFFFFF" opacity="0.75"></rect><rect x="166" y="48" width="44" height="68" fill="#14B9BA" opacity="0.5"></rect><rect x="222" y="48" width="112" height="34" fill="#14B9BA" opacity="0.3"></rect></svg>
+    <button type="button" aria-label="Wróć" style="position: absolute; top: 16px; left: 16px; width: 44px; height: 44px; border: 0; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(15,40,40,0.15)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2A37" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></button>
+    <button type="button" aria-label="Szukaj w sklepie" style="position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border: 0; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(15,40,40,0.15)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2A37" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></button>
+  </div>
+
+  <div style="margin: -36px 16px 0; position: relative; background: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(15,40,40,0.06), 0 8px 24px rgba(15,40,40,0.08)">
+    <div style="display: flex; gap: 12px; align-items: center">
+      <span style="width: 52px; height: 52px; border-radius: 14px; background: #EEF3FF; display: flex; align-items: center; justify-content: center; font: 800 16px Poppins, sans-serif; color: #1D4ED8; font-style: italic; flex: none">L</span>
+      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+        <h1 style="margin: 0; font: 700 18px/1.25 Poppins, sans-serif">Lewiatan — Podwawelskie</h1>
+        <span style="font: 500 13px Inter, sans-serif; color: #5B6675">ul. Komandosów 12 · Kraków</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <span style="padding: 6px 10px; border-radius: 999px; background: #E6F7F7; color: #097778; font: 600 12px Inter, sans-serif">Dostawa dziś od 17:00</span>
+      <span style="padding: 6px 10px; border-radius: 999px; background: #F3F8F8; color: #1F2A37; font: 600 12px Inter, sans-serif">min. 15,00 zł</span>
+      <span style="padding: 6px 10px; border-radius: 999px; background: #E9F7EE; color: #15803D; font: 600 12px Inter, sans-serif">Otwarte</span>
+    </div>
+  </div>
+
+  <div role="tablist" aria-label="Kategorie sklepu" style="display: flex; gap: 8px; padding: 16px 16px 4px; overflow: hidden">
+    <button type="button" role="tab" aria-selected="true" style="flex: none; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #1F2A37; color: #FFFFFF; font: 600 14px Inter, sans-serif">Wszystko</button>
+    <button type="button" role="tab" aria-selected="false" style="flex: none; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #FFFFFF; color: #1F2A37; font: 500 14px Inter, sans-serif">Owoce i warzywa</button>
+    <button type="button" role="tab" aria-selected="false" style="flex: none; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #FFFFFF; color: #1F2A37; font: 500 14px Inter, sans-serif">Nabiał</button>
+    <button type="button" role="tab" aria-selected="false" style="flex: none; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: #FFFFFF; color: #1F2A37; font: 500 14px Inter, sans-serif">Wędliny</button>
+  </div>
+  <div style="padding: 0 16px 6px; font: 500 11px Inter, sans-serif; color: #5B6675">Kategorie sklepu — już w API</div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 4px 16px">
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(15,40,40,0.05), 0 6px 18px rgba(15,40,40,0.05)">
+      <div style="height: 104px; border-radius: 14px; background: #FDECEC; display: flex; align-items: center; justify-content: center"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><circle cx="24" cy="38" r="17" fill="#E5484D"></circle><circle cx="40" cy="38" r="17" fill="#F2555A"></circle><path d="M32 22c0-6 3-10 8-12" stroke="#7A4A22" stroke-width="3" stroke-linecap="round" fill="none"></path><path d="M34 16c6-6 12-4 14 0-6 3-11 3-14 0z" fill="#22A35A"></path></svg></div>
+      <div style="font: 600 14px Inter, sans-serif">Jabłka</div>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div style="display: flex; flex-direction: column"><span style="font: 700 15px Inter, sans-serif">4,99 zł</span><span style="font: 500 12px Inter, sans-serif; color: #5B6675">za kg · lub szt.</span></div>
+        <div style="display: flex; align-items: center; height: 36px; border-radius: 999px; background: #E6F7F7"><button type="button" aria-label="Mniej jabłek" style="width: 32px; height: 36px; border: 0; background: transparent; color: #097778; font: 700 18px Inter, sans-serif">−</button><span style="font: 700 14px Inter, sans-serif">2</span><button type="button" aria-label="Więcej jabłek" style="width: 32px; height: 36px; border: 0; background: transparent; color: #097778; font: 700 18px Inter, sans-serif">+</button></div>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(15,40,40,0.05), 0 6px 18px rgba(15,40,40,0.05)">
+      <div style="height: 104px; border-radius: 14px; background: #EEF3FF; display: flex; align-items: center; justify-content: center"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 8h16v8l5 8v32H19V24l5-8z" fill="#FFFFFF" stroke="#9DB2E8" stroke-width="2"></path><rect x="19" y="30" width="26" height="16" fill="#3B82F6"></rect><path d="M24 8h16v6H24z" fill="#3B82F6"></path></svg></div>
+      <div style="font: 600 14px Inter, sans-serif">Mleko 2%</div>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div style="display: flex; flex-direction: column"><span style="font: 700 15px Inter, sans-serif">3,49 zł</span><span style="font: 500 12px Inter, sans-serif; color: #5B6675">za szt.</span></div>
+        <button type="button" aria-label="Dodaj mleko do koszyka" style="width: 40px; height: 40px; border: 0; border-radius: 999px; background: #097778; color: #FFFFFF; font: 700 22px Inter, sans-serif">+</button>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(15,40,40,0.05), 0 6px 18px rgba(15,40,40,0.05)">
+      <div style="height: 104px; border-radius: 14px; background: #FFF4D6; display: flex; align-items: center; justify-content: center"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 44 L52 22 L56 44 Z" fill="#F7C948"></path><path d="M8 44 L56 44 L56 50 L8 50 Z" fill="#E5AE2B"></path><circle cx="38" cy="36" r="3" fill="#E5AE2B"></circle><circle cx="27" cy="40" r="2" fill="#E5AE2B"></circle></svg></div>
+      <div style="font: 600 14px Inter, sans-serif">Parmezan</div>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div style="display: flex; flex-direction: column"><span style="font: 700 15px Inter, sans-serif">12,90 zł</span><span style="font: 500 12px Inter, sans-serif; color: #5B6675">za 100 g</span></div>
+        <button type="button" aria-label="Dodaj parmezan do koszyka" style="width: 40px; height: 40px; border: 0; border-radius: 999px; background: #097778; color: #FFFFFF; font: 700 22px Inter, sans-serif">+</button>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(15,40,40,0.05), 0 6px 18px rgba(15,40,40,0.05)">
+      <div style="height: 104px; border-radius: 14px; background: #FDEBE6; display: flex; align-items: center; justify-content: center"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="34" rx="22" ry="16" fill="#F28B82"></ellipse><ellipse cx="32" cy="34" rx="15" ry="10" fill="#F7B3AC"></ellipse><ellipse cx="32" cy="34" rx="6" ry="4" fill="#FFFFFF"></ellipse></svg></div>
+      <div style="font: 600 14px Inter, sans-serif">Szynka</div>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div style="display: flex; flex-direction: column"><span style="font: 700 15px Inter, sans-serif">8,99 zł</span><span style="font: 500 12px Inter, sans-serif; color: #5B6675">za 100 g</span></div>
+        <button type="button" aria-label="Dodaj szynkę do koszyka" style="width: 40px; height: 40px; border: 0; border-radius: 999px; background: #097778; color: #FFFFFF; font: 700 22px Inter, sans-serif">+</button>
+      </div>
+    </div>
+  </div>
+
+  <a href="Koszyk.dc.html" style="position: absolute; left: 16px; right: 16px; bottom: 16px; height: 60px; border-radius: 999px; background: #1F2A37; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 20px; text-decoration: none; box-shadow: 0 10px 28px rgba(15,40,40,0.25)">
+    <span style="display: flex; flex-direction: column"><span style="font: 700 15px Inter, sans-serif">2 produkty · 9,98 zł</span><span style="font: 500 12px Inter, sans-serif; color: #C9D6D6">Brakuje 5,02 zł do minimum</span></span>
+    <span style="padding: 12px 18px; border-radius: 999px; background: #FFB703; color: #1F2A37; font: 700 14px Inter, sans-serif">Koszyk →</span>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -114,7 +114,7 @@ E5-5 przegląd bezpieczeństwa (service worker, pamięć lokalna, linki zewnętr
 ## Etap 6 — Wdrożenie
 
 E6-1 dokumentacja (`DEPLOY.md`, design system) · E6-2 budowa i wdrożenie na `app.dowózka.pl` z kopią poprzedniej
-wersji · E6-3 lista pozostałych problemów · E6-4 (opcjonalnie) budowa APK z tego samego kodu.
+wersji · E6-3 lista pozostałych problemów · (Budowa APK i publikacja w sklepach — poza zakresem: decyzja właściciela 2026-11-14, tylko aplikacja webowa instalowana z przeglądarki.)
 
 ## Poza tym planem (osobna decyzja F-10)
 
