@@ -298,7 +298,7 @@ docker run -p 8090:80 zipzap-web      # nginx serwuje build/web (SPA, wasm, sw.j
 ### Ścieżka pilotażu — PWA (gotowe teraz, bez builda natywnego)
 1. Zbuduj i wystaw web (jak wyżej): `flutter build web --release --dart-define=API_BASE_URL=https://<api>/api` → hosting HTTPS (Cloudflare Pages / Netlify).
 2. Tester otwiera adres w przeglądarce → menu → **„Dodaj do ekranu głównego"** (Android Chrome / iOS Safari). Aplikacja instaluje się z ikoną **Dowózka.pl** i działa pełnoekranowo (manifest `standalone`, offline‑powłoka `sw.js`).
-   - Ikony PWA (`web/icons/Icon-192/512*.png`, `favicon.png`) są już **wygenerowane z nowego logo** (teal wózek). `theme_color`/`name` = Dowózka.pl.
+   - Ikony PWA (`web/app-icons/Icon-192/512*.png` (folder `app-icons`, bo lh.pl przesłania `/icons/` — 404), `favicon.png`) są już **wygenerowane z nowego logo** (teal wózek). `theme_color`/`name` = Dowózka.pl.
 
 ### Android natywnie (APK/AAB) — na maszynie z Android SDK
 > Ten komputer **nie ma toolchainu Androida** (`flutter doctor` → brak Android Studio/SDK), więc APK budujesz na maszynie deweloperskiej z zainstalowanym Android SDK.
