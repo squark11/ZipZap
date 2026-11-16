@@ -125,10 +125,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           ElevatedButton(
             onPressed: _sending ? null : () => _submit(captchaEnabled),
             child: _sending
-                ? const SizedBox(
+                ? SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
                 : const Text('Wyślij uwagę'),
           ),
         ],

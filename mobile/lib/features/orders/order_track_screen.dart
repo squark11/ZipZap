@@ -241,7 +241,7 @@ class OrderTimeline extends StatelessWidget {
         final border = current
             ? context.zz.brandStrong
             : (done ? context.zz.success : context.zz.border);
-        final iconColor = reached ? Colors.white : context.zz.textMuted;
+        final iconColor = reached ? context.zz.onBrand : context.zz.textMuted;
         final ts = timestamps[step];
 
         return IntrinsicHeight(
@@ -356,7 +356,8 @@ class _StatusNodeState extends State<_StatusNode>
       ),
       child: Center(child: ZzIcon(widget.icon, size: 16, color: widget.iconColor)),
     );
-    if (_c == null) return SizedBox(width: size, height: size, child: circle);
+    // Pulsowanie to wskaźnik „trwa", nie przejście; przy „ogranicz ruch" węzeł jest statyczny.
+    if (_c == null || ZzMotion.reduced(context)) return SizedBox(width: size, height: size, child: circle);
     return SizedBox(
       width: size,
       height: size,

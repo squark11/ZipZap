@@ -40,8 +40,8 @@ class NotificationsBell extends ConsumerWidget {
               constraints: const BoxConstraints(minWidth: 16),
               child: Text(count > 9 ? '9+' : '$count',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: context.zz.onBrand, fontSize: 11, fontWeight: FontWeight.w700)),
             ),
           ),
       ],

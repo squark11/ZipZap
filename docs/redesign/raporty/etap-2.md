@@ -79,3 +79,10 @@ Backendu i panelu nie zmieniano — `dotnet test` / `ng test` niepotrzebne.
 3. `flutter run -d chrome` → `/dev/ui` (galeria), zmiana szerokości okna 360 / 768 / 1280 / 1920 px.
 4. Linki: `/stores`, `/s/{slug}?src=qr`, `/search`.
 5. Kryteria etapu: `03-weryfikacja-codex.md` → „Etap 2".
+
+---
+
+## Runda 2 (2026-11-16) — po weryfikacji Codexa (FAIL)
+
+Pełna odpowiedź, poprawki, zrzuty, pomiar semantyki i kompletny inwentarz plików: [`etap-1-2-zbiorczy.md`](etap-1-2-zbiorczy.md).
+Korekta tego raportu: wynik „0 żądań do Google" był błędny (pamięć podręczna podglądu) — naprawione w rundzie 2; fonty to 310 200 B; testy 99/99.

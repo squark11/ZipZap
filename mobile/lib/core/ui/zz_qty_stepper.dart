@@ -15,6 +15,9 @@ class ZzQtyStepper extends StatelessWidget {
   /// Tekst ilości (np. „2 kg"); domyślnie sama liczba.
   final String? valueText;
 
+  /// Dotknięcie liczby (np. wpisanie ilości z klawiatury w koszyku). Gdy null — liczba nie jest przyciskiem.
+  final VoidCallback? onValueTap;
+
   const ZzQtyStepper({
     super.key,
     required this.quantity,
@@ -22,6 +25,7 @@ class ZzQtyStepper extends StatelessWidget {
     required this.onPlus,
     required this.itemLabel,
     this.valueText,
+    this.onValueTap,
   });
 
   @override
@@ -41,25 +45,42 @@ class ZzQtyStepper extends StatelessWidget {
             ),
           ),
         );
+    Widget value() {
+      final text = ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 24),
+        child: AnimatedSwitcher(
+          duration: ZzMotion.of(context, ZzMotion.fast),
+          child: Text(
+            valueText ?? '$quantity',
+            key: ValueKey(valueText ?? quantity),
+            textAlign: TextAlign.center,
+            semanticsLabel: 'Ilość: ${valueText ?? quantity}',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: p.text),
+          ),
+        ),
+      );
+      if (onValueTap == null) return text;
+      return Semantics(
+        button: true,
+        hint: 'Wpisz ilość',
+        child: InkWell(
+          onTap: onValueTap,
+          borderRadius: BorderRadius.circular(ZzRadius.pill),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: zzMinTouch, minHeight: zzMinTouch),
+            child: Center(widthFactor: 1, child: text),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(color: p.brandTint, borderRadius: BorderRadius.circular(ZzRadius.pill)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           btn(Icons.remove, onMinus, 'Mniej: $itemLabel'),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 24),
-            child: AnimatedSwitcher(
-              duration: ZzMotion.of(context, ZzMotion.fast),
-              child: Text(
-                valueText ?? '$quantity',
-                key: ValueKey(valueText ?? quantity),
-                textAlign: TextAlign.center,
-                semanticsLabel: 'Ilość: ${valueText ?? quantity}',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: p.text),
-              ),
-            ),
-          ),
+          value(),
           btn(Icons.add, onPlus, 'Więcej: $itemLabel'),
         ],
       ),

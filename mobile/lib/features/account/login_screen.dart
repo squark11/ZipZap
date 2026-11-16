@@ -148,10 +148,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ElevatedButton(
             onPressed: _busy ? null : () => _submit(captchaEnabled),
             child: _busy
-                ? const SizedBox(
+                ? SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
                 : Text(_register ? 'Zarejestruj się' : 'Zaloguj się'),
           ),
           const SizedBox(height: 12),

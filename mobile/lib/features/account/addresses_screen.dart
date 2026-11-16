@@ -19,8 +19,8 @@ class AddressesScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Moje adresy')),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: context.zz.brandStrong,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Dodaj adres', style: TextStyle(color: Colors.white)),
+        icon: Icon(Icons.add, color: context.zz.onBrand),
+        label: Text('Dodaj adres', style: TextStyle(color: context.zz.onBrand)),
         onPressed: () => _openForm(context, ref, null),
       ),
       body: addresses.when(
@@ -255,7 +255,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
               child: ElevatedButton(
                 onPressed: _busy ? null : _save,
                 child: _busy
-                    ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
                     : const Text('Zapisz adres'),
               ),
             ),

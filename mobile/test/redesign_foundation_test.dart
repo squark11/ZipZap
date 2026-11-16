@@ -85,6 +85,10 @@ void main() {
           'uwaga': (p.warning, p.warningTint),
           'informacja': (p.info, p.infoTint),
           'akcent': (ZzColors.onAccent, ZzColors.accent),
+          // Treść na pełnych wypełnieniach (plakietki, pasek „brak internetu", węzeł statusu) używa onBrand.
+          'onBrand/sukces': (p.onBrand, p.success),
+          'onBrand/błąd': (p.onBrand, p.danger),
+          'pasek koszyka': (Colors.white, ZzColors.graphite),
         };
         for (final e in pairs.entries) {
           expect(contrast(e.value.$1, e.value.$2), greaterThanOrEqualTo(4.5), reason: '${e.key} ($name)');
@@ -109,6 +113,22 @@ void main() {
     });
   });
 
+  group('Biel na sztywno (E2-1)', () {
+    test('Colors.white tylko tam, gdzie tło jest stałe w obu motywach', () {
+      // Biały tekst na brandStrong w trybie ciemnym (#3FD3D4) miałby kontrast ok. 1,8:1 — ma być onBrand.
+      const allowed = ['core/theme/', 'core/ui/zz_cart_bar.dart', 'core/widgets/skeleton.dart', 'core/widgets/zz_logo.dart'];
+      final offenders = Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where((f) => !allowed.any((a) => f.path.replaceAll('\\', '/').contains(a)))
+          .where((f) => f.readAsStringSync().contains('Colors.white'))
+          .map((f) => f.path)
+          .toList();
+      expect(offenders, isEmpty);
+    });
+  });
+
   group('Czcionki w paczce (E2-2)', () {
     test('bez google_fonts; Inter i Poppins zadeklarowane i obecne', () {
       final pubspec = File('pubspec.yaml').readAsStringSync();
@@ -123,6 +143,12 @@ void main() {
       }
       expect(File('assets/fonts/OFL-Inter.txt').existsSync(), isTrue);
       expect(File('assets/fonts/OFL-Poppins.txt').existsSync(), isTrue);
+    });
+
+    test('start bez serwerów Google: rodzina zapasowa Roboto w paczce, CanvasKit lokalnie', () {
+      // Bez rodziny "Roboto" silnik web pobiera ją z fonts.gstatic.com; bez flagi CanvasKit idzie z www.gstatic.com.
+      expect(File('pubspec.yaml').readAsStringSync(), contains('- family: Roboto'));
+      expect(File('hosting/build-app.ps1').readAsStringSync(), contains('--no-web-resources-cdn'));
     });
 
     test('motyw używa czcionek z paczki', () {
@@ -175,6 +201,22 @@ void main() {
       expect(qty, 3);
       expect(tester.takeException(), isNull);
       semantics.dispose();
+    });
+
+    testWidgets('licznik w koszyku: dotknięcie liczby (wpisanie ilości) ma pole ≥ 48 px', (tester) async {
+      var tapped = 0;
+      await tester.pumpWidget(_host(ZzQtyStepper(
+        itemLabel: 'Mleko',
+        quantity: 1,
+        onMinus: () {},
+        onPlus: () {},
+        onValueTap: () => tapped++,
+      )));
+      final value = find.ancestor(of: find.text('1'), matching: find.byType(InkWell));
+      expect(tester.getSize(value).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(value).height, greaterThanOrEqualTo(48));
+      await tester.tap(find.text('1'));
+      expect(tapped, 1);
     });
 
     testWidgets('karta sklepu, chip kategorii, komunikat i pasek koszyka: tekst 130 % w 320 px bez przepełnień',
@@ -271,6 +313,31 @@ void main() {
         c.dispose();
       });
     }
+
+    testWidgets('bezpośrednie wejście na /search: zakładka Szukaj, wpisanie miejscowości filtruje sklepy', (tester) async {
+      tester.view.physicalSize = const Size(375, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.binding.platformDispatcher.defaultRouteNameTestValue = '/search';
+      final c = ProviderContainer(overrides: [
+        apiClientProvider.overrideWithValue(_OfflineApi()),
+        catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
+        connectivityProvider.overrideWith((_) => Stream.value(true)),
+      ]);
+      await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const ZipZapApp()));
+      for (var i = 0; i < 25; i++) {
+        await tester.pump(const Duration(milliseconds: 40));
+      }
+      expect(find.byType(SearchScreen), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(ZzStoreCard), findsNWidgets(3));
+      await tester.enterText(find.byType(TextField), 'rabka');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(ZzStoreCard), findsOneWidget);
+      expect(find.text('Rapacz Market — Rabka'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    });
   });
 
 }

@@ -379,4 +379,3 @@ class _ProductRow extends ConsumerWidget {
         ),
       );
 }
-

@@ -142,10 +142,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ElevatedButton(
               onPressed: _busy ? null : _submit,
               child: _busy
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 22,
                       width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
                   : const Text('Wyślij link'),
             ),
             if (_error != null) _ErrorText(_error!),

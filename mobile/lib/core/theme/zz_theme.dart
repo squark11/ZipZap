@@ -431,7 +431,8 @@ class ZzTheme {
         height: 68,
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
               fontFamily: ZzFonts.body,
-              fontSize: 12,
+              fontSize: 11, // 12 px łamało „Zamówienia" na dwa wiersze przy 360 px
+              letterSpacing: 0,
               fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w600,
               color: states.contains(WidgetState.selected) ? p.brandStrong : p.textMuted,
             )),

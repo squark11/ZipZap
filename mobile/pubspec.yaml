@@ -107,6 +107,11 @@ flutter:
           weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
+    # Silnik Flutter web pobiera czcionkę zapasową "Roboto" z fonts.gstatic.com, jeśli aplikacja nie ma rodziny
+    # o tej nazwie. Podstawiamy pod nią Inter (ten sam plik — 0 dodatkowych bajtów), żeby start nie łączył się z Google.
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

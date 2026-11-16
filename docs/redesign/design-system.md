@@ -79,7 +79,7 @@ Tekst skaluje się z ustawieniem systemu do 130 % bez ucinania (E2-5).
 | Zakładki kategorii sklepu | pigułki w poziomym przewijaniu | wybrana (grafit, biały tekst), zwykła (karta) | wys. 40 |
 | Karta sklepu | z okładką (F-5), kompaktowa (logo) | otwarte / zamknięte / wyszarzona „nie dowozi pod Twój kod" | okładka 16:9 lub 86–96 px, logo 52, status-pigułka |
 | Karta produktu | siatka (zdjęcie, nazwa, cena/jednostka, „+") i wiersz (lista, koszyk) | dostępny, w koszyku (licznik zamiast „+"), niedostępny (wyszarzony, „Chwilowo brak") | zdjęcie 104–110 px, płytka zastępcza z ikoną kategorii |
-| Licznik ilości | pigułka `− n +` | min. 1 (przy 1 „−" zmienia się w „usuń"), max wg stanu | wys. 34–44 |
+| Licznik ilości | pigułka `− n +`; w koszyku dotknięcie liczby otwiera wpisanie ilości | min. 1 (przy 1 „−" zmienia się w „usuń" — Etap 3), max wg stanu | wys. 48 (pola dotyku 48 × 48) |
 | Pasek koszyka | pływający, ciemny | brak do minimum („Brakuje 5,02 zł"), gotowy | wys. 56–60, przycisk akcentowy |
 | Pasek postępu minimum | — | poniżej / osiągnięte (tekst sukcesu) | wys. 8 |
 | Kroki zamówienia | 3 segmenty + „Krok n z 3 · nazwa" | ukończony, bieżący, przyszły | wys. 6 |
@@ -88,7 +88,7 @@ Tekst skaluje się z ustawieniem systemu do 130 % bez ucinania (E2-5).
 | Komunikat | sukces, błąd, informacja | pojawia się na 4 s, z akcją „Cofnij" gdy dotyczy | pływający, promień 16 |
 | Stan pełnoekranowy | pusty, błąd, offline, sukces | ilustracja 160–200 px + 1 zdanie + 1 przycisk | — |
 | Szkielet ładowania | karta sklepu, karta produktu, wiersz | połysk 250 ms co 1 s (bez połysku przy „ogranicz ruch") | jak docelowy element |
-| Nawigacja | dolna pływająca (< 900 px), boczna (≥ 900 px) | aktywna (tło marki jasnej + tekst marki mocnej), plakietka koszyka | dolna wys. 68, 5 pozycji |
+| Nawigacja | dolna pływająca (< 900 px), boczna (≥ 900 px) | aktywna (tło marki jasnej + tekst marki mocnej), plakietka koszyka | dolna wys. 68, 5 pozycji, podpis 11 px (12 px łamało „Zamówienia" przy 360 px) |
 
 ## 5. Ikony i ilustracje
 

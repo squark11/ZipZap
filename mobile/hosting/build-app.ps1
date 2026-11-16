@@ -60,7 +60,9 @@ Push-Location $mobile
 try {
     # Flutter pisze ostrzezenia na stderr; w PowerShell 5.1 z 'Stop' przerwaloby to build - o wyniku decyduje kod wyjscia.
     $ErrorActionPreference = 'Continue'
-    & $Flutter build web --release --base-href / "--dart-define=API_BASE_URL=$ApiBaseUrl" --no-wasm-dry-run 2>&1 |
+    # --no-web-resources-cdn: silnik graficzny (CanvasKit) z paczki aplikacji, nie z www.gstatic.com -
+    # start bez polaczen z serwerami Google i dzialanie offline po instalacji.
+    & $Flutter build web --release --no-web-resources-cdn --base-href / "--dart-define=API_BASE_URL=$ApiBaseUrl" --no-wasm-dry-run 2>&1 |
         ForEach-Object { "$_" }
     $code = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'

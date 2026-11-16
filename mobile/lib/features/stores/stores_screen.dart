@@ -65,6 +65,8 @@ class StoresScreen extends ConsumerWidget {
         ],
       ),
       body: Column(
+        // Rozciągnięcie: karty sklepów zaczynają się równo z banerami (bez tego lista zwężała się i środkowała).
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _PostalBanner(),
           const _LocationBanner(),

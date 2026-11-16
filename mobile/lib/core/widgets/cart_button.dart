@@ -33,8 +33,8 @@ class CartButton extends ConsumerWidget {
               constraints: const BoxConstraints(minWidth: 16),
               child: Text('$count',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: context.zz.onBrand, fontSize: 11, fontWeight: FontWeight.w700)),
             ),
           ),
       ],

@@ -39,7 +39,7 @@ class InstallHintSheet extends StatelessWidget {
   ], 'W innej przeglądarce na iPhonie najpierw otwórz tę stronę w Safari.');
 
   static const _android = _Guide('Android — Chrome', [
-    'Stuknij menu ⋮ w prawym górnym rogu.',
+    'Stuknij menu (trzy kropki) w prawym górnym rogu.',
     'Wybierz „Dodaj do ekranu głównego" albo „Zainstaluj aplikację".',
     'Potwierdź „Dodaj".',
   ], null);

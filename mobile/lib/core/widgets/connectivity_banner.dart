@@ -25,7 +25,7 @@ class OfflineBar extends ConsumerWidget {
     // Przy braku danych zakładamy online (nie strasz użytkownika na starcie).
     final online = ref.watch(connectivityProvider).valueOrNull ?? true;
     return AnimatedSize(
-      duration: const Duration(milliseconds: 220),
+      duration: ZzMotion.of(context, ZzMotion.base),
       curve: Curves.easeOut,
       alignment: Alignment.topCenter,
       child: online
@@ -48,12 +48,12 @@ class _OfflineContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.cloud_off, color: Colors.white, size: 16),
+            children: [
+              Icon(Icons.cloud_off, color: context.zz.onBrand, size: 16),
               SizedBox(width: 8),
               Text('Brak połączenia z internetem',
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                      color: context.zz.onBrand, fontWeight: FontWeight.w600, fontSize: 13)),
             ],
           ),
         ),

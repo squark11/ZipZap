@@ -265,10 +265,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ElevatedButton(
                 onPressed: (_submitting || missing != null) ? null : () => _submit(fee),
                 child: _submitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 22,
                         width: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
                     : Text(testMode
                         ? 'Złóż zamówienie testowe'
                         : 'Złóż zamówienie i przejdź do płatności'),
