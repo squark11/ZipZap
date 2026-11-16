@@ -6,6 +6,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/navigation/last_store.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/ui/ui.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/account_button.dart';
 import '../../core/widgets/cart_button.dart';
@@ -190,17 +191,19 @@ class _StoreOfferState extends ConsumerState<_StoreOffer> {
         ),
       ),
       bottom: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 240),
-        switchInCurve: Curves.easeOutBack,
+        duration: ZzMotion.of(context, ZzMotion.slow),
+        switchInCurve: ZzMotion.enter,
         transitionBuilder: (child, anim) => SizeTransition(
           sizeFactor: anim,
           child: FadeTransition(opacity: anim, child: child),
         ),
         child: cart.count > 0
-            ? _CartBar(
+            ? ZzCartBar(
                 key: const ValueKey('cartbar'),
                 count: cart.count,
-                subtotal: cart.subtotal)
+                subtotal: cart.subtotal,
+                missingToMinimum: cart.cart?.storeId == s.id ? s.minimumOrderValue - cart.subtotal : null,
+                onTap: () => context.push('/cart'))
             : const SizedBox.shrink(key: ValueKey('nobar')),
       ),
     );
@@ -303,12 +306,13 @@ class _ProductRow extends ConsumerWidget {
                   ? OutlinedButton(
                       onPressed: canOrder ? () => _add(context, ref) : null,
                       style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(40, 40),
+                        minimumSize: const Size(zzMinTouch, zzMinTouch),
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                       ),
                       child: const Text('Dodaj'),
                     )
-                  : _Stepper(
+                  : ZzQtyStepper(
+                      itemLabel: product.name,
                       quantity: qty,
                       onMinus: () => controller.setQuantity(product.id, qty - 1),
                       onPlus: () => controller.setQuantity(product.id, qty + 1),
@@ -376,65 +380,3 @@ class _ProductRow extends ConsumerWidget {
       );
 }
 
-class _Stepper extends StatelessWidget {
-  final int quantity;
-  final VoidCallback onMinus;
-  final VoidCallback onPlus;
-  const _Stepper({required this.quantity, required this.onMinus, required this.onPlus});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: context.zz.border),
-        borderRadius: BorderRadius.circular(ZzRadius.field),
-      ),
-      child: Row(
-        children: [
-          _sqBtn(context, Icons.remove, onMinus),
-          SizedBox(
-            width: 28,
-            child: Text('$quantity',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w700)),
-          ),
-          _sqBtn(context, Icons.add, onPlus),
-        ],
-      ),
-    );
-  }
-
-  Widget _sqBtn(BuildContext context, IconData icon, VoidCallback onTap) => InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(icon, size: 18, color: context.zz.brandStrong),
-        ),
-      );
-}
-
-class _CartBar extends StatelessWidget {
-  final int count;
-  final double subtotal;
-  const _CartBar({super.key, required this.count, required this.subtotal});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      minimum: const EdgeInsets.all(16),
-      child: SizedBox(
-        height: 52,
-        child: ElevatedButton(
-          onPressed: () => context.push('/cart'),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Koszyk ($count)'),
-              Text('${zl(subtotal)} →', style: const TextStyle(fontWeight: FontWeight.w700)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/ui/ui.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/test_order_banner.dart';
@@ -138,11 +139,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
               style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
           const SizedBox(height: 20),
           if (cancelled)
-            _Banner(
-              color: context.zz.dangerTint,
-              textColor: context.zz.danger,
-              text: 'To zamówienie zostało anulowane.',
-            )
+            const ZzNotice(kind: ZzNoticeKind.danger, message: 'To zamówienie zostało anulowane.')
           else
             OrderTimeline(currentStatus: o.status, timestamps: timestamps),
           const SizedBox(height: 24),
@@ -387,19 +384,4 @@ class _StatusNodeState extends State<_StatusNode>
       ),
     );
   }
-}
-
-class _Banner extends StatelessWidget {
-  final Color color;
-  final Color textColor;
-  final String text;
-  const _Banner({required this.color, required this.textColor, required this.text});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(ZzRadius.field)),
-        child: Text(text, style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
-      );
 }

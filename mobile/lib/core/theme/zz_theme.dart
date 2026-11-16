@@ -13,6 +13,9 @@ class ZzColors {
 
   /// Grafit — tekst na akcencie, pasek koszyka.
   static const graphite = Color(0xFF1F2A37);
+
+  /// Tekst pomocniczy na grafitowym pasku koszyka (kontrast 10,2:1).
+  static const onGraphiteMuted = Color(0xFFC9D6D6);
 }
 
 /// Odstępy (skala 4 pt).
@@ -278,11 +281,11 @@ class ZzTheme {
           headlineSmall: h(FontWeight.w700, 24, 1.2),
           titleLarge: h(FontWeight.w600, 20),
           titleMedium: h(FontWeight.w600, 17),
-          bodyLarge: const TextStyle(fontSize: 16, height: 1.5),
-          bodyMedium: const TextStyle(fontSize: 14, height: 1.45),
-          bodySmall: TextStyle(fontSize: 13, height: 1.4, fontWeight: FontWeight.w500, color: p.textMuted),
-          labelLarge: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-          labelSmall: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+          bodyLarge: const TextStyle(fontFamily: ZzFonts.body, fontSize: 16, height: 1.5),
+          bodyMedium: const TextStyle(fontFamily: ZzFonts.body, fontSize: 14, height: 1.45),
+          bodySmall: TextStyle(fontFamily: ZzFonts.body, fontSize: 13, height: 1.4, fontWeight: FontWeight.w500, color: p.textMuted),
+          labelLarge: const TextStyle(fontFamily: ZzFonts.body, fontSize: 15, fontWeight: FontWeight.w600),
+          labelSmall: const TextStyle(fontFamily: ZzFonts.body, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.3),
         )
         .apply(bodyColor: p.text, displayColor: p.heading);
 

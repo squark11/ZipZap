@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
+import '../../core/ui/ui.dart';
 
 /// Prośba o link resetu hasła. Odpowiedź jest zawsze taka sama (nie zdradzamy, czy konto istnieje).
 /// Link z e-maila otwiera wspólną stronę resetu Dowózka.pl w przeglądarce (ta sama dla kont klientów, sklepów
@@ -160,26 +161,12 @@ class _MockMailNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      key: const Key('mock-mail-notice'),
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.zz.warningTint,
-        borderRadius: BorderRadius.circular(ZzRadius.field),
-      ),
-      child: Text.rich(
-        TextSpan(children: [
-          TextSpan(
-            text: 'Poczta w tym środowisku to atrapa\n',
-            style: TextStyle(fontWeight: FontWeight.w600, color: context.zz.warning),
-          ),
-          TextSpan(
-            text: 'Wiadomości nie są wysyłane, więc link nie dotrze. Skontaktuj się z obsługą Dowózka.pl.',
-            style: TextStyle(color: context.zz.text, height: 1.4),
-          ),
-        ]),
-      ),
+    return const ZzNotice(
+      key: Key('mock-mail-notice'),
+      kind: ZzNoticeKind.warning,
+      title: 'Poczta w tym środowisku to atrapa',
+      message: 'Wiadomości nie są wysyłane, więc link nie dotrze. Skontaktuj się z obsługą Dowózka.pl.',
+      margin: EdgeInsets.only(bottom: 16),
     );
   }
 }

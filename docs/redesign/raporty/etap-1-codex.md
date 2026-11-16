@@ -1,5 +1,31 @@
 # Raport weryfikacji Codexa — Etap 1: Koncepcja wizualna
 
+## Najnowsza weryfikacja — poprawki po rundzie 2
+
+Data weryfikacji: 2026-11-14. Zmiany Etapu 1: `1ab7be3` (macierz stanów) i `e98f354` (zaakceptowana reguła 1280 px). Bieżący `HEAD`: `1d99044` — rozpoczęta migracja Etapu 2, opisana w commicie jako „nieskompilowane — w toku”.
+
+**Ocena materiałów Etapu 1: PASS. Weryfikacja bieżącego `HEAD`: FAIL**, ponieważ wspólna checklista `03-weryfikacja-codex.md` wymaga zielonej analizy i testów, a obecny kod Etapu 2 ich nie przechodzi.
+
+### Poprawki Etapu 1
+
+| Kryterium | Status | Wynik |
+|---|---|---|
+| Macierz stanów E1-3 | PASS | `StanyEkranow.dc.html` i `gen-states.mjs` obejmują 8 ekranów × 4 stany. Pusty stan logowania jest oznaczony jako „nie dotyczy” z uzasadnieniem. Generator odtwarza zapisany arkusz bajtowo. |
+| Warianty 1280 px | PASS | Właściciel zaakceptował 2026-11-14 regułę jednokolumnowego widoku dla Produktu, Logowania, Konta i Śledzenia; reguła i kryteria są zgodne w planie, checkliście i `design-system.md` §7. Pozostałe wymagane widoki 1280 px są wskazane w planie. |
+| Komunikaty i dane | PASS | Teksty dla 401 i pełnego slotu są zgodne z odpowiedziami API; komunikat dla 429 jest jawnie propozycją. Daty dostaw są oznaczone jako przykładowe, a suma koszyka wynosi 22,46 zł. |
+| Ruch | PASS | W specyfikacji zachowano czasy do 250 ms, opisano ograniczenie ruchu i pozostawiono do akceptacji właściciela interpretację powtarzanego połysku. |
+
+### Kontrole bieżącego `HEAD`
+
+| Kontrola | Status | Wynik |
+|---|---|---|
+| `flutter analyze` | FAIL | 57 błędów. Wśród nich: dynamiczny `context.zz` użyty w argumentach `const` oraz statyczne `StatusPill._style()` odwołujące się do niezdefiniowanego `context` (`mobile/lib/core/widgets/states.dart`); podobne błędy są w ekranach aplikacji. |
+| `flutter test --no-pub` | FAIL | 44 testy przeszły, 7 celów testowych nie załadowało się z powodu błędów kompilacji w `mobile/lib`. Pełny zestaw nie jest zielony. |
+| Zakres regresji | PASS | Od `65c74f9` do `86ee2c9` nie zmieniono plików `mobile/`. Bieżący commit `1d99044` dodaje migrację tokenów i czcionki Etapu 2; dlatego powyższe błędy dotyczą niedokończonego WIP E2, a nie korekt macierzy E1. Poprzedni zielony wynik 79 testów dotyczył `65c74f9`, nie bieżącego `HEAD`. |
+| `git diff --check HEAD^ HEAD` | WARN | Dwie dodane licencje czcionek (`OFL-Inter.txt`, `OFL-Poppins.txt`) mają spację na końcu wiersza 21. Nie zmieniałem treści licencji. |
+
+Wniosek: wcześniejsze braki E1-3 zostały poprawione, więc same materiały Etapu 1 spełniają sprawdzone kryteria. Bieżący `HEAD` nie ma zielonej bramki technicznej; raport nie przenosi poprzedniego wyniku `flutter analyze`/`flutter test` na niedokończony commit Etapu 2.
+
 ## Najnowsza ocena — runda 2
 
 Data weryfikacji: 2026-11-14. Sprawdzony commit: `65c74f9fd1755b8f5b6a6ad06f7eae2f0595a3e4` (`HEAD` = `origin/main`). Aktywna nazwa worktree to `pilot-outbox-deadletter`; lokalne `main` jest 8 commitów za `origin/main`.

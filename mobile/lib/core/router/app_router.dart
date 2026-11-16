@@ -23,6 +23,9 @@ import '../../features/orders/order_track_screen.dart';
 import '../../features/payment/payment_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/stores/stores_screen.dart';
+import '../../features/search/search_screen.dart';
+import '../../features/dev/ui_gallery_screen.dart';
+import '../ui/zz_layout.dart';
 
 bool _needsAuth(String loc) =>
     loc.startsWith('/checkout') ||
@@ -103,6 +106,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainScaffold(child: child),
         routes: [
           GoRoute(path: '/stores', builder: (_, _) => const StoresScreen()),
+          GoRoute(path: '/search', builder: (_, _) => const SearchScreen()),
           GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
           GoRoute(path: '/orders', builder: (_, _) => const MyOrdersScreen()),
           GoRoute(path: '/account', builder: (_, _) => const AccountScreen()),
@@ -113,37 +117,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Stały link do oferty sklepu — ten adres jest w kodach QR (`/s/{slug}?src=qr`).
       GoRoute(
         path: '/s/:slug',
-        builder: (_, s) => StoreDetailScreen(storeRef: s.pathParameters['slug']!),
+        builder: (_, s) => ZzPage(maxWidth: 840, child: StoreDetailScreen(storeRef: s.pathParameters['slug']!)),
       ),
       GoRoute(
         path: '/stores/:id',
-        builder: (_, s) => StoreDetailScreen(storeRef: s.pathParameters['id']!),
+        builder: (_, s) => ZzPage(maxWidth: 840, child: StoreDetailScreen(storeRef: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/checkout', builder: (_, _) => const CheckoutScreen()),
+      GoRoute(path: '/checkout', builder: (_, _) => const ZzPage(child: CheckoutScreen())),
       GoRoute(
         path: '/pay/:orderId',
-        builder: (_, s) => PaymentScreen(orderId: s.pathParameters['orderId']!),
+        builder: (_, s) => ZzPage(child: PaymentScreen(orderId: s.pathParameters['orderId']!)),
       ),
       GoRoute(
         path: '/orders/:id',
-        builder: (_, s) => OrderTrackScreen(orderId: s.pathParameters['id']!),
+        builder: (_, s) => ZzPage(child: OrderTrackScreen(orderId: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
+      GoRoute(path: '/notifications', builder: (_, _) => const ZzPage(child: NotificationsScreen())),
       GoRoute(
         path: '/feedback',
-        builder: (_, state) => FeedbackScreen(screen: state.uri.queryParameters['from']),
+        builder: (_, state) => ZzPage(child: FeedbackScreen(screen: state.uri.queryParameters['from'])),
       ),
       GoRoute(
         path: '/login',
-        builder: (_, s) => LoginScreen(redirect: s.uri.queryParameters['redirect']),
+        builder: (_, s) => ZzPage(child: LoginScreen(redirect: s.uri.queryParameters['redirect'])),
       ),
       GoRoute(
         path: '/forgot-password',
         // E-mail wpisany na ekranie logowania (przekazany w pamięci, nie w adresie).
-        builder: (_, s) => ForgotPasswordScreen(initialEmail: s.extra is String ? s.extra as String : null),
+        builder: (_, s) => ZzPage(child: ForgotPasswordScreen(initialEmail: s.extra is String ? s.extra as String : null)),
       ),
-      GoRoute(path: '/change-password', builder: (_, _) => const ChangePasswordScreen()),
-      GoRoute(path: '/addresses', builder: (_, _) => const AddressesScreen()),
+      GoRoute(path: '/change-password', builder: (_, _) => const ZzPage(child: ChangePasswordScreen())),
+      GoRoute(path: '/addresses', builder: (_, _) => const ZzPage(child: AddressesScreen())),
+      // Galeria komponentów Design Systemu — tylko w trybie deweloperskim (kDebugMode), nie w wersji produkcyjnej.
+      if (kDebugMode) GoRoute(path: '/dev/ui', builder: (_, _) => const UiGalleryScreen()),
     ],
   );
 });

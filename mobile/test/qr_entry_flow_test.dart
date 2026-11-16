@@ -197,13 +197,13 @@ void main() {
     var c = await _launch(tester, b, '/s/piekarnia-poranek?src=qr');
     await tester.tap(find.widgetWithText(OutlinedButton, 'Dodaj').first);
     await _settle(tester);
-    expect(find.text('Koszyk (1)'), findsOneWidget);
+    expect(find.textContaining('1 produkt · '), findsOneWidget);
     await _close(tester, c);
 
     // „F5": nowa aplikacja startuje z adresu w pasku (już bez źródła), z tym samym magazynem przeglądarki.
     c = await _launch(tester, b, '/s/piekarnia-poranek');
     expect(find.text('Chleb żytni'), findsOneWidget);
-    expect(find.text('Koszyk (1)'), findsOneWidget, reason: 'koszyk odtworzony z zapamiętanego odnośnika');
+    expect(find.textContaining('1 produkt · '), findsOneWidget, reason: 'koszyk odtworzony z zapamiętanego odnośnika');
     expect(b.entries, hasLength(1), reason: 'odświeżenie nie jest nowym skanem');
     await _close(tester, c);
 
@@ -230,7 +230,7 @@ void main() {
 
     expect(_location(c), '/s/piekarnia-poranek');
     expect(find.text('Chleb żytni'), findsOneWidget);
-    expect(find.text('Koszyk (1)'), findsOneWidget);
+    expect(find.textContaining('1 produkt · '), findsOneWidget);
     expect(find.byTooltip('Konto'), findsOneWidget);
     await _close(tester, c);
   });

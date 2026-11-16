@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/zz_theme.dart';
+import '../../core/ui/ui.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/zz_icon.dart';
@@ -33,11 +34,10 @@ class CartScreen extends ConsumerWidget {
           : Column(
               children: [
                 if (cart.error != null)
-                  Container(
-                    width: double.infinity,
-                    color: context.zz.dangerTint,
-                    padding: const EdgeInsets.all(12),
-                    child: Text(cart.error!, style: TextStyle(color: context.zz.danger)),
+                  ZzNotice(
+                    kind: ZzNoticeKind.danger,
+                    message: cart.error!,
+                    margin: const EdgeInsets.fromLTRB(ZzSpace.screen, ZzSpace.md, ZzSpace.screen, 0),
                   ),
                 Expanded(
                   child: ListView.separated(

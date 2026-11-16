@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -14,6 +16,9 @@ Future<void> main() async {
   // i wklejanie linku działają przy SPA-fallbacku hostingu (index.html dla nieznanych ścieżek). Na mobile no-op.
   usePathUrlStrategy();
   await initializeDateFormatting('pl_PL');
+  // Web: Flutter rysuje na płótnie i domyślnie nie buduje drzewa dostępności — bez tego czytniki ekranu
+  // (TalkBack, VoiceOver) nie widzą przycisków ani tekstów (E2-5).
+  if (kIsWeb) SemanticsBinding.instance.ensureSemantics();
   runApp(const ProviderScope(child: ZipZapApp()));
 }
 

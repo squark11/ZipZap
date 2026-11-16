@@ -5,11 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/location/location_service.dart';
 import '../../core/providers.dart';
 import '../../core/theme/zz_theme.dart';
-import '../../core/util/format.dart';
+import '../../core/ui/ui.dart';
 import '../../core/widgets/notifications_bell.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
-import '../../core/widgets/store_logo.dart';
 import '../../models/store.dart';
 import '../account/addresses_screen.dart';
 
@@ -91,11 +90,29 @@ class StoresScreen extends ConsumerWidget {
                 return RefreshIndicator(
                   color: context.zz.brandStrong,
                   onRefresh: () async => ref.invalidate(storesProvider),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: list.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _StoreCard(store: list[i]),
+                  // Telefon: lista; szerzej: kolumny kart (maks. 520 px) o naturalnej wysokości — długa nazwa sklepu
+                  // albo powiększony tekst nie przelewa karty (stała wysokość wiersza siatki by to robiła).
+                  child: LayoutBuilder(
+                    builder: (context, c) {
+                      final inner = c.maxWidth - 2 * ZzSpace.screen;
+                      final cols = c.maxWidth >= 700 ? (inner / 520).ceil().clamp(2, 3) : 1;
+                      final cardWidth = (inner - (cols - 1) * ZzSpace.md) / cols;
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(ZzSpace.screen),
+                        child: Wrap(
+                          spacing: ZzSpace.md,
+                          runSpacing: ZzSpace.md,
+                          children: [
+                            for (final store in list)
+                              SizedBox(
+                                width: cardWidth,
+                                child: ZzStoreCard(store: store, onTap: () => context.push('/stores/${store.id}')),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -261,57 +278,5 @@ class _LocationBanner extends ConsumerWidget {
       return;
     }
     ref.read(myLocationProvider.notifier).state = loc;
-  }
-}
-
-class _StoreCard extends StatelessWidget {
-  final Store store;
-  const _StoreCard({required this.store});
-
-  @override
-  Widget build(BuildContext context) {
-    final open = store.isAcceptingOrders;
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(ZzRadius.card),
-        onTap: () => context.push('/stores/${store.id}'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              StoreLogo(logoUrl: store.logoUrl, size: 48),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(store.name,
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                        store.distanceLabel != null
-                            ? '${store.city} · ${store.distanceLabel} · min. ${zl(store.minimumOrderValue)}'
-                            : '${store.city} · min. ${zl(store.minimumOrderValue)}',
-                        style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: open ? context.zz.successTint : context.zz.dangerTint,
-                  borderRadius: BorderRadius.circular(ZzRadius.pill),
-                ),
-                child: Text(open ? 'Otwarte' : 'Zamknięte',
-                    style: TextStyle(
-                        color: open ? context.zz.success : context.zz.danger,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
