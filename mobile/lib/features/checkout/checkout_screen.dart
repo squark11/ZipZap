@@ -335,11 +335,11 @@ class _SlotPicker extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final slots = ref.watch(slotsProvider((storeId: storeId, zoneId: zoneId)));
     return slots.when(
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
         child: LinearProgressIndicator(color: context.zz.brandStrong),
       ),
-      error: (e, _) => Text(e.toString(), style: const TextStyle(color: context.zz.danger)),
+      error: (e, _) => Text(e.toString(), style: TextStyle(color: context.zz.danger)),
       data: (list) {
         if (list.isEmpty) {
           return Text('Brak dostępnych terminów w tej strefie.',
@@ -421,7 +421,7 @@ class _SlotCard extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const ZzIcon('check_circle', size: 20, color: context.zz.brandStrong),
+                ZzIcon('check_circle', size: 20, color: context.zz.brandStrong),
             ],
           ),
         ),
@@ -440,7 +440,7 @@ class _RoundCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return round.when(
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
         child: LinearProgressIndicator(color: context.zz.brandStrong),
       ),
@@ -538,11 +538,11 @@ class _LegalLinks extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(children: [
-                const Icon(Icons.open_in_new, size: 16, color: context.zz.brandStrong),
+                Icon(Icons.open_in_new, size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(it.$1,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: context.zz.brandStrong,
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.underline)),

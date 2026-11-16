@@ -37,7 +37,7 @@ class CartScreen extends ConsumerWidget {
                     width: double.infinity,
                     color: context.zz.dangerTint,
                     padding: const EdgeInsets.all(12),
-                    child: Text(cart.error!, style: const TextStyle(color: context.zz.danger)),
+                    child: Text(cart.error!, style: TextStyle(color: context.zz.danger)),
                   ),
                 Expanded(
                   child: ListView.separated(
@@ -225,7 +225,7 @@ class _CartFooter extends ConsumerWidget {
               ),
               child: Text(
                 'Minimalna wartość zamówienia to ${zl(minOrder)}. Dodaj jeszcze ${zl(minOrder - subtotal)}.',
-                style: const TextStyle(color: context.zz.brandStrong, fontSize: 13),
+                style: TextStyle(color: context.zz.brandStrong, fontSize: 13),
               ),
             ),
           ],

@@ -121,11 +121,11 @@ class _PostalBanner extends ConsumerWidget {
         color: context.zz.successTint,
         child: Row(
           children: [
-            const Icon(Icons.local_shipping_outlined, size: 18, color: context.zz.success),
+            Icon(Icons.local_shipping_outlined, size: 18, color: context.zz.success),
             const SizedBox(width: 8),
             Expanded(
               child: Text('Sklepy dowożące pod ${_fmt(postal)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: context.zz.success, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
             TextButton(onPressed: () => _edit(context, ref, postal), child: const Text('Zmień')),
@@ -139,7 +139,7 @@ class _PostalBanner extends ConsumerWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: context.zz.brandTint,
-        child: const Row(
+        child: Row(
           children: [
             Icon(Icons.markunread_mailbox_outlined, size: 18, color: context.zz.brandStrong),
             SizedBox(width: 8),
@@ -219,9 +219,9 @@ class _LocationBanner extends ConsumerWidget {
         color: context.zz.brandTint,
         child: Row(
           children: [
-            const Icon(Icons.location_on, size: 18, color: context.zz.brandStrong),
+            Icon(Icons.location_on, size: 18, color: context.zz.brandStrong),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text('Sklepy w Twojej okolicy — najbliższe na górze',
                   style: TextStyle(color: context.zz.brandStrong, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
@@ -236,7 +236,7 @@ class _LocationBanner extends ConsumerWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: context.zz.brandTint,
-        child: const Row(
+        child: Row(
           children: [
             Icon(Icons.location_on, size: 18, color: context.zz.brandStrong),
             SizedBox(width: 8),

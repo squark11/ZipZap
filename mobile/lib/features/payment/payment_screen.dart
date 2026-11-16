@@ -139,7 +139,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             ),
             child: Row(
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.brandStrong),

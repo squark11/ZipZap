@@ -24,7 +24,7 @@ class AddressesScreen extends ConsumerWidget {
         onPressed: () => _openForm(context, ref, null),
       ),
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: context.zz.brandStrong)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.zz.brandStrong)),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (list) {
           if (list.isEmpty) {
@@ -86,7 +86,7 @@ class _AddressCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: context.zz.brandTint, borderRadius: BorderRadius.circular(6)),
-                    child: const Text('Domyślny',
+                    child: Text('Domyślny',
                         style: TextStyle(color: context.zz.brandStrong, fontSize: 11, fontWeight: FontWeight.w700)),
                   ),
               ],

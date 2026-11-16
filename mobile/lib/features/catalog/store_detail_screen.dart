@@ -229,7 +229,7 @@ class StoreClosedNotice extends StatelessWidget {
         ),
         child: Text(
           '$_reason Możesz przejrzeć ofertę — zamówienie złożysz, gdy sklep wznowi przyjmowanie zamówień.',
-          style: const TextStyle(color: context.zz.brandStrong, fontSize: 13.5),
+          style: TextStyle(color: context.zz.brandStrong, fontSize: 13.5),
         ),
       );
 }
@@ -293,7 +293,7 @@ class _ProductRow extends ConsumerWidget {
                           : '${zl(product.price)} / ${product.unit}',
                       style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
                   if (!available)
-                    const Text('Niedostępny',
+                    Text('Niedostępny',
                         style: TextStyle(color: context.zz.danger, fontSize: 12)),
                 ],
               ),
@@ -366,7 +366,7 @@ class _ProductRow extends ConsumerWidget {
               ...product.unitOptions.map((o) => ListTile(
                     title: Text('1 ${o.unit}'),
                     trailing: Text(zl(o.price),
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
+                        style: TextStyle(fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
                     onTap: () => Navigator.pop(ctx, o.unit),
                   )),
               const SizedBox(height: 8),
@@ -391,20 +391,20 @@ class _Stepper extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _sqBtn(Icons.remove, onMinus),
+          _sqBtn(context, Icons.remove, onMinus),
           SizedBox(
             width: 28,
             child: Text('$quantity',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
-          _sqBtn(Icons.add, onPlus),
+          _sqBtn(context, Icons.add, onPlus),
         ],
       ),
     );
   }
 
-  Widget _sqBtn(IconData icon, VoidCallback onTap) => InkWell(
+  Widget _sqBtn(BuildContext context, IconData icon, VoidCallback onTap) => InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(8),

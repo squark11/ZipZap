@@ -55,7 +55,7 @@ class NotificationsScreen extends ConsumerWidget {
                         : Container(
                             width: 10,
                             height: 10,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                                 color: context.zz.brandStrong, shape: BoxShape.circle),
                           ),
                     onTap: n.isRead

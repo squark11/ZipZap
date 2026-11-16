@@ -86,7 +86,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           if (sentTo != null) ...[
             const SizedBox(height: 8),
-            const Icon(Icons.mark_email_read_outlined, size: 56, color: context.zz.brandStrong),
+            Icon(Icons.mark_email_read_outlined, size: 56, color: context.zz.brandStrong),
             const SizedBox(height: 12),
             Text('Sprawdź skrzynkę', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
@@ -168,7 +168,7 @@ class _MockMailNotice extends StatelessWidget {
         color: context.zz.warningTint,
         borderRadius: BorderRadius.circular(ZzRadius.field),
       ),
-      child: const Text.rich(
+      child: Text.rich(
         TextSpan(children: [
           TextSpan(
             text: 'Poczta w tym środowisku to atrapa\n',
@@ -222,7 +222,7 @@ class _ErrorText extends StatelessWidget {
         padding: const EdgeInsets.only(top: 12),
         child: Semantics(
           liveRegion: true,
-          child: Text(text, style: const TextStyle(color: context.zz.danger)),
+          child: Text(text, style: TextStyle(color: context.zz.danger)),
         ),
       );
 }

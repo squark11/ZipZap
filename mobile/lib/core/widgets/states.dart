@@ -13,7 +13,7 @@ class LoadingView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: context.zz.brandStrong),
+            CircularProgressIndicator(color: context.zz.brandStrong),
             if (label != null) ...[
               const SizedBox(height: 12),
               Text(label!, style: TextStyle(color: context.zz.textMuted)),
@@ -104,7 +104,7 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, label, icon) = _style(status);
+    final (bg, fg, label, icon) = _style(context.zz, status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.pill)),
@@ -120,26 +120,26 @@ class StatusPill extends StatelessWidget {
     );
   }
 
-  static (Color, Color, String, String) _style(String s) {
+  static (Color, Color, String, String) _style(ZzPalette p, String s) {
     switch (s) {
       case 'Placed':
-        return (context.zz.brandTint, context.zz.brandStrong, 'Złożone', 'clock');
+        return (p.brandTint, p.brandStrong, 'Złożone', 'clock');
       case 'Confirmed':
-        return (context.zz.brandTint, context.zz.brandStrong, 'Potwierdzone', 'check');
+        return (p.brandTint, p.brandStrong, 'Potwierdzone', 'check');
       case 'Picking':
-        return (context.zz.infoTint, context.zz.info, 'Kompletowane', 'cart');
+        return (p.infoTint, p.info, 'Kompletowane', 'cart');
       case 'ReadyForPickup':
-        return (context.zz.infoTint, context.zz.info, 'Gotowe do odbioru', 'package');
+        return (p.infoTint, p.info, 'Gotowe do odbioru', 'package');
       case 'InDelivery':
-        return (context.zz.brandTint, context.zz.brandStrong, 'W dostawie', 'delivery');
+        return (p.brandTint, p.brandStrong, 'W dostawie', 'delivery');
       case 'Delivered':
-        return (context.zz.successTint, context.zz.success, 'Dostarczone', 'check_circle');
+        return (p.successTint, p.success, 'Dostarczone', 'check_circle');
       case 'Completed':
-        return (context.zz.successTint, context.zz.success, 'Zakończone', 'check_circle');
+        return (p.successTint, p.success, 'Zakończone', 'check_circle');
       case 'Cancelled':
-        return (context.zz.dangerTint, context.zz.danger, 'Anulowane', 'x_circle');
+        return (p.dangerTint, p.danger, 'Anulowane', 'x_circle');
       default:
-        return (context.zz.surface, context.zz.textMuted, s, 'info');
+        return (p.surface, p.textMuted, s, 'info');
     }
   }
 }

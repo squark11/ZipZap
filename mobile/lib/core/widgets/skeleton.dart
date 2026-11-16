@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/zz_theme.dart';
 
-/// Prostokąt „skeleton” z delikatnym efektem shimmer (ładowanie treści).
+/// Prostokąt „skeleton” z delikatnym połyskiem (ładowanie treści). Połysk: jeden przebieg 250 ms co 1 s
+/// (design-system.md §6); przy systemowym „ogranicz ruch” — statyczny.
 class ZzSkeleton extends StatefulWidget {
   final double? width;
   final double height;
@@ -17,7 +18,7 @@ class ZzSkeleton extends StatefulWidget {
 class _ZzSkeletonState extends State<ZzSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))
         ..repeat();
 
   @override
@@ -30,17 +31,25 @@ class _ZzSkeletonState extends State<ZzSkeleton>
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     // Wyraźnie „placeholderowy" odcień (chłodny neutralny), inny niż kolor tekstu.
-    final base = dark ? const Color(0xFF2A3536) : const Color(0xFFDCE7E6);
+    final base = context.zz.skeleton;
     final hi = Color.lerp(base, Colors.white, dark ? 0.22 : 0.85)!;
     // Cienkie paski → pełne zaokrąglenie („pigułka”), żeby nie wyglądały jak linijka tekstu.
     final radius = widget.borderRadius ??
         (widget.height <= 20
             ? BorderRadius.circular(widget.height / 2)
             : BorderRadius.circular(ZzRadius.field));
+    if (ZzMotion.reduced(context)) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(color: base, borderRadius: radius),
+      );
+    }
     return AnimatedBuilder(
       animation: _c,
       builder: (_, _) {
-        final v = _c.value;
+        // Przebieg połysku zajmuje pierwsze 250 ms z każdej sekundy; potem pauza (v > 1 = poza paskiem).
+        final v = _c.value * 4 * 1.5 - 0.25;
         return Container(
           width: widget.width,
           height: widget.height,

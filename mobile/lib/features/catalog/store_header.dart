@@ -77,9 +77,9 @@ class StoreHeader extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const ZzIcon('delivery', size: 18, color: context.zz.brandStrong),
+                  ZzIcon('delivery', size: 18, color: context.zz.brandStrong),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text('Dostawa — opłatę i termin dostawy wybierzesz przy zamówieniu.',
                         style: TextStyle(color: context.zz.brandStrong, fontSize: 13)),
                   ),

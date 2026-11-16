@@ -138,7 +138,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
               style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
           const SizedBox(height: 20),
           if (cancelled)
-            const _Banner(
+            _Banner(
               color: context.zz.dangerTint,
               textColor: context.zz.danger,
               text: 'To zamówienie zostało anulowane.',
@@ -168,7 +168,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           if (o.deliveryWindowLabel != null) ...[
             Row(
               children: [
-                const ZzIcon('clock', size: 16, color: context.zz.brandStrong),
+                ZzIcon('clock', size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 6),
                 Text('Termin: ${o.deliveryWindowLabel}',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -179,7 +179,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           if (o.purchasingRound != null) ...[
             Row(
               children: [
-                const ZzIcon('cart', size: 16, color: context.zz.brandStrong),
+                ZzIcon('cart', size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text('Zakupy w sklepie: ${o.purchasingRound!.label}',
@@ -291,7 +291,7 @@ class OrderTimeline extends StatelessWidget {
                             style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
                       ),
                     if (current)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 2),
                         child: Text('W trakcie',
                             style: TextStyle(color: context.zz.brandStrong, fontSize: 12)),

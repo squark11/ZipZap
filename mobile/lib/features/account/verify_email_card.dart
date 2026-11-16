@@ -86,8 +86,8 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
   @override
   Widget build(BuildContext context) {
     final mailIsMock = ref.watch(publicConfigProvider).valueOrNull?.mailIsMock ?? false;
-    const accent = context.zz.warning;
-    const body = TextStyle(color: context.zz.text, height: 1.4);
+    final accent = context.zz.warning;
+    final body = TextStyle(color: context.zz.text, height: 1.4);
     return Container(
       key: const Key('verify-email-card'),
       padding: const EdgeInsets.all(16),
@@ -100,7 +100,7 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(_sent ? 'Link wysłany' : 'Potwierdź adres e-mail',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: accent)),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: accent)),
           const SizedBox(height: 6),
           Text(
             _sent
@@ -110,11 +110,11 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
           ),
           if (mailIsMock) ...[
             const SizedBox(height: 6),
-            const Text('Poczta w tym środowisku to atrapa — wiadomości nie są wysyłane.', style: body),
+            Text('Poczta w tym środowisku to atrapa — wiadomości nie są wysyłane.', style: body),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_error!, style: const TextStyle(color: context.zz.danger))),
+            Semantics(liveRegion: true, child: Text(_error!, style: TextStyle(color: context.zz.danger))),
           ],
           const SizedBox(height: 12),
           OutlinedButton(

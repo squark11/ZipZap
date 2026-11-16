@@ -30,7 +30,7 @@ class AccountScreen extends ConsumerWidget {
                   CircleAvatar(
                     radius: 26,
                     backgroundColor: context.zz.brandTint,
-                    child: const ZzIcon('account', size: 26, color: context.zz.brandStrong),
+                    child: ZzIcon('account', size: 26, color: context.zz.brandStrong),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

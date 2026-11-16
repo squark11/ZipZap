@@ -48,7 +48,7 @@ class TestOrderBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
                   const SizedBox(height: 4),
                   Text(body, style: TextStyle(color: context.zz.text, fontSize: 13)),
