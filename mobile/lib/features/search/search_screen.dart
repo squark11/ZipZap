@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/zz_theme.dart';
 import '../../core/ui/ui.dart';
+import '../../core/util/search_text.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../models/store.dart';
@@ -76,19 +77,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-String _norm(String s) {
-  const from = 'ąćęłńóśźż', to = 'acelnoszz';
-  final b = StringBuffer();
-  for (final ch in s.toLowerCase().split('')) {
-    final i = from.indexOf(ch);
-    b.write(i >= 0 ? to[i] : ch);
-  }
-  return b.toString().trim();
-}
-
 /// Dopasowanie sklepów bez wielkości liter i polskich znaków („rabka" → „Rabka-Zdrój").
 List<Store> searchStores(List<Store> stores, String query) {
-  final q = _norm(query);
-  if (q.isEmpty) return stores;
-  return stores.where((s) => _norm('${s.name} ${s.city} ${s.address ?? ''}').contains(q)).toList();
+  if (normalizeSearch(query).isEmpty) return stores;
+  return stores.where((s) => matchesSearch('${s.name} ${s.city} ${s.address ?? ''}', query)).toList();
 }

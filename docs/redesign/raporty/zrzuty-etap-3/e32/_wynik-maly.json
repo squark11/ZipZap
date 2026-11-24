@@ -1,0 +1,34 @@
+{
+  "startedAt": "2026-11-24T22:47:01.320Z",
+  "node": "v22.16.0",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "screenshots": [
+    {
+      "width": 360,
+      "height": 780,
+      "file": "sklep-maly-360x780.png",
+      "storesMs": 1751,
+      "semanticsNodes": 30,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "file": "sklep-maly-1280x900.png",
+      "storesMs": 1480,
+      "semanticsNodes": 30,
+      "horizontalOverflowPx": 0
+    }
+  ],
+  "hosts": {
+    "localhost:60983": 49,
+    "localhost:5080": 26
+  },
+  "external": [],
+  "perf": [],
+  "verdict": {
+    "googleRequests": 0,
+    "horizontalOverflowAt": []
+  },
+  "finishedAt": "2026-11-24T22:47:11.857Z"
+}

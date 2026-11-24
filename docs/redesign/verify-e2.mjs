@@ -30,10 +30,15 @@ const outDir = resolve(outDirArg);
 mkdirSync(outDir, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const WIDTHS = [320, 360, 768, 1280, 1920];
+// Opcjonalnie PAGE="/stores/<id>" (domyślnie /stores) i WAIT_API="products" — fragment adresu API, na który czekać
+// przed zrzutem (domyślnie lista sklepów). Pliki zrzutów dostają wtedy przedrostek PREFIX (domyślnie „start").
+const PAGE = process.env.PAGE ?? '/stores';
+const WAIT_API = process.env.WAIT_API ? new RegExp(process.env.WAIT_API) : /\/api\/catalog\/stores(\?|$)/;
+const PREFIX = process.env.PREFIX ?? 'start';
 // Opcjonalnie SIZES="360x640,375x812,1280x900" — inne rozmiary okna (pliki start-<szer>x<wys>.png).
 const SIZES = process.env.SIZES
-  ? process.env.SIZES.split(',').map((s) => { const [w, h] = s.split('x').map(Number); return { w, h, file: `start-${w}x${h}.png` }; })
-  : WIDTHS.map((w) => ({ w, h: w < 600 ? 780 : 900, file: `start-${w}.png` }));
+  ? process.env.SIZES.split(',').map((s) => { const [w, h] = s.split('x').map(Number); return { w, h, file: `${PREFIX}-${w}x${h}.png` }; })
+  : WIDTHS.map((w) => ({ w, h: w < 600 ? 780 : 900, file: `${PREFIX}-${w}.png` }));
 const CDP_TIMEOUT_MS = 30_000;
 const API_WAIT_MS = 120_000; // darmowy Render usypia API — pierwsze żądanie może trwać ok. minuty
 const result = { startedAt: new Date().toISOString(), node: process.version, browser: null, screenshots: [], hosts: {}, external: [], perf: [] };
@@ -115,7 +120,7 @@ async function openPage(width, height) {
       const h = new URL(url).host; hosts.set(h, (hosts.get(h) ?? 0) + 1);
       if (/google|gstatic/.test(h) && !result.external.includes(url)) result.external.push(url);
     }
-    if (d.method === 'Network.responseReceived' && /\/api\/catalog\/stores(\?|$)/.test(d.params.response.url)) storesDone = true;
+    if (d.method === 'Network.responseReceived' && WAIT_API.test(d.params.response.url)) storesDone = true;
   };
   listeners.add(l);
   return {
@@ -123,7 +128,7 @@ async function openPage(width, height) {
     async gotoStores(base) {
       storesDone = false;
       const t0 = Date.now();
-      await s('Page.navigate', { url: base + '/stores' });
+      await s('Page.navigate', { url: base + PAGE });
       while (!storesDone && Date.now() - t0 < API_WAIT_MS) await sleep(200);
       const tStores = Date.now() - t0;
       await sleep(3000); // czas na wyrysowanie kart i doczytanie obrazów

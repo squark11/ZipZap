@@ -1,6 +1,7 @@
 import '../../core/api/api_client.dart';
 import '../../models/product.dart';
 import '../../models/store.dart';
+import '../../models/store_category.dart';
 
 class CatalogRepository {
   final ApiClient _api;
@@ -24,6 +25,14 @@ class CatalogRepository {
   Future<Store> getStore(String idOrSlug) async {
     final data = await _api.get('/catalog/stores/$idOrSlug');
     return Store.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Kategorie sklepu (publiczny endpoint), w kolejności ze sklepu.
+  Future<List<StoreCategory>> listCategories(String storeId) async {
+    final data = await _api.get('/catalog/stores/$storeId/categories');
+    final list = (data as List).map((e) => StoreCategory.fromJson(e as Map<String, dynamic>)).toList();
+    list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return list;
   }
 
   Future<List<Product>> listProducts(String storeId, {String? categoryId}) async {

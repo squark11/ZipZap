@@ -1,139 +1,87 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/zz_theme.dart';
+import '../../core/ui/ui.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/store_logo.dart';
 import '../../core/widgets/zz_icon.dart';
 import '../../models/store.dart';
 
-/// Nagłówek („hero") ekranu sklepu: nazwa, lokalizacja, status i kluczowe
-/// informacje (min. zamówienie, kontakt) + notka o dostawie.
-/// Tu wyląduje sposób i harmonogram dostawy po wdrożeniu Fazy H.
+/// Nagłówek ekranu sklepu (E3-2): logo, nazwa, miejscowość, status, opis, chipy informacji i termin dostawy.
+/// [roundLine] = termin z najbliższej rundy („Zamów jutro do 11:30 · dostawa od jutro, 13:00"); bez niego —
+/// ogólna informacja, że termin wybiera się przy zamówieniu.
 class StoreHeader extends StatelessWidget {
   final Store store;
-  const StoreHeader({super.key, required this.store});
+  final String? roundLine;
+  const StoreHeader({super.key, required this.store, this.roundLine});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StoreLogo(logoUrl: store.logoUrl, size: 56),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(store.name,
-                          style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          ZzIcon('location', size: 14, color: context.zz.textMuted),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(store.city,
-                                style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _StatusPill(status: store.status, open: store.isAcceptingOrders),
-              ],
-            ),
-            if ((store.description ?? '').trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(store.description!.trim(),
-                  style: TextStyle(color: context.zz.textMuted, height: 1.35)),
-            ],
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _InfoChip(icon: 'tag', text: 'Min. ${zl(store.minimumOrderValue)}'),
-                if ((store.phone ?? '').trim().isNotEmpty)
-                  _InfoChip(icon: 'phone', text: store.phone!.trim()),
-                if ((store.address ?? '').trim().isNotEmpty)
-                  _InfoChip(icon: 'location', text: store.address!.trim()),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.zz.brandTint,
-                borderRadius: BorderRadius.circular(ZzRadius.field),
-              ),
-              child: Row(
-                children: [
-                  ZzIcon('delivery', size: 18, color: context.zz.brandStrong),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text('Dostawa — opłatę i termin dostawy wybierzesz przy zamówieniu.',
-                        style: TextStyle(color: context.zz.brandStrong, fontSize: 13)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  final String status;
-  final bool open;
-  const _StatusPill({required this.status, required this.open});
-
-  @override
-  Widget build(BuildContext context) {
-    final label = open
-        ? 'Otwarte'
-        : (status == 'TemporarilyUnavailable' ? 'Niedostępne' : 'Zamknięte');
-    final bg = open ? context.zz.successTint : context.zz.dangerTint;
-    final fg = open ? context.zz.success : context.zz.danger;
+    final p = context.zz;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZzRadius.pill)),
-      child: Text(label,
-          style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final String icon;
-  final String text;
-  const _InfoChip({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.all(ZzSpace.lg),
       decoration: BoxDecoration(
-        color: context.zz.surface,
-        borderRadius: BorderRadius.circular(ZzRadius.pill),
-        border: Border.all(color: context.zz.border),
+        color: p.card,
+        borderRadius: BorderRadius.circular(ZzRadius.card),
+        boxShadow: p.shadowMd,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ZzIcon(icon, size: 15, color: context.zz.textMuted),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(color: context.zz.text, fontSize: 13)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StoreLogo(logoUrl: store.logoUrl, size: 56),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(store.name, style: Theme.of(context).textTheme.titleLarge),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: ZzSpace.sm,
+                      runSpacing: ZzSpace.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ZzStatusChip(open: store.isAcceptingOrders, status: store.status),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ZzIcon('location', size: 14, color: p.textMuted),
+                            const SizedBox(width: 4),
+                            Text(store.city, style: TextStyle(color: p.textMuted, fontSize: 13)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if ((store.description ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: ZzSpace.md),
+            Text(store.description!.trim(), style: TextStyle(color: p.textMuted, height: 1.35)),
+          ],
+          const SizedBox(height: ZzSpace.md),
+          Wrap(
+            spacing: ZzSpace.sm,
+            runSpacing: ZzSpace.sm,
+            children: [
+              ZzInfoChip(icon: 'tag', text: 'Min. ${zl(store.minimumOrderValue)}'),
+              if ((store.phone ?? '').trim().isNotEmpty) ZzInfoChip(icon: 'phone', text: store.phone!.trim()),
+              if ((store.address ?? '').trim().isNotEmpty) ZzInfoChip(icon: 'location', text: store.address!.trim()),
+            ],
+          ),
+          const SizedBox(height: ZzSpace.md),
+          ZzNotice(
+            kind: ZzNoticeKind.info,
+            message: roundLine ?? 'Dostawa — opłatę i termin dostawy wybierzesz przy zamówieniu.',
+          ),
         ],
       ),
     );

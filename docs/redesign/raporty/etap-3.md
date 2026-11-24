@@ -1,7 +1,7 @@
 # Raport Etapu 3 — Redesign ekranów (Claude Code → ChatGPT Codex)
 
 Etap rozpoczęty 2026-11-24 po PASS Etapu 2 (Codex, `6ef4b1e`) i akceptacji właściciela. Raport rośnie z każdym
-zadaniem. Status wg Claude Code: **E3-1a gotowe do weryfikacji** — nie uznaję zadania ani etapu za zaliczone.
+zadaniem. Status wg Claude Code: **E3-1a i E3-2 gotowe do weryfikacji; E3-1b gotowe, ale cofnięte z `main` (patrz rozdział E3-1b)** — nie uznaję zadania ani etapu za zaliczone.
 Nowej wersji aplikacji **nie wdrożono** (app.dowózka.pl to nadal stara wersja).
 
 ## E3-1a — Start (część aplikacji, bez zmian serwera)
@@ -92,3 +92,154 @@ Bez zmian: backend, panel, `cart_controller.dart`, repozytoria, modele.
 Lokalne widżety w `features/home`: `_PlaceHeader` (łączy dostawców danych z `ZzPlaceHeader`), `_NextRoundNotice`
 (wybiera rundę, rysuje `ZzNotice`), `_StoreGrid` (układ kolumn `ZzStoreCard`) — to złożenia z komponentów `core/ui`,
 nie własne karty. `DeliveryPlaceSheet` to arkusz ekranu (publiczny, w `features/home`).
+
+---
+
+## E3-1b — Okładka i sposób dostawy (F-5), kategorie platformy (F-6)
+
+> **Cofnięte z `main` (2026-11-24).** Commit `a486d3c` został wypchnięty na `main`, co uruchomiło automatyczne
+> wdrożenie API na Render. Render zdążył wdrożyć `a486d3c` — **migracja wykonała się na bazie produkcyjnej**
+> (tylko dodaje: 3 puste kolumny i tabela 11 kategorii). Właściciel wybrał cofnięcie: `ff3f30c` (revert) wdrożony
+> ~1 min później; produkcja działa na starym kodzie (`/api/catalog/platform-categories` = 404, `/health/ready` = 200).
+> Kolumny i tabela zostają w bazie nieużywane; po kopii bazy i zgodzie właściciela kod wraca przez `git revert ff3f30c`
+> (migracja jest już zapisana w historii, nie wykona się drugi raz). Do weryfikacji Codexa: kod w `a486d3c`.
+
+Baza: `f4a63cf`. Status wg Claude Code: **gotowe do weryfikacji**. Zmiana obejmuje serwer, bazę danych, panel
+i aplikację. **Nic nie wdrożono**; migracji nie uruchamiano na produkcji (wymaga zgody właściciela i kopii bazy).
+
+### Zakres
+
+| Część | Co |
+|---|---|
+| Baza (migracja `20261124215822_Catalog_StoreCoverAndPlatformCategories`) | `catalog.stores`: `CoverUrl` (500), `DeliveryNote` (80); `catalog.categories`: `PlatformCategoryKey` (32); nowa tabela `catalog.platform_categories` (klucz, nazwa, kolejność, widoczność) z 11 wierszami startowymi. **Tylko dodaje** — nie zmienia ani nie usuwa istniejących danych; `Down` cofa wszystko |
+| API | `StoreDto` + `coverUrl`, `deliveryNote`, `platformCategories` (klucze kategorii, w których sklep ma **dostępny** produkt; jedno dodatkowe zapytanie na całą listę); `CategoryDto` + `platformCategoryKey`; `GET /api/catalog/platform-categories` (publiczne, tylko widoczne); `GET/PATCH /api/catalog/admin/platform-categories[/{key}]` (administrator, wpis w audycie); `PUT /api/catalog/categories/{id}/platform-category` (obsługa tego sklepu albo administrator); `PATCH /stores/{id}` + `coverUrl` (tylko `http(s)://`), `deliveryNote` (≤ 80 znaków); `null` = bez zmian, `""` = wyczyść |
+| Panel | nowa strona administratora „Kategorie" (nazwa, kolejność, widoczność; klucza nie zmienia się — to nazwa ikony w aplikacji); profil sklepu: „Okładka" z podglądem i „Sposób dostawy"; „Oferta": przy każdej kategorii sklepu wybór „W aplikacji pod", także przy dodawaniu kategorii. `styles.css`: `.formgrid` bez rozpychania kolumn (wcześniej 6 pól profilu dawało przewijanie w bok) |
+| Aplikacja | `Store` + nowe pola (stare API bez nich → puste); `PlatformCategory` (nieznany klucz → ikona ogólna); Start: rząd chipów „Wszystko + kategorie" **tylko z kategorii obecnych w widocznych sklepach** (klient nie trafia na pustą listę; bez przypiętych kategorii rzędu nie ma), wybór filtruje sklepy, drugie dotknięcie wraca do wszystkich; `ZzStoreCard`: okładka nad treścią (16:9, najwyżej 140 px; nie wczyta się → znika) i linia „sposób dostawy" |
+
+Kompatybilność wdrożenia: nowa aplikacja na starym API — brak pól i 404 na liście kategorii → karta z logo, bez
+chipów (test „model…", provider łapie błąd). Stare aplikacje na nowym API — dodatkowe pola są ignorowane.
+
+Celowo poza zakresem: import/eksport CSV nie niesie przypięcia do kategorii platformy (kategorie z importu
+przypina się w „Ofercie"); nowych kategorii platformy nie dodaje się w panelu (nowa = nowa ikona w aplikacji).
+Nowe obietnice biznesowe: brak — „sposób dostawy" to tekst sklepu, termin nadal tylko z rund.
+
+### Wyniki
+
+| Polecenie | Wynik |
+|---|---|
+| `dotnet test backend/ZipZap.sln` | **289/289** (integracyjne 225 — w tym 5 nowych w `StoreCoverAndPlatformCategoryTests`; Ordering 38, Identity 17, Payments 9) |
+| `cd admin-panel && npx ng build` | bez błędów |
+| `cd mobile && flutter analyze` | No issues found |
+| `cd mobile && flutter test` | **124/124** (119 + 5 nowych w `home_screen_test.dart`) |
+| `verify-e2.mjs` (lokalne API z migracją, `SIZES=360x780,1280x900`) | `googleRequests: 0`, przewijanie w bok 0 px; zrzuty `zrzuty-etap-3/e31b/` |
+
+Nowe testy serwera: lista 11 kategorii w kolejności; sklep pod kategorią tylko z dostępnym produktem (ukrycie
+produktu, przepięcie, odpięcie); nieznany klucz → 400, pracownik innego sklepu → 403, anonim → 401; tylko
+administrator zmienia kategorie, ukryta znika z listy publicznej; okładka i opis — ustawienie, walidacja
+(`javascript:` → 400, 81 znaków → 400), brak pola = bez zmian, `""` = wyczyść.
+
+### Sprawdzenie na żywo (lokalnie)
+
+API z migracją na **świeżej, tymczasowej bazie** (`zipzap_e31b`, usunięta po sprawdzeniu), seed pilotażu,
+dane ustawione przez API, potem panel w przeglądarce:
+
+- administrator → „Kategorie": 11 kategorii, „Zapisz" nieaktywny bez zmian; zmiana nazwy „Warzywa" → „Warzywa
+  i zioła" zapisana;
+- testowe konto sklepu (utworzone w tej bazie) → profil: okładka z podglądem, sposób dostawy, bez przewijania
+  w bok; „Oferta": przepięcie „Spożywcze" na „Warzywa i zioła" → `GET /api/catalog/stores` zwraca
+  `Rapacz — Rynek: warzywa`;
+- aplikacja (`zrzuty-etap-3/e31b/start-360x780.png`, `start-1280x900.png`): chipy „Wszystko · Owoce · Nabiał",
+  karta Rapacza z okładką, obie karty z linią sposobu dostawy.
+
+Poprawki po tym sprawdzeniu (w tym commicie): okładka 16:9 w kolumnie 1280 px miała ~285 px i robiła kartę dwa
+razy wyższą od sąsiedniej → limit 140 px; pola profilu w panelu wychodziły poza ekran → osobny wiersz + `min-width: 0`.
+
+### Wdrożenie produkcyjne — do decyzji właściciela
+
+1. Kopia bazy produkcyjnej → migracja (automatycznie przy starcie nowego API) → próba na kopii.
+2. Dopiero potem nowa aplikacja (kolejność nie jest krytyczna — patrz „Kompatybilność").
+3. Sklep pilotażowy przypina swoje kategorie w „Ofercie" i ustawia okładkę — bez tego Start wygląda jak w E3-1a.
+
+### Pliki (`git diff --name-status f4a63cf..HEAD`)
+
+- Nowe: `backend/src/Modules/ZipZap.Modules.Catalog/Domain/PlatformCategory.cs`, migracja `…_Catalog_StoreCoverAndPlatformCategories.cs` + `.Designer.cs`,
+  `backend/tests/ZipZap.Api.IntegrationTests/StoreCoverAndPlatformCategoryTests.cs`, `admin-panel/src/app/platform-categories.ts`,
+  `mobile/lib/models/platform_category.dart`, `docs/redesign/raporty/zrzuty-etap-3/e31b/{_wynik.json,start-360x780.png,start-1280x900.png}`,
+  `docs/redesign/raporty/etap-2-weryfikacja-2026-11-24.md` (raport Codexa z PASS Etapu 2 — dołączony bez zmian)
+- Zmienione: Catalog `Api/CatalogEndpoints.cs`, `Api/CatalogRequests.cs`, `Application/CatalogDtos.cs`,
+  `Application/CatalogService.cs`, `Domain/Category.cs`, `Domain/Store.cs`, `Infrastructure/CatalogDbContext.cs`,
+  `Infrastructure/Migrations/CatalogDbContextModelSnapshot.cs`; panel `api.ts`, `app.routes.ts`, `catalog.ts`,
+  `modules.ts`, `onboarding.ts`, `styles.css`; aplikacja `core/ui/zz_store_card.dart`,
+  `features/catalog/catalog_repository.dart`, `features/home/{home_providers,home_screen}.dart`, `models/store.dart`,
+  `test/home_screen_test.dart`; `docs/redesign/05-decyzje.md`; ten raport
+
+---
+
+## E3-2 — Sklep i produkty
+
+Baza: `ff3f30c` (`main` po cofnięciu E3-1b). Status wg Claude Code: **gotowe do weryfikacji**. Zmiana **tylko
+w aplikacji** (bez serwera, panelu i bazy); nie wdrożono.
+
+### Co zmieniono
+
+| Element | Przed | Po |
+|---|---|---|
+| Nagłówek | karta z ogólną notką „opłatę i termin wybierzesz przy zamówieniu" | ten sam układ na komponentach `core/ui`; notka = termin z najbliższej rundy („Zamów jutro do 11:30 · dostawa od jutro, 13:00", ten sam publiczny endpoint co Start); bez rundy — dawna notka |
+| Kategorie | brak (endpoint istniał, UI go nie używało) | przyklejone zakładki „Wszystko + kategorie sklepu" (`GET /catalog/stores/{id}/categories`), **tylko kategorie z produktami**; drugie dotknięcie wraca do wszystkich; błąd zapytania = oferta bez zakładek |
+| Szukanie | brak | „Szukaj w {sklep}" — po nazwie, bez wielkości liter i polskich znaków, słowa w dowolnej kolejności („ser zolty" → „Żółty ser"); działa razem z zakładką; pusty wynik → „Nic nie znaleźliśmy" + „Pokaż wszystkie produkty". Bez zapytań do serwera (filtr na pobranej ofercie). Decyzja F-7: szukanie tylko w sklepie |
+| Układ | lista kart (`Card`) | telefon: wiersze `ZzProductRow`; treść ≥ 600 px: siatka `ZzProductTile` (kolumny ≤ 240 px, wysokość kafelka liczona ze skali tekstu); obie budowane leniwie (`SliverList`/`SliverGrid`) |
+| „+" | przycisk „Dodaj" ↔ licznik bez przejścia | „+ Dodaj" → licznik: przenikanie + skala, 200 ms (`ZzMotion.base`); „ogranicz ruch" → 0 ms. Logika koszyka bez zmian (koszyk przy pierwszym dodaniu, pytanie przy innym sklepie, wybór jednostki) — przeniesiona 1:1 do `ProductAddButton` |
+| Sklep zamknięty | `StoreClosedNotice` (własna ramka) | `ZzNotice` (ostrzeżenie), ten sam tekst |
+| Nie ma sklepu | `_StoreNotFound` | `EmptyView` z ilustracją i przyciskiem „Zobacz sklepy" (`EmptyView` dostał opcjonalny `action`) |
+
+Lokalne widżety z listy E2-3 przypisane do E3-2: `_ProductRow` → `ZzProductRow`/`ZzProductTile` (+ `ProductAddButton`
+w `features/catalog` — akcja z logiką koszyka, nie karta); `_StatusPill` → `ZzStatusChip(status:)` (także
+„Niedostępne"); `_InfoChip` → `ZzInfoChip`; `_StoreNotFound` → `EmptyView(action:)`. Zostają prywatne, bo nie są
+kartami: `_Frame` (Scaffold z przyciskami paska), `_StoreOffer` (stan: wyszukiwanie i wybrana zakładka),
+`_TabsHeader` (delegat przyklejonego paska, nie widżet). Nowe w `core/ui`: `ZzProductRow`, `ZzProductTile`,
+`ZzProductImage`, `ZzFilterPill`, `ZzInfoChip`; w `core/util`: `normalizeSearch`, `matchesSearch` (Szukaj sklepów
+korzysta z tej samej funkcji — dawna lokalna `_norm` usunięta).
+
+### Zmiana w istniejącym teście (jawnie)
+
+`qr_entry_flow_test.dart`, 2 miejsca: przed `tap('Dodaj')` dodane `ensureVisible`. Powód: nagłówek z terminem
+i pole szukania wydłużyły stronę — w oknie testu 800×600 pierwszy przycisk był na 608 px i stuknięcie trafiało
+poza ekran (ostrzeżenie testu „would not hit test"). Test nadal sprawdza to samo (dodanie z wejścia QR,
+odtworzenie koszyka, powrót po logowaniu); nic nie osłabiono.
+
+### Wyniki
+
+| Polecenie | Wynik |
+|---|---|
+| `cd mobile && flutter analyze` | No issues found |
+| `cd mobile && flutter test` | **133/133** (119 + 14 w `store_offer_test.dart`); `store_header_test` bez zmian i przechodzi |
+| `verify-e2.mjs` — lokalne API, sklep mały (4 produkty) i duży (2004 produkty, 9 kategorii z importu CSV), 360×780 i 1280×900 | `googleRequests: 0`, przewijanie w bok 0 px; węzły dostępności na dużym sklepie 37 (360) / 50 (1280) — buduje się tylko widoczna część listy; zrzuty `zrzuty-etap-3/e32/` |
+
+Nowe testy (`store_offer_test.dart`): zakładki bez pustych kategorii i w kolejności sklepu; szukanie (polskie
+znaki, kolejność słów, spacje, z zakładką); 360 px = wiersze, wybór zakładki filtruje; szukanie + pusty wynik +
+powrót; termin z rundy w nagłówku; błąd kategorii = oferta bez zakładek; lista/siatka bez przepełnień przy
+840/640/599/360 px i tekście 100/130 %; 2000 produktów — na ekranie < 20 wierszy, szukanie znajduje „Produkt 1999";
+„ogranicz ruch" = przejście 0 ms; zwykły ruch ≤ 250 ms.
+
+`verify-e2.mjs`: doszły zmienne `PAGE` (dowolna strona), `WAIT_API` (na które zapytanie czekać) i `PREFIX`
+(nazwy plików); bez nich działa jak wcześniej. Uwaga: w Git Bash `PAGE=/stores/…` zamienia się na ścieżkę
+Windows — uruchamiać z PowerShell albo z `MSYS_NO_PATHCONV=1`.
+
+### Otwarte
+
+1. **Pomiar na telefonie przy dużym asortymencie** — telefon był odłączony (adb bez urządzeń). Dane i skrypt są
+   gotowe; zrobię po podłączeniu (2004 produkty, lokalne API przez `adb reverse`).
+2. Na komputerze pasek zakładek przewija się w bok (przy 9 kategoriach ostatnia jest ucięta) — myszą trzeba
+   Shift+kółko; do rozważenia strzałki albo zawijanie w E3-9.
+3. Nagłówek sklepu na telefonie zajmuje ~⅔ pierwszego ekranu (opis + 3 chipy + termin) — pierwszy produkt ok.
+   500 px od góry przy 780 px. Do oceny właściciela; można zwinąć opis i telefon.
+
+### Pliki (`git diff --name-status ff3f30c..HEAD`)
+
+- Nowe: `mobile/lib/core/ui/zz_product.dart`, `mobile/lib/core/util/search_text.dart`,
+  `mobile/lib/features/catalog/product_add_button.dart`, `mobile/lib/models/store_category.dart`,
+  `mobile/test/store_offer_test.dart`, `docs/redesign/raporty/zrzuty-etap-3/e32/{_wynik-maly.json,_wynik-duzy.json,sklep-maly-360x780.png,sklep-maly-1280x900.png,sklep-duzy-360x780.png,sklep-duzy-1280x900.png}`
+- Zmienione: `mobile/lib/core/ui/{ui,zz_store_card}.dart`, `mobile/lib/core/widgets/states.dart`,
+  `mobile/lib/features/catalog/{catalog_repository,store_detail_screen,store_header}.dart`,
+  `mobile/lib/features/search/search_screen.dart`, `mobile/test/qr_entry_flow_test.dart`,
+  `docs/redesign/verify-e2.mjs`, `docs/redesign/05-decyzje.md` (F-5/F-6: stan po cofnięciu), ten raport (także przywrócony rozdział E3-1b)

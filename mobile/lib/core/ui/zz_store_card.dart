@@ -91,10 +91,11 @@ class ZzStoreCard extends StatelessWidget {
   }
 }
 
-/// Pigułka „Otwarte / Zamknięte".
+/// Pigułka „Otwarte / Zamknięte / Niedostępne" (ostatnie przy statusie `TemporarilyUnavailable`).
 class ZzStatusChip extends StatelessWidget {
   final bool open;
-  const ZzStatusChip({super.key, required this.open});
+  final String? status;
+  const ZzStatusChip({super.key, required this.open, this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +106,7 @@ class ZzStatusChip extends StatelessWidget {
         color: open ? p.successTint : p.dangerTint,
         borderRadius: BorderRadius.circular(ZzRadius.pill),
       ),
-      child: Text(open ? 'Otwarte' : 'Zamknięte',
+      child: Text(open ? 'Otwarte' : (status == 'TemporarilyUnavailable' ? 'Niedostępne' : 'Zamknięte'),
           style: TextStyle(color: open ? p.success : p.danger, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }

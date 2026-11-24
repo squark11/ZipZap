@@ -195,6 +195,9 @@ void main() {
     addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
     final b = _Backend();
     var c = await _launch(tester, b, '/s/piekarnia-poranek?src=qr');
+    // E3-2: nagłówek z terminem i wyszukiwarka wydłużyły stronę — przycisk bywa pod krawędzią okna testu (600 px).
+    await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Dodaj').first);
+    await _settle(tester);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Dodaj').first);
     await _settle(tester);
     expect(find.textContaining('1 produkt · '), findsOneWidget);
@@ -217,6 +220,9 @@ void main() {
     addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
     final b = _Backend();
     final c = await _launch(tester, b, '/s/piekarnia-poranek?src=qr');
+    // E3-2: nagłówek z terminem i wyszukiwarka wydłużyły stronę — przycisk bywa pod krawędzią okna testu (600 px).
+    await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Dodaj').first);
+    await _settle(tester);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Dodaj').first);
     await _settle(tester);
 

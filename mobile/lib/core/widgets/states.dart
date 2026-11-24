@@ -62,12 +62,16 @@ class EmptyView extends StatelessWidget {
   /// Opcjonalna ilustracja SVG (np. `assets/svg/empty_cart.svg`); gdy null — ikona.
   final String? svgAsset;
 
+  /// Opcjonalny przycisk pod tekstem (np. „Zobacz sklepy", „Wyczyść wyszukiwanie").
+  final Widget? action;
+
   const EmptyView({
     super.key,
     required this.icon,
     required this.title,
     this.subtitle,
     this.svgAsset,
+    this.action,
   });
 
   @override
@@ -91,6 +95,7 @@ class EmptyView extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: context.zz.textMuted)),
               ],
+              if (action != null) ...[const SizedBox(height: 16), action!],
             ],
           ),
         ),
