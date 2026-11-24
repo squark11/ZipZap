@@ -1,5 +1,42 @@
 # Raport weryfikacji Codexa — Etap 2: Fundamenty frontendowe
 
+## Ponowna weryfikacja najnowszego raportu
+
+Data: 2026-11-17. Sprawdzony commit: `902cba2`. Najnowszy raport Claude Code to
+[`etap-1-2-zbiorczy.md`](etap-1-2-zbiorczy.md), z 2026-11-16; plan bazowy Etapu 2 jest w
+`docs/redesign/02-plan-zadan-claude.md`.
+
+**Wynik: FAIL — E2-3 nie spełnia jawnego kryterium planu.** Raport źródłowy uczciwie oznacza E2-3 jako
+częściowe, ale proponowane odłożenie lokalnych komponentów do Etapu 3 nie zostało zatwierdzone w planie.
+Plan wymaga, by ekrany nie definiowały własnych kart. Pozostałe kryteria mają znacznie lepsze pokrycie;
+testy oraz czystość diffu potwierdziłem ponownie.
+
+| Kontrola | Status | Wynik |
+|---|---|---|
+| `flutter analyze` | PASS | `No issues found!` |
+| `flutter test` | PASS | 99/99 testów przeszło. |
+| `git diff --check 86ee2c9..HEAD` | PASS | Czysty. |
+| Inwentarz zmian | PASS | Diff ma 66 plików: 30 nowych i 36 zmienionych; liczby i pozycje są ujęte w §6 raportu zbiorczego. |
+| E2-1 — tokeny i kontrast | PASS z udokumentowanymi odstępstwami | Testy są zielone; brak aliasów `@Deprecated` i umieszczenie cieni w `ZzPalette` są opisane w raporcie. |
+| E2-2 — fonty i żądania zewnętrzne | PARTIAL | Potwierdziłem lokalne fonty, brak `google_fonts` i flagę `--no-web-resources-cdn`; build release z lokalnym API zakończył się powodzeniem. Nie udało mi się dokończyć świeżego przechwycenia w Edge: `verify-e2.mjs` zakończył się ostrzeżeniem Node `Detected unsettled top-level await`, bez zrzutów i wyniku. Plik `_wynik.json` z surowymi wynikami rundy raportu nie znajduje się przy zrzutach. Raport wskazuje też nieprzetestowane znaki spoza fontu, np. emoji, jako możliwą ścieżkę do fallbacku. |
+| E2-3 — wspólne komponenty | **FAIL** | W kodzie nadal są lokalne karty/elementy prezentacyjne: `_SlotCard`, `_RoundCard`, `_AddressCard`, `_ProductRow` oraz inne wymienione w §3.2 raportu zbiorczego. Potwierdza to m.in. `checkout_screen.dart`, `addresses_screen.dart` i `store_detail_screen.dart`. |
+| E2-4 — układ | PARTIAL | Zrzuty z raportu dla 320/360/768/1280/1920 px są obecne; obejrzałem 360, 320 i 1920 px. Przy 360 i 1920 układ wygląda poprawnie. 320 px jest poniżej minimum z planu i pokazuje opisane łamanie etykiety „Zamówienia”. Wymóg własnej serii Codexa i niezależny pomiar `scrollWidth` nie zostały spełnione: próba odtworzenia skryptem nie wygenerowała wyników. |
+| E2-5 — ruch i dostępność | PARTIAL | `ZzMotion` respektuje `disableAnimations`, a węzeł statusu nie rysuje pulsu w trybie ograniczonego ruchu. Jednak `AnimationController` rozpoczyna pętlę 1500 ms w `initState` i nadal tyka, gdy później warunek w `build` ukrywa animację. Pełne ekrany przy skali 130% nadal nie są sprawdzone. |
+| E2-6 — nawigacja i linki | PASS | Pełny zestaw testów, w tym `qr_entry_flow_test.dart`, przechodzi. |
+| Pomiar kosztu semantyki web | PARTIAL | Raport zawiera porównanie, lecz pomiar wykonano na laptopie i małym katalogu; surowy `_wynik.json` nie jest dołączony. Nie zastępuje to późniejszego sprawdzenia na telefonie i dużym katalogu. |
+
+### Co blokuje zaliczenie
+
+1. Zamknąć E2-3 zgodnie z obecnym planem, przenosząc współdzielone karty do `core/ui`, albo formalnie zmienić kryterium planu i zaakceptować jawny zakres odłożony do Etapu 3. Do tego czasu E2 pozostaje niezaliczony.
+2. Przed wdrożeniem uzupełnić powtarzalny dowód dla sieci/font fallback (w tym tekstu z emoji) oraz zachować wynik pomiaru semantyki, np. `_wynik.json`.
+3. Warto zatrzymać lub w ogóle nie tworzyć `AnimationController`, kiedy aktywne jest `disableAnimations`; obecny kod ukrywa efekt, ale nie kończy pracy pętli.
+
+Zrzuty wizualne potwierdzają twierdzenia raportu o szerokościach 360/1920 oraz ograniczeniu 320 px. Raport zbiorczy jest datowany 2026-11-16, a nie 14 listopada; 14 listopada dotyczy bazowego kierunku/akceptacji opisanej w dokumentacji.
+
+---
+
+## Runda 1 — poprzednia weryfikacja (2026-11-16)
+
 Data weryfikacji: 2026-11-16. Baza audytu: `86ee2c9`; sprawdzony `HEAD`: `ea08e69` (`HEAD` = `origin/main`, worktree `pilot-outbox-deadletter`).
 
 **Wynik: FAIL — kod i testy są zielone, ale raport źródłowy nie wymienia wszystkich zmienionych plików wymaganych przez checklistę.** Galerię komponentów obejrzałem w czterech szerokościach; osobne przechwycenie żądań sieciowych, zrzutów głównego ekranu i pomiaru wydajności semantyki pozostaje niezweryfikowane.

@@ -68,8 +68,17 @@ class ZzCartBar extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                     decoration: BoxDecoration(color: ZzColors.accent, borderRadius: BorderRadius.circular(ZzRadius.pill)),
-                    child: const Text('Koszyk →',
-                        style: TextStyle(color: ZzColors.onAccent, fontWeight: FontWeight.w700, fontSize: 14)),
+                    // Strzałka jako ikona, nie znak „→" — tego znaku nie ma w Poppins, a brak glifu
+                    // kazałby przeglądarce pobrać czcionkę zapasową z Google (check_glyphs.py).
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Koszyk',
+                            style: TextStyle(color: ZzColors.onAccent, fontWeight: FontWeight.w700, fontSize: 14)),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_forward, size: 16, color: ZzColors.onAccent),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -1,0 +1,18 @@
+{
+  "api": "https://dowozka-api.onrender.com/api",
+  "fonts": [
+    "Inter-Bold.ttf",
+    "Inter-Medium.ttf",
+    "Inter-Regular.ttf",
+    "Inter-SemiBold.ttf",
+    "Poppins-Bold.ttf",
+    "Poppins-Medium.ttf",
+    "Poppins-Regular.ttf",
+    "Poppins-SemiBold.ttf"
+  ],
+  "checked": {
+    "stores": 2,
+    "products": 8
+  },
+  "missing": []
+}

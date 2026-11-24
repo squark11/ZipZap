@@ -1,6 +1,6 @@
 # F. Decyzje wymagające akceptacji właściciela
 
-Stan na 2026-11-14.
+Stan na 2026-11-24.
 
 | # | Decyzja | Status | Ustalenie |
 |---|---|---|---|
@@ -10,7 +10,7 @@ Stan na 2026-11-14.
 | F-4 | Biblioteka animacji (Lottie/Rive) | rekomendacja: nie teraz | Animacje wbudowane we Flutter (design-system.md §6). |
 | F-5 | Okładka sklepu oraz sposób i termin dostawy na karcie (nowe pola w API i panelu) | **Przyjęte** 2026-11-14 | Wchodzi do Etapu 3 (E3-1) jako zmiana backendu + panelu. |
 | F-6 | Wspólna lista kategorii platformy obok kategorii sklepu | **Przyjęte** 2026-11-14 | 12 kategorii z ikonami (`assets/svg/categories/`), zarządzanie w panelu; wchodzi do Etapu 3. |
-| F-7 | Wyszukiwarka produktów we wszystkich sklepach; ulubione | otwarte | Rekomendacja: wyszukiwarka tak (E3-10), ulubione później. |
+| F-7 | Wyszukiwarka produktów we wszystkich sklepach; ulubione | **Rozstrzygnięte** 2026-11-24: **nie** | Właściciel: klienci mają robić całe zakupy w jednym sklepie. Zakładka Szukaj znajduje sklepy; produkty szuka się w ofercie sklepu (E3-2). Bez nowego endpointu. Ulubione — później. |
 | F-8 | Baner promocyjny i „Zamów ponownie" | otwarte | Makiety używają banera najbliższej rundy (dane są w API); baner promocyjny z panelu — do decyzji. |
 | F-9 | Płatny Render (~7 USD/mies.), koniec usypiania API | otwarte | Rekomendacja: tak przed publicznym startem. |
 | F-10 | Redesign panelu Angular osobno, po aplikacji klienta | rekomendacja: tak | — |

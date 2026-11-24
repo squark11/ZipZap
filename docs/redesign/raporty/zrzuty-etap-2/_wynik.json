@@ -1,0 +1,168 @@
+{
+  "startedAt": "2026-11-24T16:47:08.769Z",
+  "node": "v22.16.0",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "screenshots": [
+    {
+      "width": 320,
+      "file": "start-320.png",
+      "storesMs": 1905,
+      "semanticsNodes": 17,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 360,
+      "file": "start-360.png",
+      "storesMs": 1853,
+      "semanticsNodes": 17,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 768,
+      "file": "start-768.png",
+      "storesMs": 1461,
+      "semanticsNodes": 17,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 1280,
+      "file": "start-1280.png",
+      "storesMs": 1651,
+      "semanticsNodes": 11,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 1920,
+      "file": "start-1920.png",
+      "storesMs": 1666,
+      "semanticsNodes": 11,
+      "horizontalOverflowPx": 0
+    }
+  ],
+  "hosts": {
+    "localhost:65473": 126,
+    "dowozka-api.onrender.com": 20
+  },
+  "external": [],
+  "perf": [
+    {
+      "run": 1,
+      "variant": "semantyka",
+      "storesMs": 1675,
+      "load": {
+        "taskS": 1.544,
+        "scriptS": 1.307,
+        "layoutS": 0.037,
+        "nodes": 130,
+        "heapMB": 27
+      },
+      "interact": {
+        "taskS": 1.485,
+        "scriptS": 1.31,
+        "layoutS": 0.008,
+        "nodes": 137,
+        "heapMB": 30.4
+      }
+    },
+    {
+      "run": 1,
+      "variant": "bez",
+      "storesMs": 1456,
+      "load": {
+        "taskS": 1.258,
+        "scriptS": 1.051,
+        "layoutS": 0.024,
+        "nodes": 92,
+        "heapMB": 19.3
+      },
+      "interact": {
+        "taskS": 1.227,
+        "scriptS": 1.087,
+        "layoutS": 0,
+        "nodes": 92,
+        "heapMB": 27.8
+      }
+    },
+    {
+      "run": 2,
+      "variant": "semantyka",
+      "storesMs": 1656,
+      "load": {
+        "taskS": 1.754,
+        "scriptS": 1.509,
+        "layoutS": 0.036,
+        "nodes": 130,
+        "heapMB": 22.1
+      },
+      "interact": {
+        "taskS": 1.294,
+        "scriptS": 1.136,
+        "layoutS": 0.003,
+        "nodes": 137,
+        "heapMB": 31.1
+      }
+    },
+    {
+      "run": 2,
+      "variant": "bez",
+      "storesMs": 1461,
+      "load": {
+        "taskS": 1.197,
+        "scriptS": 0.97,
+        "layoutS": 0.026,
+        "nodes": 92,
+        "heapMB": 19.3
+      },
+      "interact": {
+        "taskS": 1.573,
+        "scriptS": 1.413,
+        "layoutS": 0,
+        "nodes": 92,
+        "heapMB": 29.5
+      }
+    },
+    {
+      "run": 3,
+      "variant": "semantyka",
+      "storesMs": 2086,
+      "load": {
+        "taskS": 1.679,
+        "scriptS": 1.429,
+        "layoutS": 0.044,
+        "nodes": 130,
+        "heapMB": 26.7
+      },
+      "interact": {
+        "taskS": 1.296,
+        "scriptS": 1.138,
+        "layoutS": 0.004,
+        "nodes": 137,
+        "heapMB": 28.8
+      }
+    },
+    {
+      "run": 3,
+      "variant": "bez",
+      "storesMs": 1257,
+      "load": {
+        "taskS": 1.173,
+        "scriptS": 0.943,
+        "layoutS": 0.026,
+        "nodes": 92,
+        "heapMB": 19.3
+      },
+      "interact": {
+        "taskS": 1.16,
+        "scriptS": 1.036,
+        "layoutS": 0,
+        "nodes": 92,
+        "heapMB": 32.9
+      }
+    }
+  ],
+  "verdict": {
+    "googleRequests": 0,
+    "horizontalOverflowAt": []
+  },
+  "finishedAt": "2026-11-24T16:49:14.993Z"
+}

@@ -62,7 +62,15 @@ Każde zadanie ma pola: **Problem** · **Cel** · **Pliki** · **Jak** · **Akce
 
 **E2-3 Biblioteka komponentów.**
 - Cel: `lib/core/ui/` — przycisk, pole, chip kategorii, karty, licznik, arkusz, komunikat, pasek wyszukiwania; galeria pod `/dev/ui` tylko w trybie debug.
-- Akceptacja: ekrany nie definiują własnych przycisków ani kart.
+- Akceptacja: ekrany nie definiują własnych przycisków ani kart. **Zmiana zakresu zaakceptowana przez właściciela
+  2026-11-24** („okej" na propozycję z raportu zbiorczego §7): w Etapie 2 do `core/ui` trafiają elementy wspólne dla
+  kilku ekranów i używane w obecnym wyglądzie (licznik, pasek koszyka, karta sklepu, komunikat, pole wyszukiwania, chip,
+  układ strony; przycisk, pole tekstowe i arkusz — centralnie w motywie). Lokalne elementy ekranów przebudowywanych w
+  Etapie 3 przenosi się do `core/ui` w zadaniu danego ekranu, bo ich wygląd się zmienia: `_SlotCard`, `_RoundCard`,
+  `_SummaryRow`, `_ZoneDropdown`, `_SlotPicker`, `_LegalLinks`, `_Label` → E3-4; `_ProductRow`, `_StatusPill`,
+  `_InfoChip`, `_Frame`, `_StoreOffer`, `_StoreNotFound` → E3-2; `_PostalBanner`, `_LocationBanner` → E3-1;
+  `_CartFooter` → E3-3; `_StatusNode` → E3-5; `_InfoBox`, `_MockMailNotice`, `_ErrorText` → E3-6; `_AddressCard`,
+  `_AddressForm` → E3-7. Po Etapie 3: 0 lokalnych kart i przycisków w `lib/features`.
 - Testy: test widgetu na komponent (stany, 48 px, etykieta dostępności).
 - Ryzyka: dublowanie `core/widgets` — przenosimy, nie kopiujemy. Zależy od: E2-1.
 
@@ -89,7 +97,7 @@ Każde zadanie: 4 stany (ładowanie/pusty/błąd/offline) i zrzuty 375 oraz 1280
 | ID | Ekran | Zakres | Pliki | Kryterium szczególne | Ryzyko |
 |---|---|---|---|---|---|
 | E3-1 | Start | nagłówek z adresem (zastępuje dwa banery; logika kodu i lokalizacji bez zmian), szukajka, baner, kategorie, zamów ponownie, karty sklepów | `features/stores/*` → `features/home/*` | wybór kodu pocztowego w ≤ 2 dotknięciach; sklepy widoczne bez przewijania na 640 px | zależne od F-5/F-6 — bez nich wariant z logo |
-| E3-2 | Sklep i produkty | zakładki kategorii (endpoint istnieje), siatka i wiersze, szukanie po nazwie w sklepie, animacja „+" | `features/catalog/*` | `store_header_test` + testy filtrowania | średnie |
+| E3-2 | Sklep i produkty | zakładki kategorii (endpoint istnieje), siatka i wiersze, **szukanie produktów po nazwie w sklepie** (decyzja F-7: klient robi całe zakupy w jednym sklepie), animacja „+" | `features/catalog/*` | `store_header_test` + testy filtrowania | średnie |
 | E3-3 | Koszyk | pusty stan z ilustracją i przyciskiem, próg minimalnego zamówienia jako pasek postępu | `features/cart/*` | `cart_controller` bez zmian, istniejący test przechodzi | niskie |
 | E3-4 | Checkout w 3 krokach | te same wywołania API i walidacje, podział Adres → Termin → Podsumowanie | `features/checkout/*` | identyczne żądania sieciowe przed/po; testy okien, rund, trybu testowego | **wysokie** — osobny przegląd Codexa |
 | E3-5 | Zamówienia i śledzenie | oś statusu, karta terminu dostawy, animacja zmiany statusu | `features/orders/*` | `order_timeline_test` | niskie |
@@ -97,7 +105,7 @@ Każde zadanie: 4 stany (ładowanie/pusty/błąd/offline) i zrzuty 375 oraz 1280
 | E3-7 | Konto, adresy, powiadomienia, opinie | porządek sekcji, karty | `features/account/*`, `notifications`, `feedback` | — | niskie |
 | E3-8 | Start aplikacji i onboarding | animowany ekran startowy; 3 plansze przy pierwszym uruchomieniu, pomijalne | `features/splash/*`, nowe `features/onboarding/*` | wejście z kodu QR pomija onboarding | średnie |
 | E3-9 | Komunikaty i mikrointerakcje | jednolite komunikaty, plakietka koszyka, przejścia | `core/ui/*` | wyłączane przy „ogranicz ruch" | niskie |
-| E3-10 | Wyszukiwarka globalna | wymaga endpointu (F-7); wcześniej szukanie sklepów po nazwie | nowe `features/search/*`, backend Catalog | testy integracyjne endpointu | zmiana backendu |
+| E3-10 | Zakładka Szukaj | **bez wyszukiwania produktów we wszystkich sklepach** (F-7, właściciel 2026-11-24: zakupy w jednym sklepie). Zakładka szuka sklepów po nazwie i miejscowości (zrobione w E2-6); wynik prowadzi do sklepu, a produkty szuka się w sklepie (E3-2) | `features/search/*` | bez zmian backendu | niskie |
 
 ## Etap 4 — PWA
 

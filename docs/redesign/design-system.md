@@ -87,7 +87,7 @@ Tekst skaluje się z ustawieniem systemu do 130 % bez ucinania (E2-5).
 | Arkusz dolny / okno | arkusz (telefon), okno (≥ 900 px) | — | promień 28 |
 | Komunikat | sukces, błąd, informacja | pojawia się na 4 s, z akcją „Cofnij" gdy dotyczy | pływający, promień 16 |
 | Stan pełnoekranowy | pusty, błąd, offline, sukces | ilustracja 160–200 px + 1 zdanie + 1 przycisk | — |
-| Szkielet ładowania | karta sklepu, karta produktu, wiersz | połysk 250 ms co 1 s (bez połysku przy „ogranicz ruch") | jak docelowy element |
+| Szkielet ładowania | karta sklepu, karta produktu, wiersz | jedno „oddychanie" całej listy (przezroczystość 1 → 0,55 → 1, okres 1,2 s); statyczne przy „ogranicz ruch" | jak docelowy element |
 | Nawigacja | dolna pływająca (< 900 px), boczna (≥ 900 px) | aktywna (tło marki jasnej + tekst marki mocnej), plakietka koszyka | dolna wys. 68, 5 pozycji, podpis 11 px (12 px łamało „Zamówienia" przy 360 px) |
 
 ## 5. Ikony i ilustracje
@@ -116,7 +116,7 @@ zmiany stanu natychmiastowe. Animacja nigdy nie blokuje dotyku ani nie opóźnia
 | Kroki zamówienia | przesunięcie w bok + segment paska wypełnia się | 250 ms | wstecz w drugą stronę |
 | Zamówienie przyjęte | ilustracja sukcesu: koło skaluje się, znak „✓" rysuje się kreską | 250 ms (koło 120 ms + znak 130 ms) | nie blokuje przycisku |
 | Status zamówienia | nowy etap osi podświetla się | 200 ms | — |
-| Szkielety | połysk przesuwa się | przejście 250 ms, powtarzane co 1 s do wczytania danych | wyłączony przy „ogranicz ruch"; to wskaźnik czekania, nie przejście — **kryterium „≤ 250 ms" stosujemy do jednego przebiegu** (do akceptacji właściciela) |
+| Szkielety | cała lista „oddycha" (przezroczystość) | okres 1,2 s do wczytania danych | **decyzja właściciela 2026-11-24: liczy się wydajność**, więc zamiast połysku na każdym prostokącie (kilkadziesiąt zegarów, przemalowanie co klatkę) jeden zegar na listę i zmiana samej przezroczystości warstwy (bez przebudowy i przemalowania). To wskaźnik czekania, nie przejście — limit 250 ms go nie dotyczy. Przy „ogranicz ruch" zegar nie powstaje |
 
 Bez nowych bibliotek (Lottie/Rive — decyzja F-4: nie teraz); wszystko w `AnimatedContainer`/`AnimatedSwitcher`/
 `TweenAnimationBuilder`.

@@ -30,8 +30,9 @@ Blokuje: obiecane dane bez pokrycia, kontrast tekstu poniżej 4,5:1.
 
 ## Etap 2
 
-Brak `google_fonts` w `pubspec.yaml` i brak żądań do Google przy starcie; komponenty z `core/ui` użyte zamiast
-lokalnych kopii; układ w 360/768/1280/1920 px (własne zrzuty); animacje wyłączają się przy `disableAnimations`;
+Brak `google_fonts` w `pubspec.yaml` i brak żądań do Google przy starcie (`node docs/redesign/verify-e2.mjs`,
+`python docs/redesign/check_glyphs.py`); komponenty z `core/ui` użyte zamiast lokalnych kopii — w zakresie E2-3
+po zmianie z 2026-11-24 (lokalne elementy ekranów Etapu 3 wymienione w planie przy E2-3 nie blokują Etapu 2); układ w 360/768/1280/1920 px (własne zrzuty); animacje wyłączają się przy `disableAnimations`;
 stare linki `/stores` i `/s/{slug}?src=qr` działają. Blokuje: regresja linków QR, poziome przewijanie.
 
 ## Etap 3 (dla każdego ekranu)

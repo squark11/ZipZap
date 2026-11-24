@@ -324,16 +324,30 @@ class _StatusNode extends StatefulWidget {
 }
 
 class _StatusNodeState extends State<_StatusNode>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   AnimationController? _c;
 
+  // Zegar pulsu powstaje tylko, gdy węzeł jest bieżący i system nie ogranicza ruchu; przy „ogranicz ruch”
+  // nie ma zegara (a nie tylko ukryty efekt), więc nic nie pracuje w tle.
   @override
-  void initState() {
-    super.initState();
-    if (widget.pulse) {
-      _c = AnimationController(
-          vsync: this, duration: const Duration(milliseconds: 1500))
-        ..repeat();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StatusNode old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  void _sync() {
+    final want = widget.pulse && !ZzMotion.reduced(context);
+    if (want && _c == null) {
+      _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
+    } else if (!want && _c != null) {
+      _c!.dispose();
+      _c = null;
     }
   }
 
@@ -357,7 +371,7 @@ class _StatusNodeState extends State<_StatusNode>
       child: Center(child: ZzIcon(widget.icon, size: 16, color: widget.iconColor)),
     );
     // Pulsowanie to wskaźnik „trwa", nie przejście; przy „ogranicz ruch" węzeł jest statyczny.
-    if (_c == null || ZzMotion.reduced(context)) return SizedBox(width: size, height: size, child: circle);
+    if (_c == null) return SizedBox(width: size, height: size, child: circle);
     return SizedBox(
       width: size,
       height: size,

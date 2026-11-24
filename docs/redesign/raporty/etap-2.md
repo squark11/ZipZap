@@ -86,3 +86,7 @@ Backendu i panelu nie zmieniano — `dotnet test` / `ng test` niepotrzebne.
 
 Pełna odpowiedź, poprawki, zrzuty, pomiar semantyki i kompletny inwentarz plików: [`etap-1-2-zbiorczy.md`](etap-1-2-zbiorczy.md).
 Korekta tego raportu: wynik „0 żądań do Google" był błędny (pamięć podręczna podglądu) — naprawione w rundzie 2; fonty to 310 200 B; testy 99/99.
+
+## Runda 3 (2026-11-24)
+
+Odpowiedź na weryfikację Codexa z 2026-11-17, decyzje właściciela (F-7, szkielety, zakres E2-3) i wyniki: `etap-1-2-zbiorczy.md` §8. Testy 108/108.

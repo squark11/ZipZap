@@ -5,7 +5,7 @@ Data: 2026-11-16. Autor: Claude Code. Zastępuje jako punkt wejścia raporty `et
 obu etapów względem planu (`02-plan-zadan-claude.md`) i listy kontrolnej (`03-weryfikacja-codex.md`), poprawki
 wykonane po tej weryfikacji oraz stan otwartych spraw.
 
-**Status wg Claude Code:** Etap 1 — zaliczony przez Codexa (runda 3, materiały PASS). Etap 2 — **gotowy do ponownej
+**Status wg Claude Code (aktualizacja 2026-11-24, runda 3 — §8):** Etap 1 — zaliczony przez Codexa. Etap 2 — **gotowy do ponownej
 weryfikacji**; nie uznaję go za zaliczony (wynik Codexa: FAIL, trzy warunki — wszystkie obsłużone poniżej).
 Nowej wersji aplikacji **nie wdrożono** na produkcję.
 
@@ -171,3 +171,95 @@ Bez zmian (sprawdzone diffem): `cart_controller.dart`, wszystkie `*_repository.d
 9. Pomiar wydajności tylko na laptopie i małym asortymencie.
 10. Ekran Start ma jeszcze stary układ (banery kodu pocztowego i lokalizacji) — przebudowa to E3-1.
 11. Commit `1d99044` w historii `main` nie kompiluje się (zapis pracy w toku); kompletny stan etapu = HEAD.
+
+---
+
+## 8. Runda 3 (2026-11-24) — odpowiedź na weryfikację Codexa z 2026-11-17 (FAIL) i decyzje właściciela
+
+Sprawdzony raport: `etap-2-codex.md`, sekcja „Ponowna weryfikacja najnowszego raportu" (commit `902cba2`).
+Baza rundy: `902cba2`. Status wg Claude Code: **gotowe do ponownej weryfikacji** — nie uznaję etapu za zaliczony.
+
+### 8.1 Decyzje właściciela (2026-11-24) — odpowiedzi na §7 pkt 1–3
+
+| # | Pytanie | Odpowiedź właściciela | Co zmieniono |
+|---|---|---|---|
+| 1 | Połysk szkieletów a limit 250 ms | „Obojętne mi to, byle wydajność była lepsza" | szkielety bez połysku na każdym prostokącie: jeden zegar na całą listę, zmienia się tylko przezroczystość warstwy (§8.3 poz. 3); `design-system.md` §4 i §6 |
+| 2 | F-7: wyszukiwanie produktów we wszystkich sklepach | „Raczej chciałbym, żeby klienci robili całe zakupy w jednym sklepie" | **F-7 = nie.** Zakładka Szukaj zostaje wyszukiwarką sklepów; produkty szuka się w ofercie sklepu (E3-2). E3-10 bez zmiany serwera. `05-decyzje.md`, `02-plan-zadan-claude.md` (E3-2, E3-10) |
+| 3 | Lokalne karty: Etap 2 czy Etap 3 | „okej" (na rekomendację: Etap 3) | **zmiana kryterium E2-3 zapisana w planie** z imienną listą elementów i zadaniem Etapu 3, w którym każdy trafia do `core/ui`; po Etapie 3: 0 lokalnych kart w `lib/features`. Lista kontrolna Codexa (`03-weryfikacja-codex.md`, Etap 2) odsyła do tej zmiany |
+
+### 8.2 Ocena ustaleń Codexa
+
+| Ustalenie Codexa | Status Codexa | Moja ocena | Działanie |
+|---|---|---|---|
+| E2-3: lokalne karty, odroczenie niezatwierdzone w planie | FAIL | **słuszne** — w rundzie 2 to była tylko moja rekomendacja | właściciel zaakceptował zmianę zakresu; plan i lista kontrolna zmienione formalnie (§8.1 poz. 3). Kod bez zmian w tym punkcie — przenoszenie teraz to praca do wyrzucenia, bo wygląd tych elementów zmienia się w Etapie 3 |
+| E2-5: `AnimationController` pulsu statusu startuje w `initState` i tyka przy „ogranicz ruch", choć efekt jest ukryty | PARTIAL | **słuszne — błąd w mojej poprawce z rundy 2** (ukryłem efekt, zegar dalej pracował) | zegar powstaje w `didChangeDependencies`/`didUpdateWidget` tylko gdy węzeł jest bieżący **i** ruch nie jest ograniczony; przy zmianie ustawienia jest usuwany. Ten sam błąd miały szkielety (każdy prostokąt — własny zegar od `initState`, przy „ogranicz ruch" tykał w tle) → poprawione razem z decyzją 1. Test: przy „ogranicz ruch" `transientCallbackCount == 0` |
+| E2-5: pełne ekrany przy tekście 130 % niesprawdzone | PARTIAL | **słuszne** (sam to zgłosiłem) | 8 nowych testów: `/stores`, `/search`, `/cart`, `/orders`, `/account`, `/login`, `/forgot-password`, `/stores/1` przy 360 px i skali tekstu 1,3 — cała aplikacja, bez przepełnień i błędów układu |
+| E2-2: `verify-e2.mjs` zawiesił się (`Detected unsettled top-level await`), brak `_wynik.json` | PARTIAL | **słuszne** — skrypt nie miał limitów czasu na polecenia przeglądarki, miał wpisaną na sztywno ścieżkę Edge i wymagał osobnego serwera; brak odpowiedzi kończył się zawieszeniem bez komunikatu | skrypt przepisany: sam serwuje kompilację, sam szuka Edge/Chrome (albo `BROWSER`), każde polecenie ma limit 30 s, czeka na uśpione API do 120 s, wyłącza pamięć podręczną, **zawsze** zapisuje `_wynik.json` (przy błędzie z polem `error`) i kończy się kodem 0/1/2. Uruchomiony od zera: kod 0, wynik w repozytorium |
+| E2-2: tekst spoza czcionek (np. emoji) może dociągnąć czcionkę z Google | PARTIAL | **słuszne** | nowy `docs/redesign/check_glyphs.py`: sprawdza każdy znak z kodu aplikacji i z publicznych danych katalogu (sklepy + produkty) w każdej wadze Inter i Poppins. Pierwsze uruchomienie znalazło **„→" w pasku koszyka (brak w Poppins)** → zamienione na ikonę. Po poprawce: 0 braków (2 sklepy, 8 produktów) |
+| E2-4: brak własnej serii zrzutów Codexa i niezależnego `scrollWidth` | PARTIAL | słuszne — wynikało z błędu skryptu | skrypt naprawiony (wyżej); nowe zrzuty 5 szerokości, w każdej `scrollWidth − innerWidth = 0` |
+| Pomiar semantyki: brak surowych danych, tylko laptop | PARTIAL | słuszne | surowe dane w `zrzuty-etap-2/_wynik.json` (pole `perf`, 6 przebiegów). Telefon i duży katalog — nadal do zrobienia (§8.6) |
+| Data raportu zbiorczego | uwaga | zgodne — raport jest z 2026-11-16 | — |
+
+### 8.3 Zmiany w kodzie tej rundy
+
+| # | Plik | Zmiana |
+|---|---|---|
+| 1 | `lib/features/orders/order_track_screen.dart` | `_StatusNode`: zegar pulsu tylko gdy `pulse && !ZzMotion.reduced`; tworzenie/usuwanie przy zmianie zależności i parametrów; `TickerProviderStateMixin` (zegar może powstać ponownie) |
+| 2 | `lib/core/ui/zz_cart_bar.dart` | „Koszyk →" → „Koszyk" + `Icon(Icons.arrow_forward)` (ikony Material są w paczce) |
+| 3 | `lib/core/widgets/skeleton.dart` | `ZzSkeleton` statyczny (`StatelessWidget`); nowy `ZzShimmer` — jeden zegar na listę, `FadeTransition` 1 → 0,55 (600 ms w każdą stronę); listy szkieletów sklepów, produktów i zamówień owinięte w jeden `ZzShimmer`; przy „ogranicz ruch" zegar nie powstaje |
+| 4 | `test/redesign_foundation_test.dart` | +9 testów: szkielety (1 zegar / 0 zegarów przy „ogranicz ruch"), 8 ekranów przy tekście 130 % |
+
+Wydajność szkieletów (decyzja 1): wcześniej lista 6 kart sklepu = 24 prostokąty = **24 zegary**, każdy przebudowywał
+i przemalowywał swój gradient co klatkę (także w „pauzie" między przebiegami). Teraz **1 zegar** i zmiana samej
+przezroczystości warstwy — prostokąty nie są przebudowywane ani przemalowywane.
+
+### 8.4 Wyniki
+
+| Polecenie | Wynik |
+|---|---|
+| `cd mobile && flutter analyze` | No issues found |
+| `cd mobile && flutter test` | **108/108** (99 z rundy 2 + 9 nowych) |
+| `node docs/redesign/verify-e2.mjs <wyniki> <build z semantyką> <build bez>` | kod 0; `googleRequests: 0`; hosty tylko serwer aplikacji i API; `horizontalOverflowAt: []` dla 320/360/768/1280/1920 |
+| `python docs/redesign/check_glyphs.py` | kod 0; 0 brakujących znaków (kod aplikacji + 2 sklepy + 8 produktów) |
+
+Koszt semantyki — ponowny pomiar (mediana z 3, ten sam scenariusz co §4; surowe dane w `_wynik.json`):
+
+| Miara | z semantyką | bez |
+|---|---|---|
+| praca przeglądarki do listy sklepów | 1,68 s | 1,20 s |
+| praca przeglądarki w scenariuszu | 1,30 s | 1,23 s |
+| w tym skrypty | 1,14 s | 1,09 s |
+| pamięć JS po wczytaniu | 26,7 MB | 19,3 MB |
+| węzły DOM (Start / Sklep) | 130 / 137 | 92 / 92 |
+
+Wniosek bez zmian: koszt w scenariuszu ok. +5 %, pamięć +7 MB. Pierwsza miara ma duży rozrzut między przebiegami
+(w rundzie 2 wyszło odwrotnie: 1,06 s vs 1,13 s), bo zależy od czasu odpowiedzi API.
+
+Odtworzenie zrzutów i pomiaru:
+1. `cd mobile && flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL=<api> -o build/web-sem`
+2. to samo z zakomentowanym `SemanticsBinding.instance.ensureSemantics()` w `lib/main.dart` → `-o build/web-nosem`
+   (potem przywrócić `main.dart`)
+3. `node docs/redesign/verify-e2.mjs <katalog> mobile/build/web-sem mobile/build/web-nosem` (bez trzeciego argumentu —
+   tylko zrzuty i sieć)
+
+### 8.5 Pliki rundy 3 (`git diff --name-status 902cba2..HEAD`)
+
+- Nowe: `docs/redesign/check_glyphs.py`, `docs/redesign/raporty/zrzuty-etap-2/_wynik.json`, `_glify.json`
+- Zmienione: `docs/redesign/02-plan-zadan-claude.md`, `03-weryfikacja-codex.md`, `05-decyzje.md`, `design-system.md`,
+  `verify-e2.mjs`, `raporty/etap-1-2-zbiorczy.md` (ten rozdział), `raporty/etap-2.md` (odsyłacz),
+  `raporty/etap-2-codex.md` (zapis Codexa z 2026-11-17), `raporty/zrzuty-etap-2/start-1920.png` (nowa seria zrzutów;
+  pozostałe szerokości wyszły bajtowo identyczne z rundą 2, więc git ich nie pokazuje),
+  `mobile/lib/core/ui/zz_cart_bar.dart`, `mobile/lib/core/widgets/skeleton.dart`,
+  `mobile/lib/features/orders/order_track_screen.dart`, `mobile/test/redesign_foundation_test.dart`
+
+Bez zmian: backend, panel, `cart_controller.dart`, repozytoria, modele.
+
+### 8.6 Co zostaje otwarte
+
+1. **Emoji i inne znaki spoza zestawu w przyszłych danych sklepów** (np. po imporcie asortymentu Rapacza): w danych
+   dziś ich nie ma, ale gdy się pojawią, przeglądarka dociągnie czcionkę zapasową z Google (nie zepsuje to aplikacji,
+   tylko wyśle jedno żądanie). Proponuję uruchamiać `check_glyphs.py` po każdym imporcie asortymentu; walidacja znaków
+   w panelu byłaby zmianą w panelu — do decyzji, nie robię jej bez zgody.
+2. Pomiar wydajności na telefonie i przy dużym asortymencie — w Etapie 3 przy ekranie Sklepu (E3-2).
+3. Szerokość 320 px (poniżej minimum planu): łamanie w środku wyrazu na karcie sklepu i w nawigacji.
+4. Odstępstwa od planu z §7 pkt 6 — bez zmian, do oceny Codexa.

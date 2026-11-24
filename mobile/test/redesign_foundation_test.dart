@@ -13,6 +13,7 @@ import 'package:zipzap/core/providers.dart';
 import 'package:zipzap/core/theme/zz_theme.dart';
 import 'package:zipzap/core/ui/ui.dart';
 import 'package:zipzap/core/widgets/connectivity_banner.dart';
+import 'package:zipzap/core/widgets/skeleton.dart';
 import 'package:zipzap/features/catalog/catalog_repository.dart';
 import 'package:zipzap/features/search/search_screen.dart';
 import 'package:zipzap/main.dart';
@@ -173,6 +174,23 @@ void main() {
       expect(reduced, Duration.zero);
       expect(ZzMotion.slow.inMilliseconds, lessThanOrEqualTo(250));
     });
+
+    testWidgets('szkielety: jeden zegar na listę, bez zegara przy „ogranicz ruch"', (tester) async {
+      await tester.pumpWidget(_host(const SizedBox(width: 360, height: 700, child: StoreListSkeleton())));
+      expect(find.byType(ZzShimmer), findsOneWidget, reason: 'jeden wspólny efekt nad całą listą');
+      expect(find.byType(ZzSkeleton), findsWidgets);
+      final state = tester.state(find.byType(ZzShimmer)) as dynamic;
+      expect(state.isTicking, isTrue);
+      expect(tester.binding.transientCallbackCount, greaterThan(0));
+
+      await tester.pumpWidget(_host(const SizedBox(width: 360, height: 700, child: StoreListSkeleton()), reduceMotion: true));
+      await tester.pump();
+      final reduced = tester.state(find.byType(ZzShimmer)) as dynamic;
+      expect(reduced.isTicking, isFalse);
+      expect(find.descendant(of: find.byType(ZzShimmer), matching: find.byType(FadeTransition)), findsNothing);
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.binding.transientCallbackCount, 0, reason: 'żaden zegar animacji nie pracuje w tle');
+    });
   });
 
   group('Komponenty (E2-3)', () {
@@ -309,6 +327,36 @@ void main() {
         // Brak poziomego przewijania: treść mieści się w szerokości okna.
         final content = tester.getRect(find.byType(ZzPage).first);
         expect(content.right, lessThanOrEqualTo(width + 0.5));
+        await tester.pumpWidget(const SizedBox());
+        c.dispose();
+      });
+    }
+
+    // E2-5: całe ekrany (nie tylko komponenty) przy tekście powiększonym do 130 % na wąskim telefonie.
+    for (final route in ['/stores', '/search', '/cart', '/orders', '/account', '/login', '/forgot-password', '/stores/1']) {
+      testWidgets('tekst 130 % przy 360 px: $route bez przepełnień', (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tester.binding.platformDispatcher.defaultRouteNameTestValue = route;
+        final c = ProviderContainer(overrides: [
+          apiClientProvider.overrideWithValue(_OfflineApi()),
+          catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
+          connectivityProvider.overrideWith((_) => Stream.value(true)),
+        ]);
+        final errors = <String>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (d) => errors.add(
+            '${d.exceptionAsString()}\n${d.informationCollector?.call().map((e) => e.toString()).join('\n') ?? ''}');
+        await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const ZipZapApp()));
+        for (var i = 0; i < 25; i++) {
+          await tester.pump(const Duration(milliseconds: 40));
+        }
+        FlutterError.onError = previous;
+        expect(MediaQuery.textScalerOf(tester.element(find.byType(Scaffold).last)).scale(10), closeTo(13, 0.01));
+        expect(errors, isEmpty, reason: '$route przy 130 %:\n${errors.join('\n---\n')}');
         await tester.pumpWidget(const SizedBox());
         c.dispose();
       });

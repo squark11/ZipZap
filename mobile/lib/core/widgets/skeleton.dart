@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../theme/zz_theme.dart';
 
-/// Prostokąt „skeleton” z delikatnym połyskiem (ładowanie treści). Połysk: jeden przebieg 250 ms co 1 s
-/// (design-system.md §6); przy systemowym „ogranicz ruch” — statyczny.
-class ZzSkeleton extends StatefulWidget {
+/// Statyczny prostokąt „skeleton” (miejsce na treść podczas ładowania). Sam się nie animuje — ruch daje
+/// jeden wspólny [ZzShimmer] nad całą listą (wydajność: 1 zegar animacji zamiast kilkudziesięciu).
+class ZzSkeleton extends StatelessWidget {
   final double? width;
   final double height;
   final BorderRadiusGeometry? borderRadius;
@@ -12,64 +12,60 @@ class ZzSkeleton extends StatefulWidget {
   const ZzSkeleton({super.key, this.width, this.height = 14, this.borderRadius});
 
   @override
-  State<ZzSkeleton> createState() => _ZzSkeletonState();
+  Widget build(BuildContext context) {
+    // Cienkie paski → pełne zaokrąglenie („pigułka”), żeby nie wyglądały jak linijka tekstu.
+    final radius = borderRadius ??
+        (height <= 20 ? BorderRadius.circular(height / 2) : BorderRadius.circular(ZzRadius.field));
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(color: context.zz.skeleton, borderRadius: radius),
+    );
+  }
 }
 
-class _ZzSkeletonState extends State<ZzSkeleton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))
-        ..repeat();
+/// Delikatne „oddychanie” (przezroczystość 1 → 0,55 → 1, okres 1,2 s) nad całym blokiem szkieletów.
+/// Jeden zegar na listę; zmienia się tylko przezroczystość warstwy — dzieci nie są przebudowywane ani
+/// przemalowywane. Przy systemowym „ogranicz ruch” zegar w ogóle nie powstaje (statyczne szkielety).
+class ZzShimmer extends StatefulWidget {
+  final Widget child;
+  const ZzShimmer({super.key, required this.child});
+
+  @override
+  State<ZzShimmer> createState() => _ZzShimmerState();
+}
+
+class _ZzShimmerState extends State<ZzShimmer> with TickerProviderStateMixin {
+  AnimationController? _c;
+  Animation<double>? _opacity;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduced = ZzMotion.reduced(context);
+    if (reduced && _c != null) {
+      _c!.dispose();
+      _c = null;
+      _opacity = null;
+    } else if (!reduced && _c == null) {
+      _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..repeat(reverse: true);
+      _opacity = Tween<double>(begin: 1, end: 0.55).animate(CurvedAnimation(parent: _c!, curve: Curves.easeInOut));
+    }
+  }
 
   @override
   void dispose() {
-    _c.dispose();
+    _c?.dispose();
     super.dispose();
   }
 
+  /// Do testów: czy zegar animacji istnieje i pracuje.
+  @visibleForTesting
+  bool get isTicking => _c?.isAnimating ?? false;
+
   @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    // Wyraźnie „placeholderowy" odcień (chłodny neutralny), inny niż kolor tekstu.
-    final base = context.zz.skeleton;
-    final hi = Color.lerp(base, Colors.white, dark ? 0.22 : 0.85)!;
-    // Cienkie paski → pełne zaokrąglenie („pigułka”), żeby nie wyglądały jak linijka tekstu.
-    final radius = widget.borderRadius ??
-        (widget.height <= 20
-            ? BorderRadius.circular(widget.height / 2)
-            : BorderRadius.circular(ZzRadius.field));
-    if (ZzMotion.reduced(context)) {
-      return Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(color: base, borderRadius: radius),
-      );
-    }
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, _) {
-        // Przebieg połysku zajmuje pierwsze 250 ms z każdej sekundy; potem pauza (v > 1 = poza paskiem).
-        final v = _c.value * 4 * 1.5 - 0.25;
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [base, hi, base],
-              stops: [
-                (v - 0.25).clamp(0.0, 1.0),
-                v.clamp(0.0, 1.0),
-                (v + 0.25).clamp(0.0, 1.0),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) =>
+      _opacity == null ? widget.child : FadeTransition(opacity: _opacity!, child: widget.child);
 }
 
 /// Lista „szkieletów” kart sklepu — zastępuje spinner podczas ładowania.
@@ -79,11 +75,13 @@ class StoreListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return ZzShimmer(
+      child: ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: count,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (_, _) => const _StoreCardSkeleton(),
+      ),
     );
   }
 }
@@ -126,11 +124,13 @@ class ProductListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return ZzShimmer(
+      child: ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       itemCount: count,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (_, _) => const _ProductRowSkeleton(),
+      ),
     );
   }
 }
@@ -173,11 +173,13 @@ class OrderListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return ZzShimmer(
+      child: ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: count,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (_, _) => const _OrderCardSkeleton(),
+      ),
     );
   }
 }
