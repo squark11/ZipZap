@@ -7,8 +7,14 @@ export interface StoreDto {
   status: string; minimumOrderValue: number; isAcceptingOrders: boolean;
   description?: string; address?: string; phone?: string; nip?: string;
   logoUrl?: string; latitude?: number; longitude?: number;
+  /** F-5: okładka 16:9 i krótki opis sposobu dostawy na karcie sklepu w aplikacji klienta. */
+  coverUrl?: string; deliveryNote?: string;
+  /** F-6: kategorie platformy, w których sklep ma dostępny produkt. */
+  platformCategories?: string[];
 }
-export interface CategoryDto { id: string; storeId: string; name: string; sortOrder: number; }
+export interface CategoryDto { id: string; storeId: string; name: string; sortOrder: number; platformCategoryKey?: string | null; }
+/** F-6: wspólna kategoria platformy (klucz = ikona w aplikacji). */
+export interface PlatformCategoryDto { key: string; name: string; sortOrder: number; isActive: boolean; }
 export interface ProductUnitOption { unit: string; price: number; }
 export interface ProductDto { id: string; storeId: string; categoryId?: string; name: string; price: number; currency: string; unit: string; isAvailable: boolean; unitOptions?: ProductUnitOption[]; }
 export interface OrderItemDto { productId: string; productName: string; unitPrice: number; quantity: number; lineTotal: number; }

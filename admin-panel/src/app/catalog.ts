@@ -1,7 +1,7 @@
 import { Component, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Api, CategoryDto, ProductDto } from './api';
+import { Api, CategoryDto, PlatformCategoryDto, ProductDto } from './api';
 
 interface ImportRow { row: number; name: string; action: string; error?: string; }
 interface ImportReport { committed: boolean; total: number; created: number; updated: number; failed: number; rows: ImportRow[]; }
@@ -31,8 +31,40 @@ export function decodeCsv(buf: ArrayBuffer): string {
   <div class="card pad" style="margin-bottom:16px">
     <div class="inline-form" style="margin-bottom:14px">
       <label>Nowa kategoria<input [(ngModel)]="newCategory" placeholder="np. Pieczywo" /></label>
+      <label>W aplikacji pod
+        <select [(ngModel)]="newCategoryPlatform">
+          <option value="">— brak —</option>
+          @for (pc of platformCategories; track pc.key) { <option [value]="pc.key">{{ pc.name }}</option> }
+        </select>
+      </label>
       <button class="btn" (click)="addCategory()">Dodaj kategorię</button>
     </div>
+    @if (categories.length) {
+      <div style="margin-bottom:14px">
+        <div class="muted" style="font-size:13px;margin-bottom:6px">
+          Kategorie sklepu i wspólne kategorie aplikacji — klient, który na Starcie wybierze np. „Owoce", zobaczy
+          sklep, jeśli ma dostępny produkt w kategorii przypiętej do „Owoce".
+        </div>
+        <table>
+          <thead><tr><th>Kategoria sklepu</th><th>W aplikacji pod</th></tr></thead>
+          <tbody>
+            @for (c of categories; track c.id) {
+              <tr>
+                <td>{{ c.name }}</td>
+                <td>
+                  <select [ngModel]="c.platformCategoryKey ?? ''" (ngModelChange)="setPlatform(c, $event)"
+                    [attr.aria-label]="'Kategoria aplikacji dla ' + c.name">
+                    <option value="">— brak —</option>
+                    @for (pc of platformCategories; track pc.key) { <option [value]="pc.key">{{ pc.name }}</option> }
+                  </select>
+                  @if (savedCategory === c.id) { <span class="ok-msg">✓</span> }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
     <div class="formgrid">
       <label>Nazwa produktu<input [(ngModel)]="np.name" placeholder="np. Chleb żytni" /></label>
       <label>Cena<input [(ngModel)]="np.price" type="number" step="0.01" /></label>
@@ -151,8 +183,11 @@ export class CatalogComponent {
   storeId = input<string>('');
 
   categories: CategoryDto[] = [];
+  platformCategories: PlatformCategoryDto[] = [];
   products: ProductDto[] = [];
   newCategory = '';
+  newCategoryPlatform = '';
+  savedCategory: string | null = null;
   np: { name: string; price: number; unit: string; categoryId?: string } = { name: '', price: 0, unit: 'szt', categoryId: undefined };
   /// Dodatkowe jednostki (poza bazową) — gdy niepuste, klient wybiera jednostkę.
   extraUnits: { unit: string; price: number }[] = [];
@@ -170,13 +205,27 @@ export class CatalogComponent {
   load() {
     const id = this.storeId();
     this.api.getPublic<CategoryDto[]>(`/catalog/stores/${id}/categories`).subscribe(c => this.categories = c);
+    this.api.getPublic<PlatformCategoryDto[]>(`/catalog/platform-categories`).subscribe(p => this.platformCategories = p);
     this.api.getPublic<ProductDto[]>(`/catalog/stores/${id}/products`).subscribe(p => this.products = p);
   }
 
   addCategory() {
     if (!this.newCategory.trim()) return;
-    this.api.post(`/catalog/stores/${this.storeId()}/categories`, { name: this.newCategory, sortOrder: this.categories.length })
-      .subscribe({ next: () => { this.newCategory = ''; this.load(); }, error: e => alert(err(e)) });
+    this.api.post(`/catalog/stores/${this.storeId()}/categories`, {
+      name: this.newCategory, sortOrder: this.categories.length, platformCategoryKey: this.newCategoryPlatform || null,
+    }).subscribe({ next: () => { this.newCategory = ''; this.newCategoryPlatform = ''; this.load(); }, error: e => alert(err(e)) });
+  }
+
+  /** Przypina kategorię sklepu do wspólnej kategorii aplikacji (pusty = odepnij). */
+  setPlatform(c: CategoryDto, key: string) {
+    this.api.put<CategoryDto>(`/catalog/categories/${c.id}/platform-category`, { key: key || null }).subscribe({
+      next: r => {
+        c.platformCategoryKey = r.platformCategoryKey ?? null;
+        this.savedCategory = c.id;
+        setTimeout(() => { if (this.savedCategory === c.id) this.savedCategory = null; }, 1500);
+      },
+      error: e => { alert(err(e)); this.load(); },
+    });
   }
 
   addUnitRow() { this.extraUnits.push({ unit: '', price: 0 }); }

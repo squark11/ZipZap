@@ -20,6 +20,7 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
 
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<PlatformCategory> PlatformCategories => Set<PlatformCategory>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<StoreEntryStat> StoreEntryStats => Set<StoreEntryStat>();
@@ -45,6 +46,8 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.Property(s => s.SupportCode).HasMaxLength(12);
             e.HasIndex(s => s.SupportCode).IsUnique().HasFilter("\"SupportCode\" IS NOT NULL");
             e.Property(s => s.LogoUrl).HasMaxLength(500);
+            e.Property(s => s.CoverUrl).HasMaxLength(500);
+            e.Property(s => s.DeliveryNote).HasMaxLength(Store.DeliveryNoteMaxLength);
             e.Property(s => s.Latitude);
             e.Property(s => s.Longitude);
             e.Property(s => s.CommissionRate).HasColumnType("numeric(5,4)");
@@ -65,8 +68,19 @@ public sealed class CatalogDbContext : DbContext, IOutboxDbContext
             e.Property(c => c.Name).IsRequired().HasMaxLength(150);
             e.Property(c => c.SortOrder);
             e.HasIndex(c => new { c.StoreId, c.ParentId, c.SortOrder });
+            e.Property(c => c.PlatformCategoryKey).HasMaxLength(PlatformCategory.KeyMaxLength);
             // Multi-tenancy: filtr po najemcy (pominięty gdy brak kontekstu sklepu).
             e.HasQueryFilter(c => _tenant.StoreId == null || c.StoreId == _tenant.StoreId);
+        });
+
+        // Wspólne kategorie platformy (F-6) — bez filtra najemcy; lista startowa w migracji.
+        b.Entity<PlatformCategory>(e =>
+        {
+            e.ToTable("platform_categories");
+            e.HasKey(c => c.Key);
+            e.Property(c => c.Key).HasMaxLength(PlatformCategory.KeyMaxLength);
+            e.Property(c => c.Name).IsRequired().HasMaxLength(PlatformCategory.NameMaxLength);
+            e.HasData(PlatformCategory.Seed.Select(c => new { c.Key, c.Name, c.SortOrder, c.IsActive }));
         });
 
         b.Entity<Product>(e =>

@@ -28,6 +28,7 @@ const loaders: Record<string, () => Promise<any>> = {
   stores:       () => import('./stores').then(m => m.StoresComponent),
   feedback:     () => import('./feedback').then(m => m.FeedbackComponent),
   outbox:       () => import('./outbox').then(m => m.OutboxComponent),
+  'platform-categories': () => import('./platform-categories').then(m => m.PlatformCategoriesComponent),
   settings:     () => import('./settings').then(m => m.SettingsComponent),
 };
 

@@ -10,6 +10,9 @@ public sealed class Category : Entity
     public int SortOrder { get; private set; }
     public Guid? ParentId { get; private set; }
 
+    /// <summary>Kategoria platformy, do której sklep przypiął tę kategorię (F-6); null = brak.</summary>
+    public string? PlatformCategoryKey { get; private set; }
+
     private Category() { } // EF
 
     public Category(Guid storeId, string name, int sortOrder, Guid? parentId)
@@ -22,4 +25,5 @@ public sealed class Category : Entity
 
     public void Rename(string name) => Name = name.Trim();
     public void Reorder(int sortOrder) => SortOrder = sortOrder;
+    public void SetPlatformCategory(string? key) => PlatformCategoryKey = key;
 }

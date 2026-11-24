@@ -9,9 +9,16 @@ public sealed record CreateStoreRequest(
 
 public sealed record UpdateStoreRequest(
     decimal? CommissionRate, bool? IsActive, string? Status, decimal? MinimumOrderValue,
-    string? LogoUrl = null, double? Latitude = null, double? Longitude = null);
+    string? LogoUrl = null, double? Latitude = null, double? Longitude = null,
+    string? CoverUrl = null, string? DeliveryNote = null);
 
-public sealed record CreateCategoryRequest(string Name, int SortOrder, Guid? ParentId);
+public sealed record CreateCategoryRequest(string Name, int SortOrder, Guid? ParentId, string? PlatformCategoryKey = null);
+
+/// <summary>Przypięcie kategorii sklepu do kategorii platformy (F-6); pusty klucz = odepnij.</summary>
+public sealed record SetCategoryPlatformRequest(string? Key);
+
+/// <summary>Administrator: zmiana kategorii platformy (null = bez zmian).</summary>
+public sealed record UpdatePlatformCategoryRequest(string? Name, int? SortOrder, bool? IsActive);
 
 public sealed record CreateProductRequest(
     Guid? CategoryId, string Name, string? Description, decimal Price,

@@ -13,7 +13,7 @@ export type PanelRole = 'Admin' | 'StoreEmployee' | 'Driver' | 'Customer';
 export type PanelTab =
   | 'onboarding' | 'dashboard' | 'orders' | 'rounds' | 'deliveries' | 'catalog'
   | 'integrations' | 'team' | 'drivers' | 'driver-home' | 'finance' | 'stores' | 'feedback' | 'settings'
-  | 'admin-home' | 'users' | 'invoices' | 'support' | 'compliance' | 'outbox';
+  | 'admin-home' | 'users' | 'invoices' | 'support' | 'compliance' | 'outbox' | 'platform-categories';
 
 export interface PanelModule {
   id: PanelTab;
@@ -35,6 +35,8 @@ export const PANEL_MODULES: readonly PanelModule[] = [
   { id: 'drivers',      label: 'Dostawcy',     icon: 'drivers',      roles: ['Admin'],            storeScoped: false },
   { id: 'support',      label: 'Wsparcie',     icon: 'support',      roles: ['Admin'],            storeScoped: false },
   { id: 'compliance',   label: 'Nadzór',       icon: 'compliance',   roles: ['Admin'],            storeScoped: false },
+  // Wspólne kategorie platformy (chipy na Starcie aplikacji klienta): nazwa, kolejność, widoczność.
+  { id: 'platform-categories', label: 'Kategorie', icon: 'catalog', roles: ['Admin'],            storeScoped: false },
   { id: 'feedback',     label: 'Uwagi',        icon: 'feedback',     roles: ['Admin'],            storeScoped: false },
   // Kolejka zdarzeń: odłożone i długo ponawiane zdarzenia + ręczne ponowienie (tylko metadane, bez danych klientów).
   { id: 'outbox',       label: 'Zdarzenia',    icon: 'events',       roles: ['Admin'],            storeScoped: false },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/location/location_service.dart';
 import '../../core/providers.dart';
 import '../../core/util/format.dart';
+import '../../models/platform_category.dart';
 import '../../models/purchasing_round.dart';
 import '../../models/store.dart';
 
@@ -23,6 +24,29 @@ final storesProvider = FutureProvider.autoDispose<List<Store>>((ref) {
   final postal = ref.watch(postalFilterProvider);
   return ref.read(catalogRepositoryProvider).listStores(lat: loc?.lat, lng: loc?.lng, postalCode: postal);
 });
+
+/// Kategorie platformy (F-6). Błąd sieci = brak chipów (Start działa dalej bez nich).
+final platformCategoriesProvider = FutureProvider.autoDispose<List<PlatformCategory>>((ref) async {
+  try {
+    return await ref.read(catalogRepositoryProvider).listPlatformCategories();
+  } catch (_) {
+    return const [];
+  }
+});
+
+/// Wybrany chip kategorii na Starcie (null = „Wszystko").
+final selectedCategoryProvider = StateProvider<String?>((ref) => null);
+
+/// Kategorie do pokazania jako chipy: tylko te, w których któryś z widocznych sklepów ma produkt — klient nie trafia
+/// na pustą listę po dotknięciu chipu. Pusta lista = sklepy nie przypięły kategorii → bez rzędu chipów.
+List<PlatformCategory> chipsFor(List<PlatformCategory> all, List<Store> stores) {
+  final used = {for (final s in stores) ...s.platformCategories};
+  return [for (final c in all) if (used.contains(c.key)) c];
+}
+
+/// Sklepy z wybranej kategorii (null = wszystkie).
+List<Store> storesInCategory(List<Store> stores, String? key) =>
+    key == null ? stores : [for (final s in stores) if (s.platformCategories.contains(key)) s];
 
 /// Najbliższa runda zakupowa sklepu (publiczny endpoint). Karta sklepu i baner na Starcie czytają ten sam
 /// wpis, więc na sklep idzie jedno zapytanie.
