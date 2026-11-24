@@ -14,13 +14,6 @@ class Store {
   final double? longitude;
   final double? distanceKm;
 
-  /// F-5: okładka 16:9 (URL) i krótki opis sposobu dostawy z panelu sklepu.
-  final String? coverUrl;
-  final String? deliveryNote;
-
-  /// F-6: klucze kategorii platformy, w których sklep ma dostępny produkt (np. „owoce").
-  final List<String> platformCategories;
-
   Store({
     required this.id,
     required this.name,
@@ -36,9 +29,6 @@ class Store {
     this.latitude,
     this.longitude,
     this.distanceKm,
-    this.coverUrl,
-    this.deliveryNote,
-    this.platformCategories = const [],
   });
 
   bool get hasLocation => latitude != null && longitude != null;
@@ -66,10 +56,5 @@ class Store {
         latitude: (j['latitude'] as num?)?.toDouble(),
         longitude: (j['longitude'] as num?)?.toDouble(),
         distanceKm: (j['distanceKm'] as num?)?.toDouble(),
-        coverUrl: _nonEmpty(j['coverUrl']),
-        deliveryNote: _nonEmpty(j['deliveryNote']),
-        platformCategories: [for (final k in (j['platformCategories'] as List?) ?? const []) k.toString()],
       );
-
-  static String? _nonEmpty(Object? v) => v is String && v.trim().isNotEmpty ? v.trim() : null;
 }

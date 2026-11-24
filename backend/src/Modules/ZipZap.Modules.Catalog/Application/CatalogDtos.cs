@@ -6,29 +6,17 @@ namespace ZipZap.Modules.Catalog.Application;
 public sealed record StoreDto(
     Guid Id, string Name, string Slug, string? Description, string City, string? Address, string? Phone, string? Nip,
     decimal CommissionRate, decimal MinimumOrderValue, bool IsActive, string Status, bool IsAcceptingOrders,
-    string? LogoUrl, double? Latitude, double? Longitude, double? DistanceKm = null,
-    string? CoverUrl = null, string? DeliveryNote = null, IReadOnlyList<string>? PlatformCategories = null)
+    string? LogoUrl, double? Latitude, double? Longitude, double? DistanceKm = null)
 {
-    /// <summary><paramref name="platformCategories"/>: klucze kategorii platformy, w których sklep ma dostępny produkt
-    /// (F-6) — liczone osobnym zapytaniem dla całej listy (CatalogService.WithPlatformCategoriesAsync).</summary>
-    public static StoreDto From(Store s, double? distanceKm = null, IReadOnlyList<string>? platformCategories = null) =>
+    public static StoreDto From(Store s, double? distanceKm = null) =>
         new(s.Id, s.Name, s.Slug, s.Description, s.City, s.Address, s.Phone, s.Nip,
             s.CommissionRate, s.MinimumOrderValue, s.IsActive, s.Status.ToString(), s.IsAcceptingOrders,
-            s.LogoUrl, s.Latitude, s.Longitude, distanceKm, s.CoverUrl, s.DeliveryNote,
-            platformCategories ?? Array.Empty<string>());
+            s.LogoUrl, s.Latitude, s.Longitude, distanceKm);
 }
 
-public sealed record CategoryDto(Guid Id, Guid StoreId, string Name, int SortOrder, Guid? ParentId,
-    string? PlatformCategoryKey = null)
+public sealed record CategoryDto(Guid Id, Guid StoreId, string Name, int SortOrder, Guid? ParentId)
 {
-    public static CategoryDto From(Category c) =>
-        new(c.Id, c.StoreId, c.Name, c.SortOrder, c.ParentId, c.PlatformCategoryKey);
-}
-
-/// <summary>Kategoria platformy (F-6). Klucz = nazwa ikony w aplikacji.</summary>
-public sealed record PlatformCategoryDto(string Key, string Name, int SortOrder, bool IsActive)
-{
-    public static PlatformCategoryDto From(PlatformCategory c) => new(c.Key, c.Name, c.SortOrder, c.IsActive);
+    public static CategoryDto From(Category c) => new(c.Id, c.StoreId, c.Name, c.SortOrder, c.ParentId);
 }
 
 public sealed record ProductDto(

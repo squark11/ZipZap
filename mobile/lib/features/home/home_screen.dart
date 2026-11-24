@@ -54,14 +54,6 @@ class HomeScreen extends ConsumerWidget {
 
     final firstName = auth.user?.fullName.trim().split(RegExp(r'\s+')).first ?? '';
 
-    // Kategorie platformy (F-6): chipy tylko dla kategorii obecnych w widocznych sklepach. Wybrany chip, którego już
-    // nie ma (np. po zmianie kodu pocztowego), przestaje filtrować.
-    final all = stores.valueOrNull ?? const <Store>[];
-    final chips = chipsFor(ref.watch(platformCategoriesProvider).valueOrNull ?? const [], all);
-    final picked = ref.watch(selectedCategoryProvider);
-    final category = chips.any((c) => c.key == picked) ? picked : null;
-    final categoryName = category == null ? null : chips.firstWhere((c) => c.key == category).name;
-
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 72,
@@ -88,45 +80,12 @@ class HomeScreen extends ConsumerWidget {
                   ZzSearchField(hint: 'Szukaj sklepu albo miejscowości', onTap: () => context.go('/search')),
                   const SizedBox(height: ZzSpace.md),
                   if (stores.valueOrNull case final list?) _NextRoundNotice(stores: list),
-                ],
-              ),
-            ),
-            if (chips.isNotEmpty)
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 96,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: ZzSpace.screen - 4),
-                    children: [
-                      ZzCategoryChip(
-                        label: 'Wszystko',
-                        icon: 'wszystko',
-                        selected: category == null,
-                        onTap: () => ref.read(selectedCategoryProvider.notifier).state = null,
-                      ),
-                      for (final c in chips)
-                        ZzCategoryChip(
-                          label: c.name,
-                          icon: c.icon,
-                          selected: c.key == category,
-                          onTap: () => ref.read(selectedCategoryProvider.notifier).state =
-                              c.key == category ? null : c.key,
-                        ),
-                    ],
+                  const SizedBox(height: ZzSpace.sm),
+                  ZzSectionHeader(
+                    title: ref.watch(postalFilterProvider) == null ? 'Sklepy' : 'Sklepy, które tu dowożą',
                   ),
-                ),
-              ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(ZzSpace.screen, ZzSpace.sm, ZzSpace.screen, ZzSpace.sm),
-              sliver: SliverToBoxAdapter(
-                child: ZzSectionHeader(
-                  title: categoryName != null
-                      ? 'Sklepy: $categoryName'
-                      : ref.watch(postalFilterProvider) == null
-                          ? 'Sklepy'
-                          : 'Sklepy, które tu dowożą',
-                ),
+                  const SizedBox(height: ZzSpace.sm),
+                ],
               ),
             ),
             ...stores.when(
@@ -147,7 +106,7 @@ class HomeScreen extends ConsumerWidget {
                   : [
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(ZzSpace.screen, 0, ZzSpace.screen, ZzSpace.screen),
-                        sliver: SliverToBoxAdapter(child: _StoreGrid(stores: storesInCategory(list, category))),
+                        sliver: SliverToBoxAdapter(child: _StoreGrid(stores: list)),
                       ),
                     ],
             ),

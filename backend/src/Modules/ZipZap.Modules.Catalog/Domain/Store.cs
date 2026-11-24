@@ -22,14 +22,6 @@ public sealed class Store : AggregateRoot
     /// <summary>Logo sklepu (URL) — branding widoczny dla klienta. Puste = brak.</summary>
     public string? LogoUrl { get; private set; }
 
-    /// <summary>Okładka sklepu (URL, zdjęcie 16:9) na karcie w aplikacji klienta (F-5). Puste = karta z logo.</summary>
-    public string? CoverUrl { get; private set; }
-
-    /// <summary>Krótki opis sposobu dostawy na karcie (F-5), np. „Dostawa autem sklepu". Termin wynika z rund.</summary>
-    public string? DeliveryNote { get; private set; }
-
-    public const int DeliveryNoteMaxLength = 80;
-
     /// <summary>Współrzędne sklepu — do proponowania sklepów wg odległości. Null = nieustalone.</summary>
     public double? Latitude { get; private set; }
     public double? Longitude { get; private set; }
@@ -108,17 +100,6 @@ public sealed class Store : AggregateRoot
 
     public void SetLogoUrl(string? logoUrl)
         => LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
-
-    public void SetCoverUrl(string? coverUrl)
-        => CoverUrl = string.IsNullOrWhiteSpace(coverUrl) ? null : coverUrl.Trim();
-
-    public void SetDeliveryNote(string? note)
-    {
-        var v = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
-        if (v is { Length: > DeliveryNoteMaxLength })
-            throw new ArgumentOutOfRangeException(nameof(note), $"Opis dostawy może mieć najwyżej {DeliveryNoteMaxLength} znaków.");
-        DeliveryNote = v;
-    }
 
     /// <summary>Ustawia współrzędne; przekazanie null czyści (np. po zmianie adresu do ponownego geokodowania).</summary>
     public void SetLocation(double? latitude, double? longitude)

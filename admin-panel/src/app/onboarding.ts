@@ -98,20 +98,6 @@ interface Slot {
         </select>
       </label>
     </div>
-    <div class="formgrid" style="grid-template-columns:1fr 1fr;margin-top:10px">
-      <label>Okładka (URL zdjęcia 16:9)<input [(ngModel)]="prof.coverUrl" placeholder="https://…/sklep.jpg" /></label>
-      <label>Sposób dostawy (na karcie sklepu)
-        <input [(ngModel)]="prof.deliveryNote" maxlength="80" placeholder="np. Dostawa autem sklepu" />
-      </label>
-    </div>
-    <p class="muted" style="margin:8px 0 0;font-size:13px">
-      Okładka i sposób dostawy pokazują się na karcie sklepu w aplikacji klienta. Termin dostawy aplikacja liczy sama
-      z rund zakupowych — nie wpisuj go tutaj. Puste pole = karta z samym logo.
-    </p>
-    @if (prof.coverUrl.trim()) {
-      <img [src]="prof.coverUrl.trim()" alt="Podgląd okładki"
-        style="margin-top:8px;width:240px;aspect-ratio:16/9;object-fit:cover;border-radius:10px;border:1px solid #E5E7EB" />
-    }
   </div>
 
   <div class="card pad">
@@ -175,7 +161,7 @@ export class OnboardingComponent {
   savingP = false;
   savedP = false;
 
-  prof = { logoUrl: '', coverUrl: '', deliveryNote: '', latitude: null as number | null, longitude: null as number | null, status: 'Open' };
+  prof = { logoUrl: '', latitude: null as number | null, longitude: null as number | null, status: 'Open' };
   nz = { name: '', fee: 0, postal: '' };
   ns = { zoneId: '', date: '', start: '', end: '', maxOrders: 20 };
 
@@ -187,8 +173,7 @@ export class OnboardingComponent {
     const id = this.storeId();
     this.api.get<Readiness>(`/stores/${id}/readiness`).subscribe({ next: r => this.ready = r, error: () => this.ready = null });
     this.api.getPublic<StoreDto>(`/catalog/stores/${id}`).subscribe(s => {
-      this.prof = { logoUrl: s.logoUrl || '', coverUrl: s.coverUrl || '', deliveryNote: s.deliveryNote || '',
-        latitude: s.latitude ?? null, longitude: s.longitude ?? null, status: s.status || 'Open' };
+      this.prof = { logoUrl: s.logoUrl || '', latitude: s.latitude ?? null, longitude: s.longitude ?? null, status: s.status || 'Open' };
     });
     this.api.getPublic<Zone[]>(`/ordering/stores/${id}/zones`).subscribe(z => this.zones = z);
     this.api.getPublic<Slot[]>(`/ordering/stores/${id}/slots`).subscribe(s => this.slots = s);
@@ -205,9 +190,7 @@ export class OnboardingComponent {
 
   saveProfile() {
     this.savingP = true; this.savedP = false;
-    // Pusty łańcuch czyści pole na serwerze (logo, okładka, opis dostawy).
-    const body: any = { logoUrl: this.prof.logoUrl.trim() || '', coverUrl: this.prof.coverUrl.trim(),
-      deliveryNote: this.prof.deliveryNote.trim(), status: this.prof.status };
+    const body: any = { logoUrl: this.prof.logoUrl.trim() || '', status: this.prof.status };
     if (this.prof.latitude != null && this.prof.longitude != null) { body.latitude = this.prof.latitude; body.longitude = this.prof.longitude; }
     this.api.patch(`/catalog/stores/${this.storeId()}`, body).subscribe({
       next: () => { this.savingP = false; this.savedP = true; setTimeout(() => this.savedP = false, 2000); this.load(); },

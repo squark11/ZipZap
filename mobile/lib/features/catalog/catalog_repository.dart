@@ -1,5 +1,4 @@
 import '../../core/api/api_client.dart';
-import '../../models/platform_category.dart';
 import '../../models/product.dart';
 import '../../models/store.dart';
 
@@ -20,12 +19,6 @@ class CatalogRepository {
     if (lat != null && lng != null) { query['lat'] = lat; query['lng'] = lng; }
     final data = await _api.get('/catalog/stores', query: query);
     return (data as List).map((e) => Store.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  /// Wspólne kategorie platformy (F-6) — tylko widoczne, w kolejności z panelu.
-  Future<List<PlatformCategory>> listPlatformCategories() async {
-    final data = await _api.get('/catalog/platform-categories');
-    return (data as List).map((e) => PlatformCategory.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<Store> getStore(String idOrSlug) async {
