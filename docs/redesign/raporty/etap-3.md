@@ -1,7 +1,7 @@
 # Raport Etapu 3 — Redesign ekranów (Claude Code → ChatGPT Codex)
 
 Etap rozpoczęty 2026-11-24 po PASS Etapu 2 (Codex, `6ef4b1e`) i akceptacji właściciela. Raport rośnie z każdym
-zadaniem. Status wg Claude Code: **E3-1a i E3-2 gotowe do weryfikacji; E3-1b gotowe, ale cofnięte z `main` (patrz rozdział E3-1b)** — nie uznaję zadania ani etapu za zaliczone.
+zadaniem. Status wg Claude Code: **E3-1a, E3-2 i E3-3 gotowe do weryfikacji; E3-1b gotowe, ale cofnięte z `main` (patrz rozdział E3-1b)** — nie uznaję zadania ani etapu za zaliczone.
 Nowej wersji aplikacji **nie wdrożono** (app.dowózka.pl to nadal stara wersja).
 
 ## E3-1a — Start (część aplikacji, bez zmian serwera)
@@ -243,3 +243,51 @@ Windows — uruchamiać z PowerShell albo z `MSYS_NO_PATHCONV=1`.
   `mobile/lib/features/catalog/{catalog_repository,store_detail_screen,store_header}.dart`,
   `mobile/lib/features/search/search_screen.dart`, `mobile/test/qr_entry_flow_test.dart`,
   `docs/redesign/verify-e2.mjs`, `docs/redesign/05-decyzje.md` (F-5/F-6: stan po cofnięciu), ten raport (także przywrócony rozdział E3-1b)
+
+---
+
+## E3-3 — Koszyk
+
+Baza: `357a76e`. Status wg Claude Code: **gotowe do weryfikacji**. Zmiana **tylko w aplikacji**; nie wdrożono.
+
+### Co zmieniono
+
+| Element | Przed | Po |
+|---|---|---|
+| Pusty koszyk | ikona/tekst bez akcji | ilustracja `state_empty_cart.svg`, „Przeglądaj sklepy"; gdy klient oglądał sklep — także „Wróć do: {sklep}" (zapamiętany sklep, ta sama ścieżka co po logowaniu) |
+| Minimum zamówienia | ramka z tekstem pod sumą | `ZzMinOrderProgress`: pasek postępu + „Brakuje 3,61 zł do minimum 20,00 zł" / „Minimum zamówienia osiągnięte (20,00 zł)"; czytnik ekranu dostaje tekst i procent; pasek rośnie z animacją 250 ms, przy „ogranicz ruch" 0 ms. Blokada przejścia dalej — bez zmian (`subtotal < minimum`) |
+| Pozycje | wiersze z separatorem, kosz 28 px | `ZzCartItem`: nazwa + wartość, „2 × 4,99 zł / kg", licznik (z wpisaniem ilości z E2), „Usuń" jako przycisk 48 × 48 z etykietą „Usuń: {produkt}"; dwa rzędy — w jednym rzędzie przy 360 px i tekście 130 % przelewało się o 65 px |
+| Sklep | brak | „Rapacz — Rynek" + „Dodaj więcej" (oferta sklepu) |
+| Termin | brak | `ZzNotice` „Najbliższa runda zakupów": „Zakupy w sklepie: Jutro, 12:00. Zamów jutro do 11:30. Godzinę dostawy wybierzesz w następnym kroku." — z publicznego endpointu rund; bez rundy — brak ramki (checkout i tak sprawdza) |
+| Podsumowanie | `_CartFooter` (lokalny) | stopka na `ZzSummaryRow`: „Dostawa — po wyborze adresu", „Razem bez dostawy"; przycisk bez zmian („Przejdź do dostawy i płatności") |
+
+`cart_controller.dart` i `cart_controller_test.dart` — **bez zmian** (kryterium planu); ekran woła te same metody
+(`setQuantity`, `remove`). Lokalny `_CartFooter` (E2-3 → E3-3) usunięty; nowe w `core/ui`: `ZzMinOrderProgress`,
+`ZzCartItem`, `ZzSummaryRow` (posłuży też w checkoucie E3-4 zamiast `_SummaryRow`).
+
+Poprawki po zrzutach (w tym commicie): wiersz „Produkty" usunięty — przed wyborem adresu miał tę samą kwotę co
+„Razem bez dostawy" (niższa stopka na 375 px); `ZzSummaryRow` przy 1280 px trzymał wartość w połowie szerokości
+(`Expanded` + `Flexible`) → luźne `Flexible` + `spaceBetween`, test położenia.
+
+### Wyniki
+
+| Polecenie | Wynik |
+|---|---|
+| `cd mobile && flutter analyze` | No issues found |
+| `cd mobile && flutter test` | **143/143** (133 + 10 w `cart_screen_test.dart`); `cart_controller_test` bez zmian i przechodzi |
+| `verify-e2.mjs` — lokalne API (seed pilotażu), dodanie 2 produktów kliknięciami (`CLICKS`), 375×812 i 1280×900; pusty koszyk 375/1280 | `googleRequests: 0`, przewijanie w bok 0 px; zrzuty `zrzuty-etap-3/e33/` |
+
+Testy (`cart_screen_test.dart`; kontroler podstawiony, zapisuje wywołania): pusty → „Przeglądaj sklepy" prowadzi
+do listy; pusty po wizycie → „Wróć do: Lewiatan" prowadzi do `/s/lewiatan`; poniżej minimum — brakująca kwota
+i zablokowany przycisk; minimum osiągnięte — przejście do `/checkout`; „Usuń" ≥ 48 px i licznik wołają kontroler
+(`remove`, `set … 2`); tekst rundy; 360 i 768 px przy tekście 130 % bez przepełnień; „ogranicz ruch" — pasek 0 ms;
+wartość podsumowania przy prawej krawędzi (640 px).
+
+`verify-e2.mjs`: doszła zmienna `CLICKS="x,y;x,y"` (kliknięcia co 2 s przed zrzutem); bez niej jak wcześniej.
+
+### Pliki (`git diff --name-status 357a76e..HEAD`)
+
+- Nowe: `mobile/lib/core/ui/zz_cart.dart`, `mobile/test/cart_screen_test.dart`,
+  `docs/redesign/raporty/zrzuty-etap-3/e33/{koszyk-375x812.png,koszyk-1280x900.png,koszyk-pusty-375x812.png,koszyk-pusty-1280x900.png,_wynik-koszyk-375.json,_wynik-koszyk-1280.json,_wynik-pusty.json}`
+- Zmienione: `mobile/lib/core/ui/ui.dart`, `mobile/lib/features/cart/cart_screen.dart`, `docs/redesign/verify-e2.mjs`,
+  ten raport

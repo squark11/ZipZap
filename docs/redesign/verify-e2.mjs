@@ -35,6 +35,9 @@ const WIDTHS = [320, 360, 768, 1280, 1920];
 const PAGE = process.env.PAGE ?? '/stores';
 const WAIT_API = process.env.WAIT_API ? new RegExp(process.env.WAIT_API) : /\/api\/catalog\/stores(\?|$)/;
 const PREFIX = process.env.PREFIX ?? 'start';
+// Opcjonalnie CLICKS="285,635;180,740" — kliknięcia (współrzędne CSS) po wczytaniu, co 2 s, przed zrzutem
+// (np. dodanie produktu i przejście do koszyka). Te same współrzędne dla każdego rozmiaru z SIZES.
+const CLICKS = (process.env.CLICKS ?? '').split(';').filter(Boolean).map((c) => c.split(',').map(Number));
 // Opcjonalnie SIZES="360x640,375x812,1280x900" — inne rozmiary okna (pliki start-<szer>x<wys>.png).
 const SIZES = process.env.SIZES
   ? process.env.SIZES.split(',').map((s) => { const [w, h] = s.split('x').map(Number); return { w, h, file: `${PREFIX}-${w}x${h}.png` }; })
@@ -153,6 +156,11 @@ try {
     const p = await openPage(w, h);
     const r = await p.gotoStores(sem.url);
     if (!r.storesDone) throw new Error(`API nie odpowiedziało w ${API_WAIT_MS / 1000} s (szerokość ${w}) — sprawdź adres API w kompilacji.`);
+    for (const [x, y] of CLICKS) {
+      await p.s('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+      await p.s('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+      await sleep(2000);
+    }
     await p.shot(join(outDir, file));
     result.screenshots.push({ width: w, height: h, file, storesMs: r.tStores,
       semanticsNodes: await p.eval('document.querySelectorAll("flt-semantics").length'),

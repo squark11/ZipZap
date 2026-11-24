@@ -3,14 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/last_store.dart';
 import '../../core/theme/zz_theme.dart';
 import '../../core/ui/ui.dart';
 import '../../core/util/format.dart';
 import '../../core/widgets/states.dart';
-import '../../core/widgets/zz_icon.dart';
+import '../../models/cart.dart';
+import '../../models/purchasing_round.dart';
+import '../../models/store.dart';
 import '../catalog/store_detail_screen.dart';
+import '../home/home_providers.dart';
 import 'cart_controller.dart';
 
+/// Koszyk (E3-3): sklep, pozycje, termin najbliższej rundy, pasek postępu do minimum zamówienia i podsumowanie.
+/// `cart_controller` bez zmian — ekran tylko inaczej pokazuje te same dane i wywołuje te same akcje.
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
 
@@ -20,87 +26,140 @@ class CartScreen extends ConsumerWidget {
     final controller = ref.read(cartControllerProvider.notifier);
     final c = cart.cart;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Koszyk')),
-      body: (c == null && cart.restoring)
-          ? const LoadingView(label: 'Wczytywanie koszyka…')
-          : (c == null || c.items.isEmpty)
-          ? const EmptyView(
-              svgAsset: 'assets/svg/empty_cart.svg',
-              icon: Icons.shopping_cart_outlined,
-              title: 'Koszyk jest pusty',
-              subtitle: 'Dodaj produkty ze sklepu, aby złożyć zamówienie.',
-            )
-          : Column(
-              children: [
-                if (cart.error != null)
-                  ZzNotice(
-                    kind: ZzNoticeKind.danger,
-                    message: cart.error!,
-                    margin: const EdgeInsets.fromLTRB(ZzSpace.screen, ZzSpace.md, ZzSpace.screen, 0),
-                  ),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: c.items.length,
-                    separatorBuilder: (_, _) => const Divider(height: 20),
-                    itemBuilder: (_, i) {
-                      final it = c.items[i];
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(it.productName,
-                                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 2),
-                                Text('${zl(it.unitPrice)} / ${it.unit}',
-                                    style: TextStyle(
-                                        color: context.zz.textMuted, fontSize: 13)),
-                                const SizedBox(height: 8),
-                                ZzQtyStepper(
-                                  itemLabel: it.productName,
-                                  quantity: it.quantity,
-                                  onMinus: () => controller.setQuantity(
-                                      it.productId, it.quantity - 1),
-                                  onPlus: () => controller.setQuantity(
-                                      it.productId, it.quantity + 1),
-                                  onValueTap: () => _editQuantity(
-                                      context, it.quantity, (q) => controller.setQuantity(it.productId, q)),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(zl(it.lineTotal),
-                                  style: const TextStyle(fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => controller.remove(it.productId),
-                                borderRadius: BorderRadius.circular(ZzRadius.pill),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: ZzIcon('trash',
-                                      size: 20, color: context.zz.textMuted),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+    if (c == null && cart.restoring) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Koszyk')),
+        body: const LoadingView(label: 'Wczytywanie koszyka…'),
+      );
+    }
+    if (c == null || c.items.isEmpty) {
+      final last = ref.watch(lastStoreProvider);
+      return Scaffold(
+        appBar: AppBar(title: const Text('Koszyk')),
+        body: EmptyView(
+          svgAsset: 'assets/svg/illustrations/state_empty_cart.svg',
+          icon: Icons.shopping_cart_outlined,
+          title: 'Koszyk jest pusty',
+          subtitle: 'Dodaj produkty ze sklepu, aby złożyć zamówienie.',
+          action: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (last != null) ...[
+                FilledButton(
+                  onPressed: () => context.push(last.path),
+                  child: Text('Wróć do: ${last.name}'),
                 ),
-                _CartFooter(storeId: c.storeId, subtotal: cart.subtotal),
+                const SizedBox(height: ZzSpace.sm),
+              ],
+              OutlinedButton(onPressed: () => context.go('/stores'), child: const Text('Przeglądaj sklepy')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final store = ref.watch(storeDetailProvider(c.storeId)).valueOrNull;
+    final round = ref.watch(storeRoundProvider(c.storeId)).valueOrNull;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Twój koszyk')),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(ZzSpace.screen),
+              children: [
+                if (store != null) ...[
+                  _storeLine(context, store),
+                  const SizedBox(height: ZzSpace.md),
+                ],
+                if (cart.error != null) ...[
+                  ZzNotice(kind: ZzNoticeKind.danger, message: cart.error!),
+                  const SizedBox(height: ZzSpace.md),
+                ],
+                for (final it in c.items) ...[
+                  ZzCartItem(
+                    name: it.productName,
+                    quantity: it.quantity,
+                    unit: it.unit,
+                    unitPrice: it.unitPrice,
+                    lineTotal: it.lineTotal,
+                    onMinus: () => controller.setQuantity(it.productId, it.quantity - 1),
+                    onPlus: () => controller.setQuantity(it.productId, it.quantity + 1),
+                    onRemove: () => controller.remove(it.productId),
+                    onValueTap: () =>
+                        _editQuantity(context, it.quantity, (q) => controller.setQuantity(it.productId, q)),
+                  ),
+                  const SizedBox(height: ZzSpace.sm),
+                ],
+                if (round != null && round.available && round.round != null) ...[
+                  const SizedBox(height: ZzSpace.sm),
+                  ZzNotice(kind: ZzNoticeKind.info, title: 'Najbliższa runda zakupów', message: roundText(round)),
+                ],
               ],
             ),
+          ),
+          _footer(context, c, store),
+        ],
+      ),
     );
   }
+
+  /// Sklep, z którego jest koszyk, i powrót do jego oferty.
+  Widget _storeLine(BuildContext context, Store store) => Row(
+        children: [
+          Expanded(
+            child: Text(store.name,
+                style: TextStyle(color: context.zz.textMuted, fontWeight: FontWeight.w600)),
+          ),
+          TextButton.icon(
+            onPressed: () => context.push('/stores/${store.id}'),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Dodaj więcej'),
+          ),
+        ],
+      );
+
+  /// Podsumowanie i przejście dalej. Minimum zamówienia z danych sklepu; dopóki nie jest znane — 0 (jak dotąd).
+  Widget _footer(BuildContext context, Cart c, Store? store) {
+    final p = context.zz;
+    final minOrder = store?.minimumOrderValue ?? 0;
+    final belowMin = c.subtotal < minOrder;
+    return Container(
+      decoration: BoxDecoration(
+        color: p.card,
+        boxShadow: p.shadowMd,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(ZzRadius.card)),
+      ),
+      child: SafeArea(
+        minimum: const EdgeInsets.all(ZzSpace.screen),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (minOrder > 0) ...[
+              ZzMinOrderProgress(subtotal: c.subtotal, minimum: minOrder),
+              const SizedBox(height: ZzSpace.md),
+            ],
+            // Bez osobnego wiersza „Produkty" — przed wyborem adresu ma tę samą kwotę co suma (niższa stopka na 375 px).
+            const ZzSummaryRow(label: 'Dostawa', value: 'po wyborze adresu', mutedValue: true),
+            ZzSummaryRow(label: 'Razem bez dostawy', value: zl(c.subtotal), strong: true),
+            const SizedBox(height: ZzSpace.md),
+            ElevatedButton(
+              onPressed: belowMin ? null : () => context.push('/checkout'),
+              child: const Text('Przejdź do dostawy i płatności'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// „Zakupy w sklepie: Dziś, 16:00. Zamów do 15:30. Godzinę dostawy wybierzesz w następnym kroku." — tylko dane
+/// z serwera (runda, termin graniczny), bez obietnic godziny dostawy.
+String roundText(RoundPreview p) {
+  final r = p.round!;
+  return 'Zakupy w sklepie: ${r.label}. ${cutoffPhrase(r)}. Godzinę dostawy wybierzesz w następnym kroku.';
 }
 
 /// Wpisanie ilości z klawiatury (dotknięcie liczby w liczniku).
@@ -130,62 +189,4 @@ Future<void> _editQuantity(BuildContext context, int quantity, ValueChanged<int>
     ),
   );
   if (result != null && result > 0) onSet(result);
-}
-
-class _CartFooter extends ConsumerWidget {
-  final String storeId;
-  final double subtotal;
-  const _CartFooter({required this.storeId, required this.subtotal});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final store = ref.watch(storeDetailProvider(storeId));
-    final minOrder = store.valueOrNull?.minimumOrderValue ?? 0;
-    final belowMin = subtotal < minOrder;
-
-    return SafeArea(
-      minimum: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Wartość produktów', style: TextStyle(color: context.zz.textMuted)),
-              Text(zl(subtotal), style: const TextStyle(fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Opłata za dostawę', style: TextStyle(color: context.zz.textMuted)),
-              Text('liczona przy wyborze strefy',
-                  style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
-            ],
-          ),
-          if (belowMin) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: context.zz.brandTint,
-                borderRadius: BorderRadius.circular(ZzRadius.pill),
-              ),
-              child: Text(
-                'Minimalna wartość zamówienia to ${zl(minOrder)}. Dodaj jeszcze ${zl(minOrder - subtotal)}.',
-                style: TextStyle(color: context.zz.brandStrong, fontSize: 13),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: belowMin ? null : () => context.push('/checkout'),
-            child: const Text('Przejdź do dostawy i płatności'),
-          ),
-        ],
-      ),
-    );
-  }
 }

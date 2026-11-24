@@ -2,6 +2,7 @@
 library;
 
 export 'zz_basics.dart';
+export 'zz_cart.dart';
 export 'zz_cart_bar.dart';
 export 'zz_layout.dart';
 export 'zz_place_header.dart';

@@ -1,0 +1,26 @@
+{
+  "startedAt": "2026-11-24T23:05:02.646Z",
+  "node": "v22.16.0",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "screenshots": [
+    {
+      "width": 1280,
+      "height": 900,
+      "file": "koszyk-1280x900.png",
+      "storesMs": 2075,
+      "semanticsNodes": 31,
+      "horizontalOverflowPx": 0
+    }
+  ],
+  "hosts": {
+    "localhost:63342": 30,
+    "localhost:5080": 19
+  },
+  "external": [],
+  "perf": [],
+  "verdict": {
+    "googleRequests": 0,
+    "horizontalOverflowAt": []
+  },
+  "finishedAt": "2026-11-24T23:05:14.983Z"
+}
