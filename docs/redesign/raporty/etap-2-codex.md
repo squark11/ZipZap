@@ -1,6 +1,39 @@
 # Raport weryfikacji Codexa — Etap 2: Fundamenty frontendowe
 
-## Ponowna weryfikacja najnowszego raportu
+## Runda 3 — ponowna weryfikacja raportu z 2026-11-24
+
+Data weryfikacji: 2026-11-24. Sprawdzony commit: `6ef4b1e`. Analizowany raport Claude Code: runda 3 w
+[`etap-1-2-zbiorczy.md`](etap-1-2-zbiorczy.md) §8.
+
+**Wynik: PASS dla Etapu 2 według kryteriów po zmianie zaakceptowanej przez właściciela.** Poprzedni blocker
+E2-3 został rozwiązany formalnie: zakres wyjątków jest zapisany w planie i checklistę aktualizowano. Poprawki
+E2-5, testy skali 130%, dowody sieci oraz własne zrzuty zostały potwierdzone.
+
+| Kontrola | Status | Wynik |
+|---|---|---|
+| `flutter analyze` | PASS | Uruchomione ponownie: `No issues found!`. |
+| `flutter test` | PASS | Uruchomione ponownie: 108/108. Od commita `902cba2` dodano 9 testów; nie usunięto ani nie wyłączono testów. |
+| `git diff --check 86ee2c9..HEAD` | PASS | Czysty. Diff rundy 3 obejmuje dokładnie 16 plików; §8.5 wymienia je w podziale na 3 nowe i 13 zmienionych. |
+| E2-1 — tokeny | PASS | `Color(0x...)` poza `core/theme` nie znaleziono; backend, panel, repozytoria i modele bez zmian. |
+| E2-2 — żądania Google i glify | PASS dla sprawdzonych danych | Niezależny release build z lokalną atrapą API, świeży Edge i `verify-e2.mjs`: 0 żądań Google, overflow 0 px w pięciu szerokościach. `check_glyphs.py` uruchomiony na lokalnym katalogu 2 sklepów/8 produktów: `missing: []`. Dołączony wynik rundy 3 dla bieżącego API też pokazuje 0 żądań Google i 0 brakujących glifów (2 sklepy/8 produktów). |
+| E2-3 — komponenty | PASS po zatwierdzonej zmianie zakresu | Właściciel zaakceptował odłożenie lokalnych komponentów do Etapu 3; zmiana jest w planie i checkliście. Sprawdziłem wszystkie lokalne widgety z `lib/features`: każdy jest przypisany do konkretnego zadania E3. |
+| E2-4 — układ | PASS | Własne zrzuty z release build przy 320/360/768/1280/1920 px; `horizontalOverflowPx: 0` na wszystkich. Przy 360 px układ jest poprawny. 320 px jest poniżej minimum planu i nadal łamie część tekstu w środku wyrazu, ale nie przewija poziomo. |
+| E2-5 — ruch i tekst 130% | PASS | Test całej listy potwierdza 1 zegar przy animacji i 0 przy `disableAnimations`; 8 ekranów przy 360 px i skali 1,3 bez błędów przepełnienia. Wszystkie testy przeszły. |
+| E2-6 — trasy i QR | PASS | Testy całego zestawu, w tym `qr_entry_flow_test.dart`, przeszły; backend i logika koszyka bez zmian. |
+| Semantyka web — wydajność | PASS z ograniczeniem | Surowe 6 przebiegów są w `_wynik.json`; wynik wskazuje mały koszt na laptopie i małym katalogu. Pomiar na telefonie i dużym asortymencie pozostaje w E3-2. |
+
+### Pozostałe ograniczenia — nie blokują Etapu 2
+
+1. Katalog sprawdzony w rundzie 3 ma 2 sklepy i 8 produktów. Po imporcie nowych danych trzeba ponowić `check_glyphs.py`; emoji lub inny znak poza fontami może uruchomić fallback Google.
+2. Pomiar kosztu semantyki na telefonie i dużym katalogu jest odłożony do E3-2.
+3. Szerokość 320 px leży poniżej minimum 360 px z planu; opisane łamanie tekstu nie powoduje poziomego overflow.
+
+Niezależne zrzuty i kontrolę hostów wykonałem z lokalną atrapą API, aby nie odpytwać produkcji w tej rundzie.
+Zapisany `_glify.json` i `_wynik.json` w raporcie zbiorczym zawierają wyniki sprawdzenia bieżącego API. Produkcji nie wdrażano.
+
+---
+
+## Runda 2 — ponowna weryfikacja raportu z 2026-11-16
 
 Data: 2026-11-17. Sprawdzony commit: `902cba2`. Najnowszy raport Claude Code to
 [`etap-1-2-zbiorczy.md`](etap-1-2-zbiorczy.md), z 2026-11-16; plan bazowy Etapu 2 jest w
