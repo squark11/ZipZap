@@ -1,0 +1,86 @@
+{
+ "device": "Realme RMX3311 (Android), Chrome 158, ekran 360x691 CSS px; build release na localhost przez adb reverse; API Render (prod, tylko odczyt publiczny)",
+ "date": "2026-11-24",
+ "cold": [
+  {
+   "mode": "cold",
+   "run": 1,
+   "storesResponseMs": 1876,
+   "roundResponseMs": 2086,
+   "fcpMs": 120,
+   "scriptS": 1.47,
+   "taskS": 1.7,
+   "layoutS": 0.007,
+   "heapMB": 22.5,
+   "viewport": "360x691",
+   "overflowPx": 0
+  },
+  {
+   "mode": "cold",
+   "run": 2,
+   "storesResponseMs": 1322,
+   "roundResponseMs": 1539,
+   "fcpMs": 132,
+   "scriptS": 0.93,
+   "taskS": 1.18,
+   "layoutS": 0.006,
+   "heapMB": 26.7,
+   "viewport": "360x691",
+   "overflowPx": 0
+  },
+  {
+   "mode": "cold",
+   "run": 3,
+   "storesResponseMs": 1220,
+   "roundResponseMs": 1435,
+   "fcpMs": 120,
+   "scriptS": 0.9,
+   "taskS": 1.12,
+   "layoutS": 0.006,
+   "heapMB": 37.9,
+   "viewport": "360x691",
+   "overflowPx": 0
+  }
+ ],
+ "warm": [
+  {
+   "mode": "warm",
+   "run": 1,
+   "storesResponseMs": 1472,
+   "roundResponseMs": 1686,
+   "fcpMs": 156,
+   "scriptS": 1.02,
+   "taskS": 1.25,
+   "layoutS": 0.006,
+   "heapMB": 24.4,
+   "viewport": "360x691",
+   "overflowPx": 0
+  },
+  {
+   "mode": "warm",
+   "run": 2,
+   "storesResponseMs": 1240,
+   "roundResponseMs": 1352,
+   "fcpMs": 108,
+   "scriptS": 0.85,
+   "taskS": 1.08,
+   "layoutS": 0.006,
+   "heapMB": 26.7,
+   "viewport": "360x691",
+   "overflowPx": 0
+  },
+  {
+   "mode": "warm",
+   "run": 3,
+   "storesResponseMs": 1155,
+   "roundResponseMs": 1374,
+   "fcpMs": 116,
+   "scriptS": 0.8,
+   "taskS": 1.03,
+   "layoutS": 0.005,
+   "heapMB": 37.2,
+   "viewport": "360x691",
+   "overflowPx": 0
+  }
+ ]
+}

@@ -22,7 +22,7 @@ import '../../features/orders/my_orders_screen.dart';
 import '../../features/orders/order_track_screen.dart';
 import '../../features/payment/payment_screen.dart';
 import '../../features/splash/splash_screen.dart';
-import '../../features/stores/stores_screen.dart';
+import '../../features/home/home_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/dev/ui_gallery_screen.dart';
 import '../ui/zz_layout.dart';
@@ -105,7 +105,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),
         routes: [
-          GoRoute(path: '/stores', builder: (_, _) => const StoresScreen()),
+          GoRoute(path: '/stores', builder: (_, _) => const HomeScreen()),
           GoRoute(path: '/search', builder: (_, _) => const SearchScreen()),
           GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
           GoRoute(path: '/orders', builder: (_, _) => const MyOrdersScreen()),

@@ -7,7 +7,7 @@ import '../../core/ui/ui.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../models/store.dart';
-import '../stores/stores_screen.dart';
+import '../home/home_providers.dart';
 
 /// Zakładka „Szukaj" (E2-6). Na razie szuka sklepów po nazwie i miejscowości (te same dane co „Start", bez nowego
 /// zapytania do API). Wyszukiwarka produktów we wszystkich sklepach wymaga nowego endpointu — decyzja F-7 (E3-10).

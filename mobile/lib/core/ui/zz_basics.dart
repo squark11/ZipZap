@@ -82,7 +82,11 @@ class ZzSearchField extends StatelessWidget {
   final String hint;
   final ValueChanged<String>? onChanged;
   final bool autofocus;
-  const ZzSearchField({super.key, this.controller, required this.hint, this.onChanged, this.autofocus = false});
+
+  /// Ustawione = pole tylko do odczytu, które po dotknięciu przenosi do wyszukiwarki (np. na Starcie).
+  final VoidCallback? onTap;
+  const ZzSearchField(
+      {super.key, this.controller, required this.hint, this.onChanged, this.autofocus = false, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -91,10 +95,13 @@ class ZzSearchField extends StatelessWidget {
       borderRadius: BorderRadius.circular(ZzRadius.pill),
       borderSide: BorderSide(color: p.border, width: 1.5),
     );
-    return TextField(
+    final field = TextField(
       controller: controller,
       onChanged: onChanged,
       autofocus: autofocus,
+      readOnly: onTap != null,
+      onTap: onTap,
+      canRequestFocus: onTap == null,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: hint,
@@ -107,6 +114,8 @@ class ZzSearchField extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
       ),
     );
+    if (onTap == null) return field;
+    return Semantics(button: true, label: hint, excludeSemantics: true, onTap: onTap, child: field);
   }
 }
 

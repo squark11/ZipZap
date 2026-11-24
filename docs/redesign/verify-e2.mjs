@@ -30,6 +30,10 @@ const outDir = resolve(outDirArg);
 mkdirSync(outDir, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const WIDTHS = [320, 360, 768, 1280, 1920];
+// Opcjonalnie SIZES="360x640,375x812,1280x900" — inne rozmiary okna (pliki start-<szer>x<wys>.png).
+const SIZES = process.env.SIZES
+  ? process.env.SIZES.split(',').map((s) => { const [w, h] = s.split('x').map(Number); return { w, h, file: `start-${w}x${h}.png` }; })
+  : WIDTHS.map((w) => ({ w, h: w < 600 ? 780 : 900, file: `start-${w}.png` }));
 const CDP_TIMEOUT_MS = 30_000;
 const API_WAIT_MS = 120_000; // darmowy Render usypia API — pierwsze żądanie może trwać ok. minuty
 const result = { startedAt: new Date().toISOString(), node: process.version, browser: null, screenshots: [], hosts: {}, external: [], perf: [] };
@@ -140,12 +144,12 @@ try {
   await startBrowser();
 
   // 1) Zrzuty + hosty + przewijanie
-  for (const w of WIDTHS) {
-    const p = await openPage(w, w < 600 ? 780 : 900);
+  for (const { w, h, file } of SIZES) {
+    const p = await openPage(w, h);
     const r = await p.gotoStores(sem.url);
     if (!r.storesDone) throw new Error(`API nie odpowiedziało w ${API_WAIT_MS / 1000} s (szerokość ${w}) — sprawdź adres API w kompilacji.`);
-    await p.shot(join(outDir, `start-${w}.png`));
-    result.screenshots.push({ width: w, file: `start-${w}.png`, storesMs: r.tStores,
+    await p.shot(join(outDir, file));
+    result.screenshots.push({ width: w, height: h, file, storesMs: r.tStores,
       semanticsNodes: await p.eval('document.querySelectorAll("flt-semantics").length'),
       horizontalOverflowPx: await p.eval('document.documentElement.scrollWidth - window.innerWidth') });
     for (const [h, n] of p.hosts) result.hosts[h] = (result.hosts[h] ?? 0) + n;
