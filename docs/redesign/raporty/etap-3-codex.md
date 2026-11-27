@@ -1,0 +1,50 @@
+# Weryfikacja Etapu 3 — Codex
+
+**Data:** 2026-11-27  
+**HEAD:** `1c08301999766a2df465667c3e8bb275d51163c3`
+
+**Sprawdzone commity:** E3-1a `f4a63cf` (baza `181d281`); E3-1b `a486d3c` (baza `f4a63cf`, cofnięty przez `ff3f30c`); E3-2 `357a76e` (baza `ff3f30c`); E3-3 `f3aeab4` (baza `357a76e`); formatowanie `1c08301` (baza `f3aeab4`).
+
+## Werdykty
+
+| Zadanie | Status | Uzasadnienie |
+|---|---|---|
+| **E3-1a — Start** | **PARTIAL** | Kod realizuje stany ładowania, błędu i pustej listy; termin na kartach pochodzi z publicznego API, a filtr kodu i lokalizacji jest w `home_providers.dart`. Testy potwierdzają wybór adresu w 2 dotknięciach, widok przy 360×640, pustą listę i błąd. Inwentarz zmian zgadza się z `181d281..f4a63cf` (**19 plików**). Brakuje jednak pary zrzutów przed/po w wymaganym rozmiarze 375 px: przed jest `start-360.png`, po `start-375x812.png`. |
+| **E3-1b — F-5/F-6** | **PARTIAL** | Przegląd kodu `a486d3c` nie ujawnił błędu w autoryzacji ani walidacji. Migracja `Up` dodaje 3 nullable kolumny, tabelę i 11 wierszy startowych; 5 testów integracyjnych sprawdza m.in. uprawnienia, przypięcia i walidację. Inwentarz zgadza się z `f4a63cf..a486d3c` (**32 pliki**). Raport przeczy sam sobie w opisie wdrożenia produkcyjnego, a testów backendu nie można było wykonać bez Dockera. |
+| **E3-2 — Sklep** | **PARTIAL** | Filtry, normalizacja polskich znaków, lista/siatka, pusty wynik i animacja respektująca „ogranicz ruch” mają kod i testy; test QR zachowuje asercje, dodając tylko `ensureVisible`. Inwentarz zgadza się z `ff3f30c..357a76e` (**22 pliki**). Zrzut po jest przy 360 px, a przed przy 375 px; brakuje też zrzutu przed przy 1280 px. Duży asortyment nie był mierzony na telefonie. |
+| **E3-3 — Koszyk** | **PARTIAL** | `cart_controller.dart` i jego test nie zmieniły się. Nowy pasek minimum ma etykietę i wartość semantyczną, przycisk usuwania ma cel co najmniej 48×48 px, a tekst rundy pochodzi z API. Inwentarz zgadza się z `357a76e..f3aeab4` (**13 plików**). Brakuje zrzutów przed redesignem; testy nie pokrywają wszystkich czterech stanów. |
+| **`1c08301` — formatowanie** | **PASS** | Po sformatowaniu obu drzew tym samym formatterem i szerokością 120 porównałem **105 plików Dart przed i po: 0 różnic**. W HEAD `dart format --output=none --set-exit-if-changed --page-width 120 lib test` zgłosił `Formatted 105 files (0 changed)`. Zmiana `analysis_options.yaml` ustawia szerokość formatowania, nie zmienia logiki. |
+
+Kryterium planu wymaga czterech stanów oraz zrzutów 375 i 1280 px przed i po dla każdego zadania ([plan, linia 95](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/02-plan-zadan-claude.md:95>)). Lista Codexa wymaga też ręcznego przejścia ścieżki i sprawdzenia API oraz offline ([lista weryfikacji, linia 40](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/03-weryfikacja-codex.md:40>)). Kod zawiera odpowiednie ścieżki stanów, ale dostępne dowody nie domykają wszystkich tych kryteriów.
+
+## Ustalenia blokujące
+
+1. **Brakuje wymaganych par zrzutów 375/1280 przed i po.** E3-1a ma zrzuty po w 375 i 1280 px, ale przed w 360 i 1280 px ([raport, linie 65](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:65>), [linia 66](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:66>)). E3-1b ma po w 360 i 1280 px (`a486d3c`), więc brak pary 375 px. E3-2 ma przed w 375 px, po w 360 i 1280 px, ale brak przed w 1280 px ([raport, linia 216](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:216>)). E3-3 ma po w 375 i 1280 px, ale w bazie `357a76e` brak zrzutów koszyka przed zmianą ([raport, linia 278](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:278>)). **Poprawka:** dołączyć brakujące zrzuty w dokładnych rozmiarach oraz jawnie udokumentować ładowanie, pusty stan, błąd i offline dla każdego ekranu.
+
+2. **Opis incydentu E3-1b jest sprzeczny.** Raport mówi, że `a486d3c` wdrożono i migracja wykonała się na produkcji ([raport, linia 100](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:100>)), a kilka linii później stwierdza, że „Nic nie wdrożono; migracji nie uruchamiano na produkcji” ([raport, linia 107](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:107>)). Git potwierdza commit i jego revert, ale nie potwierdza zdarzeń w Render ani aktualnego stanu bazy; zgodnie z poleceniem nie łączyłem się z produkcją. **Poprawka:** uzgodnić zapis incydentu z właścicielem i logami wdrożenia; oddzielić wcześniejsze wdrożenie od aktualnego stanu kodu po rewercie.
+
+3. **Wyniki wymaganych testów mobilnych nie są zweryfikowane.** `flutter analyze` i `flutter test` na HEAD nie zwróciły wyników; uruchomienia zawiesiły się bez wyjścia i zostały zatrzymane. `dart analyze` zakończył się kodem 1 z `CreateFile failed 5 (Odmowa dostępu)` podczas uruchamiania `analysis_server_aot.dart`. Dlatego nie potwierdzam liczb `119/119`, `124/124`, `133/133` ani `143/143` podanych w raporcie Claude. **Poprawka:** powtórzyć oba polecenia w środowisku, które może uruchamiać procesy potomne, i zapisać ich rzeczywisty wynik.
+
+4. **Testy integracyjne E3-1b nie mogły zostać uruchomione.** Docker nie łączy się z `dockerDesktopLinuxEngine`, więc brak wymaganego Postgresa. Testy przeczytałem, ale `289/289` z raportu nie jest wynikiem tej weryfikacji. **Poprawka:** uruchomić `dotnet test backend/ZipZap.sln` z dostępnym Dockerem przed końcowym PASS.
+
+## Ustalenia nieblokujące
+
+- **Inwentarz plików:** listy dla poszczególnych zadań zgadzają się z diffami commitów: E3-1a **19**, E3-1b **32**, E3-2 **22**, E3-3 **13** plików. E3-1b testy w `a486d3c` obejmują publiczną listę, przypinanie kategorii, uprawnienia i walidację (`a486d3c:backend/tests/ZipZap.Api.IntegrationTests/StoreCoverAndPlatformCategoryTests.cs:23`). Jednak etykiety zakresów w aktualnym raporcie używają `..HEAD`; po `1c08301` są nieaktualne jako zakresy literalne. Warto zastąpić `HEAD` konkretnym commitem zadania.
+- **Autoryzacja, walidacja i migracja E3-1b:** publiczny GET kategorii jest publiczny; administracyjne GET/PATCH wymagają `Admin`; przypięcie kategorii i aktualizacja sklepu wymagają `StoreEmployee` (`a486d3c:backend/src/Modules/ZipZap.Modules.Catalog/Api/CatalogEndpoints.cs:56`, `:81`, `:84`, `:102`, `:122`). Serwis dodatkowo sprawdza, czy pracownik zarządza sklepem; weryfikuje aktywny klucz kategorii, URL `http(s)` i limit notatki 80 znaków (`a486d3c:backend/src/Modules/ZipZap.Modules.Catalog/Application/CatalogService.cs:350`, `:457`, `:471`). `Up` tylko dodaje kolumny, tabelę i seed, a `Down` usuwa nowe obiekty (`a486d3c:backend/src/Modules/ZipZap.Modules.Catalog/Infrastructure/Migrations/20261124215822_Catalog_StoreCoverAndPlatformCategories.cs:13`, `:75`).
+- **Logika i obietnice biznesowe:** nie znalazłem nowych obietnic dostawy niezależnych od danych serwera. E3-1a/E3-2/E3-3 korzystają z danych rundy; `deliveryNote` w E3-1b jest tekstem ustawianym przez sklep. E3-3 nie zmienia logiki koszyka. Nowe testy nie osłabiają istniejących; w teście QR dodano `ensureVisible` przed tym samym tapnięciem, bez usuwania asercji ([raport, linia 203](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:203>)).
+- **Dostępność i kolory:** nowe elementy mobilne używają semantycznych etykiet, `zzMinTouch` lub większych celów oraz `ZzMotion`. Nie znalazłem nowych kolorów literalnych w diffach Fluttera. Pozostają jednak wcześniejsze `Colors.white`/`Colors.transparent` poza `core/theme` w `zz_cart_bar.dart` i `zz_logo.dart`; nie wprowadził ich Etap 3. W nowym podglądzie okładki panelu Angular jest dodatkowo inline `#E5E7EB` (`a486d3c:admin-panel/src/app/catalog.ts:113`); warto przenieść go do tokenu CSS.
+- **Zrzut koszyka:** `koszyk-375x812.png` zawiera podpowiedź „Koszyk” zasłaniającą środek przycisku przejścia do checkoutu. Wygląda na tooltip pozostawiony przez kursor przy zrzucie. **Poprawka:** przed screenshotem przesunąć kursor poza nawigację i odświeżyć obraz.
+- **E3-2:** raport sam odnotowuje poziome przewijanie paska kategorii na desktopie i brak pomiaru dużego katalogu na telefonie ([raport, linia 230](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:230>), [linia 232](</E:/systemowe/Pulpit/THE BUISNESS/.claude/worktrees/vigorous-tharp-d602d8/docs/redesign/raporty/etap-3.md:232>)). Warto dodać wskazówki przewijania i wykonać pomiar na urządzeniu.
+
+## Wyniki poleceń
+
+- `flutter analyze` na HEAD: **brak wyniku**; polecenie nie zakończyło się normalnie. Dodatkowe `dart analyze`: **exit 1**, `CreateFile failed 5`.
+- `flutter test` na HEAD: **0 testów zaraportowanych**; polecenie nie zwróciło wyjścia przez ponad 15 minut i zostało zatrzymane. Raport Claude podaje `143/143`, ale nie udało mi się tego potwierdzić.
+- `dart format --output=none --set-exit-if-changed --page-width 120 lib test`: **105 plików, 0 zmienionych**, exit 0.
+- Porównanie po ponownym formatowaniu drzew `f3aeab4` i `1c08301`: **105 / 105 plików, 0 różnic**.
+- `git diff --check` dla pięciu porównywanych zakresów: **0 zgłoszeń**.
+- Docker: niedostępny; `dotnet --version`: **8.0.424**. Testów .NET nie uruchamiałem.
+
+**Werdykt Etapu 3:** nie PASS — wymagane zrzuty są niekompletne, incydent E3-1b wymaga sprostowania, a wymagane testy mobilne i backendowe nie uzyskały zweryfikowanego wyniku. E3-1b ma poprawnie wyglądający kod w `a486d3c`, ale historia wdrożenia pozostaje niespójna w raporcie.
+
+**Stan repozytorium:** HEAD pozostał `1c08301`, brak zmian śledzonych. Końcowy `git status` zawiera nieśledzone `.agents/`, `docs/redesign/plany/` i `docs/redesign/raporty/e3-4-plan-codex.md`; pozostawiłem je bez zmian.

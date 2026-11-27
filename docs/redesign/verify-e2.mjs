@@ -33,7 +33,11 @@ const WIDTHS = [320, 360, 768, 1280, 1920];
 // Opcjonalnie PAGE="/stores/<id>" (domyślnie /stores) i WAIT_API="products" — fragment adresu API, na który czekać
 // przed zrzutem (domyślnie lista sklepów). Pliki zrzutów dostają wtedy przedrostek PREFIX (domyślnie „start").
 const PAGE = process.env.PAGE ?? '/stores';
-const WAIT_API = process.env.WAIT_API ? new RegExp(process.env.WAIT_API) : /\/api\/catalog\/stores(\?|$)/;
+// WAIT_API=none — nie czekaj na API (np. stan błędu przy wyłączonym serwerze): zrzut po 8 s.
+const NO_WAIT = process.env.WAIT_API === 'none';
+const WAIT_API = process.env.WAIT_API && !NO_WAIT ? new RegExp(process.env.WAIT_API) : /\/api\/catalog\/stores(\?|$)/;
+// OFFLINE=1 — po wczytaniu i kliknięciach przeglądarka przechodzi w tryb offline (pasek „Brak połączenia").
+const OFFLINE = process.env.OFFLINE === '1';
 const PREFIX = process.env.PREFIX ?? 'start';
 // Opcjonalnie CLICKS="285,635;180,740" — kliknięcia (współrzędne CSS) po wczytaniu, co 2 s, przed zrzutem
 // (np. dodanie produktu i przejście do koszyka). Te same współrzędne dla każdego rozmiaru z SIZES.
@@ -132,6 +136,7 @@ async function openPage(width, height) {
       storesDone = false;
       const t0 = Date.now();
       await s('Page.navigate', { url: base + PAGE });
+      if (NO_WAIT) { await sleep(8000); return { storesDone: true, tStores: null }; }
       while (!storesDone && Date.now() - t0 < API_WAIT_MS) await sleep(200);
       const tStores = Date.now() - t0;
       await sleep(3000); // czas na wyrysowanie kart i doczytanie obrazów
@@ -160,6 +165,12 @@ try {
       await p.s('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
       await p.s('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
       await sleep(2000);
+    }
+    // Kursor poza nawigacją — inaczej na zrzucie zostaje dymek ostatnio wskazanego elementu.
+    if (CLICKS.length) { await p.s('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 }); await sleep(1500); }
+    if (OFFLINE) {
+      await p.s('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+      await sleep(3000);
     }
     await p.shot(join(outDir, file));
     result.screenshots.push({ width: w, height: h, file, storesMs: r.tStores,

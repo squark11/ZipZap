@@ -76,7 +76,7 @@ Uwaga: systemowy pasek gestów pod aplikacją jest biały w trybie ciemnym — d
 
 `verify-e2.mjs`: doszła zmienna `SIZES` (dowolne rozmiary okna); bez niej działa jak w Etapie 2.
 
-### Pliki (`git diff --name-status 181d281..HEAD`)
+### Pliki (`git diff --name-status 181d281..f4a63cf`)
 
 - Nowe: `mobile/lib/features/home/{home_screen,home_providers,delivery_place_sheet}.dart`,
   `mobile/lib/core/ui/zz_place_header.dart`, `mobile/test/home_screen_test.dart`, ten raport,
@@ -114,7 +114,8 @@ nie własne karty. `DeliveryPlaceSheet` to arkusz ekranu (publiczny, w `features
 > i `ZzStatusChip(status:)` z E3-2), po `dart format`; `dotnet test` 289/289, `flutter test` 148/148, panel buduje się.
 
 Baza: `f4a63cf`. Status wg Claude Code: **gotowe do weryfikacji**. Zmiana obejmuje serwer, bazę danych, panel
-i aplikację. **Nic nie wdrożono**; migracji nie uruchamiano na produkcji (wymaga zgody właściciela i kopii bazy).
+i aplikację. *(Zdanie z chwili przygotowania commitu — przed pushem. Faktyczny przebieg wdrożeń: ramka na początku
+rozdziału. Stan na 2026-11-27: kod E3-1b na produkcji (`c6451bd`), panel wgrany; aplikacja klienta bez nowej wersji.)*
 
 ### Zakres
 
@@ -169,7 +170,7 @@ razy wyższą od sąsiedniej → limit 140 px; pola profilu w panelu wychodziły
 2. Dopiero potem nowa aplikacja (kolejność nie jest krytyczna — patrz „Kompatybilność").
 3. Sklep pilotażowy przypina swoje kategorie w „Ofercie" i ustawia okładkę — bez tego Start wygląda jak w E3-1a.
 
-### Pliki (`git diff --name-status f4a63cf..HEAD`)
+### Pliki (`git diff --name-status f4a63cf..a486d3c`)
 
 - Nowe: `backend/src/Modules/ZipZap.Modules.Catalog/Domain/PlatformCategory.cs`, migracja `…_Catalog_StoreCoverAndPlatformCategories.cs` + `.Designer.cs`,
   `backend/tests/ZipZap.Api.IntegrationTests/StoreCoverAndPlatformCategoryTests.cs`, `admin-panel/src/app/platform-categories.ts`,
@@ -243,7 +244,7 @@ Windows — uruchamiać z PowerShell albo z `MSYS_NO_PATHCONV=1`.
 3. Nagłówek sklepu na telefonie zajmuje ~⅔ pierwszego ekranu (opis + 3 chipy + termin) — pierwszy produkt ok.
    500 px od góry przy 780 px. Do oceny właściciela; można zwinąć opis i telefon.
 
-### Pliki (`git diff --name-status ff3f30c..HEAD`)
+### Pliki (`git diff --name-status ff3f30c..357a76e`)
 
 - Nowe: `mobile/lib/core/ui/zz_product.dart`, `mobile/lib/core/util/search_text.dart`,
   `mobile/lib/features/catalog/product_add_button.dart`, `mobile/lib/models/store_category.dart`,
@@ -294,9 +295,53 @@ wartość podsumowania przy prawej krawędzi (640 px).
 
 `verify-e2.mjs`: doszła zmienna `CLICKS="x,y;x,y"` (kliknięcia co 2 s przed zrzutem); bez niej jak wcześniej.
 
-### Pliki (`git diff --name-status 357a76e..HEAD`)
+### Pliki (`git diff --name-status 357a76e..f3aeab4`)
 
 - Nowe: `mobile/lib/core/ui/zz_cart.dart`, `mobile/test/cart_screen_test.dart`,
   `docs/redesign/raporty/zrzuty-etap-3/e33/{koszyk-375x812.png,koszyk-1280x900.png,koszyk-pusty-375x812.png,koszyk-pusty-1280x900.png,_wynik-koszyk-375.json,_wynik-koszyk-1280.json,_wynik-pusty.json}`
 - Zmienione: `mobile/lib/core/ui/ui.dart`, `mobile/lib/features/cart/cart_screen.dart`, `docs/redesign/verify-e2.mjs`,
   ten raport
+
+---
+
+## Uzupełnienia po audycie Codexa (2026-11-27)
+
+Audyt: [`etap-3-codex.md`](etap-3-codex.md) (HEAD `1c08301`; E3-1a/1b/2/3 PARTIAL, formatowanie PASS).
+
+| Ustalenie Codexa | Ocena | Działanie |
+|---|---|---|
+| 1. Brak par zrzutów 375/1280 przed i po oraz udokumentowanych stanów | słuszne | nowa seria `zrzuty-etap-3/przed-po/` (tabela niżej): każda wersja **zbudowana z własnego commitu** (przed/po zadania), lokalne API na świeżej bazie, **prawdziwe lokalizacje Rapacz Market** (`docs/rapacz/seed-rapacz.mjs`), oba rozmiary dokładnie 375×812 i 1280×900; stany pusty / błąd / offline na wersji `c6451bd`; ładowanie — szkielet z testami widżetów (`redesign_foundation_test`: 1 zegar, 0 przy „ogranicz ruch") |
+| 2. Sprzeczny opis wdrożenia E3-1b | słuszne | poprawione: zdanie z chwili commitu oznaczone jako takie, stan na 2026-11-27 dopisany; przebieg w ramce rozdziału E3-1b |
+| 3. Testy aplikacji niezweryfikowane (piaskownica Codexa) | słuszne (środowisko) | właściciel zdecydował 2026-11-27: kolejny audyt Codexa bez piaskownicy, z zakazem zmian i kontrolą `git status` przed/po |
+| 4. Testy serwera niezweryfikowane (brak Dockera) | jw. | jw. — Docker uruchomiony |
+| Zakresy `..HEAD` w spisach plików | słuszne | zamienione na konkretne commity zadań |
+| Dymek „Koszyk" na zrzucie koszyka | słuszne | skrypt przesuwa kursor poza nawigację po kliknięciach (`verify-e2.mjs`) |
+| Inline `#E5E7EB` w panelu (E3-1b) | słuszne, drobne | do przeniesienia do tokenu CSS przy pracach nad panelem (sieć sklepów) |
+
+### Zrzuty przed/po (`zrzuty-etap-3/przed-po/`, każdy w 375×812 i 1280×900)
+
+| Zadanie | Przed (commit) | Po (commit) |
+|---|---|---|
+| E3-1a Start | `e3-1a-przed-start-*` (`181d281`) | `e3-1a-po-start-*` (`f4a63cf`) |
+| E3-1b karty, kategorie, sposób dostawy | `e3-1a-po-start-*` (`f4a63cf`) | `e3-1b-po-start-*` (`c6451bd`) |
+| E3-2 Sklep | `e3-2-przed-sklep-*` (`f4a63cf`) | `e3-2-po-sklep-*` (`357a76e`) |
+| E3-3 Koszyk (2 produkty dodane kliknięciami) | `e3-3-przed-koszyk-375-*`, `-1280-*` (`357a76e`) | `e3-3-po-koszyk-375-*`, `-1280-*` (`f3aeab4`) |
+| E3-3 Pusty koszyk | `e3-3-przed-koszyk-pusty-*` (`357a76e`) | `e3-3-po-koszyk-pusty-*` (`f3aeab4`) |
+
+Stany (wersja `c6451bd`): `stan-pusty-start-*` (baza bez sklepów), `stan-pusty-oferta-*` (sklep bez produktów),
+`stan-blad-start-*`, `stan-blad-sklep-*` (API wyłączone), `stan-offline-start-*`, `stan-offline-sklep-*`
+(przeglądarka w trybie offline po wczytaniu). Każdy zrzut ma `_wynik-*.json` (0 żądań do Google, 0 px przewijania
+w bok we wszystkich 30). Nowe tryby skryptu: `WAIT_API=none`, `OFFLINE=1`, odsunięcie kursora po `CLICKS`.
+
+Zauważone przy zrzutach (do poprawki): przy minimum zamówienia 0 zł karta i nagłówek sklepu pokazują „min. 0,00 zł"
+— powinny nic nie pokazywać.
+
+### Kierunek od właściciela (2026-11-27) — wpływa na dalszą część Etapu 3
+
+- Aplikacja na **prawdziwych sklepach Rapacza** w okolicy Raby Wyżnej: `docs/rapacz/seed-rapacz.mjs` (4 lokalizacje
+  z adresami i współrzędnymi OSM, strefy wg kodów: gmina Raba Wyżna 34-721/34-723/34-713, Spytkowice 34-745,
+  Rabka-Zdrój 34-700, Klikuszowa 34-404; asortyment przykładowy — do zastąpienia eksportem z kasy; opłata za dostawę
+  do ustalenia). Tylko lokalnie; na produkcję za zgodą.
+- **Lejek bez przewijania** — plan E3-4 rozszerzony (pkt 3a), zatwierdzony przez Codexa po 10 rundach.
+- **Sieć sklepów** — klient widzi jeden „Rapacz Market", lokalizację dobiera system: plan
+  [`plany/siec-sklepow.md`](../plany/siec-sklepow.md) w przeglądzie Codexa.

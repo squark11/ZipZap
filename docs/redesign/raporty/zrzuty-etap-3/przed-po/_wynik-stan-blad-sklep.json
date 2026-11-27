@@ -1,0 +1,34 @@
+{
+  "startedAt": "2026-11-27T21:35:40.753Z",
+  "node": "v22.16.0",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "screenshots": [
+    {
+      "width": 375,
+      "height": 812,
+      "file": "stan-blad-sklep-375x812.png",
+      "storesMs": null,
+      "semanticsNodes": 11,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "file": "stan-blad-sklep-1280x900.png",
+      "storesMs": null,
+      "semanticsNodes": 11,
+      "horizontalOverflowPx": 0
+    }
+  ],
+  "hosts": {
+    "localhost:61211": 45,
+    "localhost:5080": 4
+  },
+  "external": [],
+  "perf": [],
+  "verdict": {
+    "googleRequests": 0,
+    "horizontalOverflowAt": []
+  },
+  "finishedAt": "2026-11-27T21:35:58.304Z"
+}

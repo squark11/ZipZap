@@ -1,0 +1,33 @@
+{
+  "startedAt": "2026-11-27T21:33:48.991Z",
+  "node": "v22.16.0",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "screenshots": [
+    {
+      "width": 375,
+      "height": 812,
+      "file": "e3-3-po-koszyk-pusty-375x812.png",
+      "storesMs": null,
+      "semanticsNodes": 16,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "file": "e3-3-po-koszyk-pusty-1280x900.png",
+      "storesMs": null,
+      "semanticsNodes": 10,
+      "horizontalOverflowPx": 0
+    }
+  ],
+  "hosts": {
+    "localhost:60328": 53
+  },
+  "external": [],
+  "perf": [],
+  "verdict": {
+    "googleRequests": 0,
+    "horizontalOverflowAt": []
+  },
+  "finishedAt": "2026-11-27T21:34:06.387Z"
+}
