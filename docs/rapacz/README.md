@@ -36,7 +36,8 @@ Format (plik [`szablon-asortymentu.csv`](szablon-asortymentu.csv)), separator ś
 
 1. Osoba i e-mail do konta właściciela (jedno konto zarządza czterema lokalizacjami).
 2. Plik z asortymentem i cenami (eksport z programu kasowego) — dla każdej lokalizacji albo jeden wspólny.
-3. Obszar dostaw każdej lokalizacji (kody pocztowe / miejscowości) i opłata za dostawę.
+3. Obszar dostaw każdej lokalizacji (kody pocztowe / miejscowości) — propozycja w `seed-rapacz.mjs` do potwierdzenia.
+   **Opłata za dostawę: 9,90 zł** (decyzja właściciela 2026-11-27, każda strefa).
 4. Godziny dostaw (domyślnie po rundach zakupowych 12:00 i 16:00, pon–sob) i limit zamówień na termin.
 5. Spytkowice: 14B czy 14a.
 6. Dokumenty: regulamin i polityka prywatności sklepu (wymagane do akceptacji przy zamówieniu, jeśli sklep je włączy).

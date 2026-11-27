@@ -3,14 +3,15 @@
 // uzupełniany, nie dublowany.
 //
 // Użycie (Node ≥ 18):
-//   API=http://localhost:5080/api ADMIN_EMAIL=... ADMIN_PASSWORD=... node docs/rapacz/seed-rapacz.mjs [--fee=0] [--days=7]
+//   API=http://localhost:5080/api ADMIN_EMAIL=... ADMIN_PASSWORD=... node docs/rapacz/seed-rapacz.mjs [--fee=9.90] [--days=7]
 //
 // UWAGA: asortyment jest PRZYKŁADOWY (Rapacz nie publikuje katalogu) — do zastąpienia eksportem z programu kasowego
-// (panel → Oferta → Import). Opłata za dostawę (--fee) i terminy są do ustalenia z Rapaczem (docs/rapacz/README.md).
+// (panel → Oferta → Import). Opłata za dostawę: 9,90 zł w każdej strefie (decyzja właściciela 2026-11-27); terminy —
+// do ustalenia z Rapaczem (docs/rapacz/README.md).
 // Na produkcji uruchamiać tylko za zgodą właściciela.
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')));
 const API = process.env.API ?? 'http://localhost:5080/api';
-const FEE = Number(args.fee ?? 0);
+const FEE = Number(args.fee ?? 9.9);
 const DAYS = Number(args.days ?? 7);
 
 const STORES = [
@@ -70,6 +71,8 @@ for (const s of STORES) {
   const zones = await get(`/ordering/stores/${store.id}/zones`);
   let zone = zones.find((z) => z.name === s.zone);
   if (!zone) zone = await send('POST', `/ordering/stores/${store.id}/zones`, { name: s.zone, deliveryFee: FEE, postalCodes: s.postal });
+  else if (Number(zone.deliveryFee) !== FEE)
+    console.warn(`UWAGA: strefa „${s.zone}" ma opłatę ${zone.deliveryFee} zł zamiast ${FEE} zł — API nie ma edycji strefy; popraw w panelu.`);
 
   // Terminy dostaw po rundach zakupowych 12:00 i 16:00 (pon–sob), następne DAYS dni.
   const slots = await get(`/ordering/stores/${store.id}/slots?zoneId=${zone.id}`);

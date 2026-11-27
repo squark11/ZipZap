@@ -340,8 +340,8 @@ Zauważone przy zrzutach (do poprawki): przy minimum zamówienia 0 zł karta i n
 
 - Aplikacja na **prawdziwych sklepach Rapacza** w okolicy Raby Wyżnej: `docs/rapacz/seed-rapacz.mjs` (4 lokalizacje
   z adresami i współrzędnymi OSM, strefy wg kodów: gmina Raba Wyżna 34-721/34-723/34-713, Spytkowice 34-745,
-  Rabka-Zdrój 34-700, Klikuszowa 34-404; asortyment przykładowy — do zastąpienia eksportem z kasy; opłata za dostawę
-  do ustalenia). Tylko lokalnie; na produkcję za zgodą.
+  Rabka-Zdrój 34-700, Klikuszowa 34-404; asortyment przykładowy — do zastąpienia eksportem z kasy; **opłata za dostawę 9,90 zł** w każdej
+  strefie — decyzja właściciela 2026-11-27). Tylko lokalnie; na produkcję za zgodą.
 - **Lejek bez przewijania** — plan E3-4 rozszerzony (pkt 3a), zatwierdzony przez Codexa po 10 rundach.
 - **Sieć sklepów** — klient widzi jeden „Rapacz Market", lokalizację dobiera system: plan
   [`plany/siec-sklepow.md`](../plany/siec-sklepow.md) w przeglądzie Codexa.

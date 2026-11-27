@@ -129,7 +129,7 @@ Zamknięte wszystkie publiczne ścieżki, nie tylko lista:
 ## 8. Kolejność i ryzyka
 
 1. Serwer: model + migracje + zdarzenia/projekcja + router + `delivery-options` + checkout + uprawnienia + ukrycie
-   (testy). 2. Panel. 3. Plan E3-4 zaktualizowany → przegląd → aplikacja. 4. `seed-rapacz.mjs` na model sieci.
+   (testy). 2. Panel. 3. Plan E3-4 zaktualizowany → przegląd → aplikacja. 4. `seed-rapacz.mjs` na model sieci (opłata za dostawę 9,90 zł w każdej strefie — decyzja właściciela 2026-11-27).
 5. Kopia bazy + próba na kopii + resync projekcji → wdrożenie za zgodą.
 
 Ryzyka: wyciek danych lokalizacji przez nieobjęty endpoint (lista kontrolna z pkt 4 w testach); stare APK u klientów
