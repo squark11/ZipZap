@@ -91,7 +91,10 @@ class ZzProductTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AspectRatio(aspectRatio: 4 / 3, child: ZzProductImage(url: product.imageUrl)),
+          AspectRatio(
+            aspectRatio: 4 / 3,
+            child: ZzProductImage(url: product.imageUrl),
+          ),
           const SizedBox(height: ZzSpace.sm),
           Expanded(child: _ProductText(product: product, maxNameLines: 2)),
           if (action != null) Align(alignment: Alignment.centerRight, child: action!),
@@ -113,14 +116,19 @@ class _ProductText extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(product.name,
-            maxLines: maxNameLines,
-            overflow: maxNameLines == null ? null : TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: p.text)),
+        Text(
+          product.name,
+          maxLines: maxNameLines,
+          overflow: maxNameLines == null ? null : TextOverflow.ellipsis,
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: p.text),
+        ),
         const SizedBox(height: 2),
         Text(productPriceLine(product), style: TextStyle(color: p.textMuted, fontSize: 13)),
         if (!product.isAvailable)
-          Text('Niedostępny', style: TextStyle(color: p.danger, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            'Niedostępny',
+            style: TextStyle(color: p.danger, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
       ],
     );
   }
@@ -156,12 +164,14 @@ class ZzFilterPill extends StatelessWidget {
                 borderRadius: BorderRadius.circular(ZzRadius.pill),
                 border: Border.all(color: selected ? p.brandStrong : p.border),
               ),
-              child: Text(label,
-                  style: TextStyle(
-                    color: selected ? p.onBrand : p.text,
-                    fontSize: 14,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  )),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: selected ? p.onBrand : p.text,
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
             ),
           ),
         ),
@@ -192,7 +202,9 @@ class ZzInfoChip extends StatelessWidget {
         children: [
           ZzIcon(icon, size: 15, color: p.textMuted),
           const SizedBox(width: 6),
-          Flexible(child: Text(text, style: TextStyle(color: p.text, fontSize: 13))),
+          Flexible(
+            child: Text(text, style: TextStyle(color: p.text, fontSize: 13)),
+          ),
         ],
       ),
     );

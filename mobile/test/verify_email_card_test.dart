@@ -25,16 +25,18 @@ class _FakeAuth extends AuthRepository {
 }
 
 Future<void> _pump(WidgetTester tester, _FakeAuth auth, {String delivery = 'live'}) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWith((_) => auth),
-      publicConfigProvider.overrideWith((_) async => PublicConfig(emailDelivery: delivery)),
-    ],
-    child: MaterialApp(
-      theme: ZzTheme.light(),
-      home: const Scaffold(body: VerifyEmailCard(email: 'jan@example.com')),
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authRepositoryProvider.overrideWith((_) => auth),
+        publicConfigProvider.overrideWith((_) async => PublicConfig(emailDelivery: delivery)),
+      ],
+      child: MaterialApp(
+        theme: ZzTheme.light(),
+        home: const Scaffold(body: VerifyEmailCard(email: 'jan@example.com')),
+      ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
 }
 
@@ -63,8 +65,12 @@ void main() {
   });
 
   testWidgets('explains the per-account limit', (tester) async {
-    await _pump(tester, _FakeAuth(error: ApiException(
-        code: 'validation.verify_resend_limit', message: 'x', statusCode: 400)));
+    await _pump(
+      tester,
+      _FakeAuth(
+        error: ApiException(code: 'validation.verify_resend_limit', message: 'x', statusCode: 400),
+      ),
+    );
     await tester.tap(find.text('Wyślij link ponownie'));
     await tester.pump();
     await tester.pump();

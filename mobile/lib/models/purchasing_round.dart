@@ -33,14 +33,14 @@ class PurchasingRound {
       : '${friendlyDate(cutoffLocalDate)}, ${_hhmm(cutoffLocalTime)}';
 
   factory PurchasingRound.fromJson(Map<String, dynamic> j) => PurchasingRound(
-        localDate: j['localDate']?.toString() ?? '',
-        localTime: j['localTime']?.toString() ?? '',
-        cutoffLocalDate: j['cutoffLocalDate']?.toString() ?? '',
-        cutoffLocalTime: j['cutoffLocalTime']?.toString() ?? '',
-        timeZone: j['timeZone']?.toString() ?? 'Europe/Warsaw',
-        startsAtUtc: DateTime.parse(j['startsAtUtc'].toString()).toUtc(),
-        cutoffAtUtc: DateTime.parse(j['cutoffAtUtc'].toString()).toUtc(),
-      );
+    localDate: j['localDate']?.toString() ?? '',
+    localTime: j['localTime']?.toString() ?? '',
+    cutoffLocalDate: j['cutoffLocalDate']?.toString() ?? '',
+    cutoffLocalTime: j['cutoffLocalTime']?.toString() ?? '',
+    timeZone: j['timeZone']?.toString() ?? 'Europe/Warsaw',
+    startsAtUtc: DateTime.parse(j['startsAtUtc'].toString()).toUtc(),
+    cutoffAtUtc: DateTime.parse(j['cutoffAtUtc'].toString()).toUtc(),
+  );
 }
 
 /// Podgląd przed zamówieniem: najbliższa runda + najwcześniejszy możliwy początek dostawy.

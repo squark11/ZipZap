@@ -37,10 +37,8 @@ class AccountScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user?.fullName ?? 'Klient',
-                            style: Theme.of(context).textTheme.titleMedium),
-                        Text(user?.email ?? '',
-                            style: TextStyle(color: context.zz.textMuted)),
+                        Text(user?.fullName ?? 'Klient', style: Theme.of(context).textTheme.titleMedium),
+                        Text(user?.email ?? '', style: TextStyle(color: context.zz.textMuted)),
                       ],
                     ),
                   ),
@@ -104,8 +102,7 @@ class AccountScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Wygląd',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                  const Text('Wygląd', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -117,8 +114,7 @@ class AccountScreen extends ConsumerWidget {
                         ButtonSegment(value: ThemeMode.dark, label: Text('Ciemny')),
                       ],
                       selected: {mode},
-                      onSelectionChanged: (s) =>
-                          ref.read(themeModeProvider.notifier).setMode(s.first),
+                      onSelectionChanged: (s) => ref.read(themeModeProvider.notifier).setMode(s.first),
                     ),
                   ),
                 ],

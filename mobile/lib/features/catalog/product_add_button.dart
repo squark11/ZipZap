@@ -56,10 +56,7 @@ class ProductAddButton extends ConsumerWidget {
         opacity: anim,
         child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(anim), child: c),
       ),
-      layoutBuilder: (current, previous) => Stack(
-        alignment: Alignment.centerRight,
-        children: [...previous, ?current],
-      ),
+      layoutBuilder: (current, previous) => Stack(alignment: Alignment.centerRight, children: [...previous, ?current]),
       child: child,
     );
   }
@@ -74,8 +71,9 @@ class ProductAddButton extends ConsumerWidget {
         builder: (ctx) => AlertDialog(
           title: const Text('Zacząć nowy koszyk?'),
           content: Text(
-              'Twój koszyk zawiera produkty z innego sklepu. Dodanie „${product.name}" '
-              'opróżni obecny koszyk i zacznie zakupy w „$storeName".'),
+            'Twój koszyk zawiera produkty z innego sklepu. Dodanie „${product.name}" '
+            'opróżni obecny koszyk i zacznie zakupy w „$storeName".',
+          ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
             ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Opróżnij i dodaj')),
@@ -97,26 +95,32 @@ class ProductAddButton extends ConsumerWidget {
 
   /// Arkusz z wyborem jednostki (np. „1 kg — 4,99 zł" / „1 szt — 1,20 zł").
   Future<String?> _pickUnit(BuildContext context) => showModalBottomSheet<String>(
-        context: context,
-        builder: (ctx) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-                child: Text('Wybierz jednostkę — ${product.name}',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-              ),
-              ...product.unitOptions.map((o) => ListTile(
-                    title: Text('1 ${o.unit}'),
-                    trailing: Text(zl(o.price),
-                        style: TextStyle(fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
-                    onTap: () => Navigator.pop(ctx, o.unit),
-                  )),
-              const SizedBox(height: 8),
-            ],
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+            child: Text(
+              'Wybierz jednostkę — ${product.name}',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
           ),
-        ),
-      );
+          ...product.unitOptions.map(
+            (o) => ListTile(
+              title: Text('1 ${o.unit}'),
+              trailing: Text(
+                zl(o.price),
+                style: TextStyle(fontWeight: FontWeight.w700, color: context.zz.brandStrong),
+              ),
+              onTap: () => Navigator.pop(ctx, o.unit),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 }

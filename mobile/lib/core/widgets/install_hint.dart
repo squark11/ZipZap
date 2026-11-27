@@ -23,11 +23,11 @@ class InstallHintButton extends StatelessWidget {
 }
 
 Future<void> showInstallHint(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => const InstallHintSheet(),
-    );
+  context: context,
+  isScrollControlled: true,
+  showDragHandle: true,
+  builder: (_) => const InstallHintSheet(),
+);
 
 class InstallHintSheet extends StatelessWidget {
   const InstallHintSheet({super.key});
@@ -54,12 +54,13 @@ class InstallHintSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Dodaj Dowózkę do ekranu głównego',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const Text('Dodaj Dowózkę do ekranu głównego', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text('Nie musisz niczego instalować ze sklepu z aplikacjami — to tylko skrót do tej strony. '
-                'Zamawiać możesz też bez niego, prosto z przeglądarki.',
-                style: TextStyle(color: context.zz.textMuted)),
+            Text(
+              'Nie musisz niczego instalować ze sklepu z aplikacjami — to tylko skrót do tej strony. '
+              'Zamawiać możesz też bez niego, prosto z przeglądarki.',
+              style: TextStyle(color: context.zz.textMuted),
+            ),
             for (final g in guides) ...[
               const SizedBox(height: 18),
               Text(g.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
@@ -67,13 +68,18 @@ class InstallHintSheet extends StatelessWidget {
               for (var i = 0; i < g.steps.length; i++)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    SizedBox(width: 22, child: Text('${i + 1}.', style: const TextStyle(fontWeight: FontWeight.w600))),
-                    Expanded(child: Text(g.steps[i])),
-                  ]),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        child: Text('${i + 1}.', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      Expanded(child: Text(g.steps[i])),
+                    ],
+                  ),
                 ),
-              if (g.note != null)
-                Text(g.note!, style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+              if (g.note != null) Text(g.note!, style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
             ],
             const SizedBox(height: 12),
             Align(

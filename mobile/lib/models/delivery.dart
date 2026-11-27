@@ -16,12 +16,12 @@ class DeliveryZone {
   });
 
   factory DeliveryZone.fromJson(Map<String, dynamic> j) => DeliveryZone(
-        id: j['id'].toString(),
-        storeId: j['storeId'].toString(),
-        name: j['name'] ?? '',
-        deliveryFee: (j['deliveryFee'] as num?)?.toDouble() ?? 0,
-        isActive: j['isActive'] == true,
-      );
+    id: j['id'].toString(),
+    storeId: j['storeId'].toString(),
+    name: j['name'] ?? '',
+    deliveryFee: (j['deliveryFee'] as num?)?.toDouble() ?? 0,
+    isActive: j['isActive'] == true,
+  );
 }
 
 class TimeSlot {
@@ -55,14 +55,14 @@ class TimeSlot {
   }
 
   factory TimeSlot.fromJson(Map<String, dynamic> j) => TimeSlot(
-        id: j['id'].toString(),
-        storeId: j['storeId'].toString(),
-        deliveryZoneId: j['deliveryZoneId'].toString(),
-        date: j['date']?.toString() ?? '',
-        startTime: j['startTime']?.toString() ?? '',
-        endTime: j['endTime']?.toString() ?? '',
-        maxOrders: (j['maxOrders'] as num?)?.toInt() ?? 0,
-        reservedCount: (j['reservedCount'] as num?)?.toInt() ?? 0,
-        remainingCapacity: (j['remainingCapacity'] as num?)?.toInt() ?? 0,
-      );
+    id: j['id'].toString(),
+    storeId: j['storeId'].toString(),
+    deliveryZoneId: j['deliveryZoneId'].toString(),
+    date: j['date']?.toString() ?? '',
+    startTime: j['startTime']?.toString() ?? '',
+    endTime: j['endTime']?.toString() ?? '',
+    maxOrders: (j['maxOrders'] as num?)?.toInt() ?? 0,
+    reservedCount: (j['reservedCount'] as num?)?.toInt() ?? 0,
+    remainingCapacity: (j['remainingCapacity'] as num?)?.toInt() ?? 0,
+  );
 }

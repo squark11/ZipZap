@@ -8,7 +8,8 @@ import '../../core/widgets/states.dart';
 import '../../models/notification.dart';
 
 final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
-    (ref) => ref.read(notificationsRepositoryProvider).listMine());
+  (ref) => ref.read(notificationsRepositoryProvider).listMine(),
+);
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -20,8 +21,7 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Powiadomienia')),
       body: items.when(
         loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(
-            message: e.toString(), onRetry: () => ref.invalidate(notificationsProvider)),
+        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(notificationsProvider)),
         data: (list) {
           if (list.isEmpty) {
             return const EmptyView(
@@ -45,25 +45,22 @@ class NotificationsScreen extends ConsumerWidget {
                       n.isRead ? Icons.notifications_none : Icons.notifications_active,
                       color: n.isRead ? context.zz.textMuted : context.zz.brandStrong,
                     ),
-                    title: Text(n.title,
-                        style: TextStyle(
-                            fontWeight: n.isRead ? FontWeight.w500 : FontWeight.w700)),
-                    subtitle: Text(shortDateTime(n.createdAtUtc),
-                        style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
+                    title: Text(n.title, style: TextStyle(fontWeight: n.isRead ? FontWeight.w500 : FontWeight.w700)),
+                    subtitle: Text(
+                      shortDateTime(n.createdAtUtc),
+                      style: TextStyle(color: context.zz.textMuted, fontSize: 12),
+                    ),
                     trailing: n.isRead
                         ? null
                         : Container(
                             width: 10,
                             height: 10,
-                            decoration: BoxDecoration(
-                                color: context.zz.brandStrong, shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: context.zz.brandStrong, shape: BoxShape.circle),
                           ),
                     onTap: n.isRead
                         ? null
                         : () async {
-                            await ref
-                                .read(notificationsRepositoryProvider)
-                                .markRead(n.id);
+                            await ref.read(notificationsRepositoryProvider).markRead(n.id);
                             ref.invalidate(notificationsProvider);
                           },
                   ),

@@ -24,22 +24,30 @@ import 'package:zipzap/models/user.dart';
 
 const _openId = '11111111-1111-1111-1111-111111111111';
 
-Store _store(String id, String slug, String name, {String status = 'Open', bool accepting = true}) =>
-    Store.fromJson({
-      'id': id, 'slug': slug, 'name': name, 'city': 'Koło', 'status': status,
-      'minimumOrderValue': 0, 'isAcceptingOrders': accepting,
-    });
+Store _store(String id, String slug, String name, {String status = 'Open', bool accepting = true}) => Store.fromJson({
+  'id': id,
+  'slug': slug,
+  'name': name,
+  'city': 'Koło',
+  'status': status,
+  'minimumOrderValue': 0,
+  'isAcceptingOrders': accepting,
+});
 
-Product _product(String id, String storeId, String name) => Product.fromJson({
-      'id': id, 'storeId': storeId, 'name': name, 'price': 6.5, 'unit': 'szt', 'isAvailable': true,
-    });
+Product _product(String id, String storeId, String name) =>
+    Product.fromJson({'id': id, 'storeId': storeId, 'name': name, 'price': 6.5, 'unit': 'szt', 'isAvailable': true});
 
 /// „Serwer": sklepy, produkty i koszyki — współdzielony między „odświeżeniami" (nowymi instancjami aplikacji).
 class _Backend {
   final stores = <Store>[
     _store(_openId, 'piekarnia-poranek', 'Piekarnia Poranek'),
-    _store('22222222-2222-2222-2222-222222222222', 'sklep-zamkniety', 'Sklep Zamknięty',
-        status: 'Closed', accepting: false),
+    _store(
+      '22222222-2222-2222-2222-222222222222',
+      'sklep-zamkniety',
+      'Sklep Zamknięty',
+      status: 'Closed',
+      accepting: false,
+    ),
     _store('33333333-3333-3333-3333-333333333333', 'pusty-sklep', 'Pusty Sklep'),
     _store('44444444-4444-4444-4444-444444444444', 'wolny-sklep', 'Wolny Sklep'),
   ];
@@ -86,8 +94,14 @@ class _FakeOrdering extends OrderingRepository {
 
   @override
   Future<Cart> createCart(String storeId) async {
-    final c = Cart(id: 'cart-${b.carts.length + 1}', storeId: storeId, cartToken: 'tok-${b.carts.length + 1}',
-        status: 'Active', subtotal: 0, items: const []);
+    final c = Cart(
+      id: 'cart-${b.carts.length + 1}',
+      storeId: storeId,
+      cartToken: 'tok-${b.carts.length + 1}',
+      status: 'Active',
+      subtotal: 0,
+      items: const [],
+    );
     return b.carts[c.id] = c;
   }
 
@@ -103,11 +117,23 @@ class _FakeOrdering extends OrderingRepository {
     final c = await getCart(cartId, token);
     final items = [
       ...c.items,
-      CartItem(productId: productId, productName: productId, unitPrice: 6.5, unit: 'szt', quantity: quantity,
-          lineTotal: 6.5 * quantity),
+      CartItem(
+        productId: productId,
+        productName: productId,
+        unitPrice: 6.5,
+        unit: 'szt',
+        quantity: quantity,
+        lineTotal: 6.5 * quantity,
+      ),
     ];
-    return b.carts[cartId] = Cart(id: c.id, storeId: c.storeId, cartToken: c.cartToken, status: c.status,
-        subtotal: items.fold(0.0, (a, i) => a + i.lineTotal), items: items);
+    return b.carts[cartId] = Cart(
+      id: c.id,
+      storeId: c.storeId,
+      cartToken: c.cartToken,
+      status: c.status,
+      subtotal: items.fold(0.0, (a, i) => a + i.lineTotal),
+      items: items,
+    );
   }
 }
 
@@ -115,8 +141,10 @@ class _FakeAuth extends AuthRepository {
   _FakeAuth() : super(ApiClient());
 
   AuthResult _ok(String email) => AuthResult(
-      accessToken: 'at', refreshToken: 'rt',
-      user: AppUser(id: 'u1', email: email, fullName: 'Tester', roles: const ['Customer']));
+    accessToken: 'at',
+    refreshToken: 'rt',
+    user: AppUser(id: 'u1', email: email, fullName: 'Tester', roles: const ['Customer']),
+  );
 
   @override
   Future<AuthResult> login(String email, String password) async => _ok(email);
@@ -145,13 +173,15 @@ class _FakeApi extends ApiClient {
 /// Jedna „instancja aplikacji" (np. karta przeglądarki po odświeżeniu) nad wspólnym backendem i magazynem.
 Future<ProviderContainer> _launch(WidgetTester tester, _Backend b, String url) async {
   tester.binding.platformDispatcher.defaultRouteNameTestValue = url;
-  final c = ProviderContainer(overrides: [
-    apiClientProvider.overrideWithValue(_FakeApi(b)),
-    catalogRepositoryProvider.overrideWith((_) => _FakeCatalog(b)),
-    orderingRepositoryProvider.overrideWith((_) => _FakeOrdering(b)),
-    authRepositoryProvider.overrideWith((_) => _FakeAuth()),
-    connectivityProvider.overrideWith((_) => Stream.value(true)),
-  ]);
+  final c = ProviderContainer(
+    overrides: [
+      apiClientProvider.overrideWithValue(_FakeApi(b)),
+      catalogRepositoryProvider.overrideWith((_) => _FakeCatalog(b)),
+      orderingRepositoryProvider.overrideWith((_) => _FakeOrdering(b)),
+      authRepositoryProvider.overrideWith((_) => _FakeAuth()),
+      connectivityProvider.overrideWith((_) => Stream.value(true)),
+    ],
+  );
   await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const ZipZapApp()));
   await _settle(tester);
   return c;

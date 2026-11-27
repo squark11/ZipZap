@@ -11,13 +11,7 @@ class ZzCartBar extends StatelessWidget {
   final double? missingToMinimum;
   final VoidCallback onTap;
 
-  const ZzCartBar({
-    super.key,
-    required this.count,
-    required this.subtotal,
-    required this.onTap,
-    this.missingToMinimum,
-  });
+  const ZzCartBar({super.key, required this.count, required this.subtotal, required this.onTap, this.missingToMinimum});
 
   static String productsLabel(int n) {
     if (n == 1) return '1 produkt';
@@ -57,24 +51,37 @@ class ZzCartBar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('${productsLabel(count)} · ${zl(subtotal)}',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                        Text(
+                          '${productsLabel(count)} · ${zl(subtotal)}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
                         if (missing != null && missing > 0)
-                          Text('Brakuje ${zl(missing)} do minimum',
-                              style: const TextStyle(color: ZzColors.onGraphiteMuted, fontSize: 12, fontWeight: FontWeight.w500)),
+                          Text(
+                            'Brakuje ${zl(missing)} do minimum',
+                            style: const TextStyle(
+                              color: ZzColors.onGraphiteMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                       ],
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    decoration: BoxDecoration(color: ZzColors.accent, borderRadius: BorderRadius.circular(ZzRadius.pill)),
+                    decoration: BoxDecoration(
+                      color: ZzColors.accent,
+                      borderRadius: BorderRadius.circular(ZzRadius.pill),
+                    ),
                     // Strzałka jako ikona, nie znak „→" — tego znaku nie ma w Poppins, a brak glifu
                     // kazałby przeglądarce pobrać czcionkę zapasową z Google (check_glyphs.py).
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Koszyk',
-                            style: TextStyle(color: ZzColors.onAccent, fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text(
+                          'Koszyk',
+                          style: TextStyle(color: ZzColors.onAccent, fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
                         SizedBox(width: 4),
                         Icon(Icons.arrow_forward, size: 16, color: ZzColors.onAccent),
                       ],

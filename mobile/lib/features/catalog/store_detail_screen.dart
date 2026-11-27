@@ -23,11 +23,13 @@ import 'store_header.dart';
 
 /// Sklep po slugu (stały link z kodu QR) albo po id (z listy).
 final storeDetailProvider = FutureProvider.autoDispose.family<Store, String>(
-    (ref, idOrSlug) => ref.read(catalogRepositoryProvider).getStore(idOrSlug));
+  (ref, idOrSlug) => ref.read(catalogRepositoryProvider).getStore(idOrSlug),
+);
 
 /// Produkty sklepu — zawsze po id (API przyjmuje tu tylko identyfikator, nie slug).
 final productsProvider = FutureProvider.autoDispose.family<List<Product>, String>(
-    (ref, storeId) => ref.read(catalogRepositoryProvider).listProducts(storeId));
+  (ref, storeId) => ref.read(catalogRepositoryProvider).listProducts(storeId),
+);
 
 /// Kategorie sklepu (zakładki). Błąd = brak zakładek — oferta działa dalej bez nich.
 final storeCategoriesProvider = FutureProvider.autoDispose.family<List<StoreCategory>, String>((ref, storeId) async {
@@ -41,15 +43,18 @@ final storeCategoriesProvider = FutureProvider.autoDispose.family<List<StoreCate
 /// Zakładki do pokazania: tylko kategorie, w których są produkty (bez pustych zakładek), w kolejności sklepu.
 List<StoreCategory> tabsFor(List<StoreCategory> categories, List<Product> products) {
   final used = {for (final p in products) p.categoryId};
-  return [for (final c in categories) if (used.contains(c.id)) c];
+  return [
+    for (final c in categories)
+      if (used.contains(c.id)) c,
+  ];
 }
 
 /// Produkty po wybranej kategorii (null = wszystkie) i zapytaniu (nazwa, bez wielkości liter i polskich znaków,
 /// słowa w dowolnej kolejności). Kolejność z serwera bez zmian.
 List<Product> filterProducts(List<Product> products, {String? categoryId, String query = ''}) => [
-      for (final p in products)
-        if ((categoryId == null || p.categoryId == categoryId) && matchesSearch(p.name, query)) p,
-    ];
+  for (final p in products)
+    if ((categoryId == null || p.categoryId == categoryId) && matchesSearch(p.name, query)) p,
+];
 
 /// Od tej szerokości treści produkty idą w siatkę kafelków zamiast listy wierszy.
 const productGridFrom = 600.0;
@@ -77,10 +82,7 @@ class StoreDetailScreen extends ConsumerWidget {
                 subtitle: 'Kod QR lub link może być nieaktualny. Zobacz sklepy dostępne w Dowózka.pl.',
                 action: ElevatedButton(onPressed: () => context.go('/stores'), child: const Text('Zobacz sklepy')),
               )
-            : ErrorView(
-                message: e.toString(),
-                onRetry: () => ref.invalidate(storeDetailProvider(storeRef)),
-              ),
+            : ErrorView(message: e.toString(), onRetry: () => ref.invalidate(storeDetailProvider(storeRef))),
       ),
       data: (s) => _StoreOffer(store: s, storeRef: storeRef),
     );
@@ -97,20 +99,20 @@ class _Frame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          leading: context.canPop()
-              ? null
-              : IconButton(
-                  tooltip: 'Wszystkie sklepy',
-                  icon: const Icon(Icons.storefront_outlined),
-                  onPressed: () => context.go('/stores'),
-                ),
-          title: Text(title, overflow: TextOverflow.ellipsis),
-          actions: const [InstallHintButton(), AccountButton(), CartButton()],
-        ),
-        body: body,
-        bottomNavigationBar: bottom,
-      );
+    appBar: AppBar(
+      leading: context.canPop()
+          ? null
+          : IconButton(
+              tooltip: 'Wszystkie sklepy',
+              icon: const Icon(Icons.storefront_outlined),
+              onPressed: () => context.go('/stores'),
+            ),
+      title: Text(title, overflow: TextOverflow.ellipsis),
+      actions: const [InstallHintButton(), AccountButton(), CartButton()],
+    ),
+    body: body,
+    bottomNavigationBar: bottom,
+  );
 }
 
 /// Stan ekranu oferty: wyszukiwanie i wybrana zakładka (nie karta).
@@ -149,9 +151,9 @@ class _StoreOfferState extends ConsumerState<_StoreOffer> {
   void _remember() => Future.microtask(() => ref.read(lastStoreProvider.notifier).remember(widget.store));
 
   void _clearFilters() => setState(() {
-        _search.clear();
-        _category = null;
-      });
+    _search.clear();
+    _category = null;
+  });
 
   // Koszyk NIE jest tworzony przy wejściu do sklepu — dopiero przy pierwszym dodaniu produktu
   // (ProductAddButton). Wejście na stronę innego sklepu nie kasuje po cichu koszyka z poprzedniego.
@@ -174,10 +176,7 @@ class _StoreOfferState extends ConsumerState<_StoreOffer> {
       title: s.name,
       body: products.when(
         loading: () => const ProductListSkeleton(),
-        error: (e, _) => ErrorView(
-          message: e.toString(),
-          onRetry: () => ref.invalidate(productsProvider(s.id)),
-        ),
+        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(productsProvider(s.id))),
         data: (all) {
           final tabs = tabsFor(categories, all);
           final category = tabs.any((c) => c.id == _category) ? _category : null;
@@ -190,21 +189,23 @@ class _StoreOfferState extends ConsumerState<_StoreOffer> {
               slivers: [
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(ZzSpace.screen, ZzSpace.screen, ZzSpace.screen, 0),
-                  sliver: SliverList.list(children: [
-                    StoreHeader(store: s, roundLine: round == null ? null : roundLine(round)),
-                    if (!s.isAcceptingOrders) ...[
-                      const SizedBox(height: ZzSpace.md),
-                      ZzNotice(kind: ZzNoticeKind.warning, message: closedMessage(s)),
+                  sliver: SliverList.list(
+                    children: [
+                      StoreHeader(store: s, roundLine: round == null ? null : roundLine(round)),
+                      if (!s.isAcceptingOrders) ...[
+                        const SizedBox(height: ZzSpace.md),
+                        ZzNotice(kind: ZzNoticeKind.warning, message: closedMessage(s)),
+                      ],
+                      if (all.isNotEmpty) ...[
+                        const SizedBox(height: ZzSpace.md),
+                        ZzSearchField(
+                          controller: _search,
+                          hint: 'Szukaj w ${s.name}',
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
                     ],
-                    if (all.isNotEmpty) ...[
-                      const SizedBox(height: ZzSpace.md),
-                      ZzSearchField(
-                        controller: _search,
-                        hint: 'Szukaj w ${s.name}',
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ],
-                  ]),
+                  ),
                 ),
                 if (tabs.isNotEmpty)
                   SliverPersistentHeader(
@@ -281,18 +282,19 @@ class _StoreOfferState extends ConsumerState<_StoreOffer> {
                 count: cart.count,
                 subtotal: cart.subtotal,
                 missingToMinimum: cart.cart?.storeId == s.id ? s.minimumOrderValue - cart.subtotal : null,
-                onTap: () => context.push('/cart'))
+                onTap: () => context.push('/cart'),
+              )
             : const SizedBox.shrink(key: ValueKey('nobar')),
       ),
     );
   }
 
   Widget _action(Product p) => ProductAddButton(
-        product: p,
-        storeId: widget.store.id,
-        storeName: widget.store.name,
-        canOrder: widget.store.isAcceptingOrders,
-      );
+    product: p,
+    storeId: widget.store.id,
+    storeName: widget.store.name,
+    canOrder: widget.store.isAcceptingOrders,
+  );
 
   /// Siatka kafelków: kolumny maks. 240 px; wysokość kafelka liczona z szerokości zdjęcia (4:3) i skali tekstu,
   /// żeby powiększony tekst (130 %) nie przelewał kafelka.
@@ -341,15 +343,15 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => ColoredBox(
-        color: background,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: ZzSpace.screen, vertical: ZzSpace.sm),
-          itemCount: children.length,
-          separatorBuilder: (_, _) => const SizedBox(width: ZzSpace.sm),
-          itemBuilder: (_, i) => children[i],
-        ),
-      );
+    color: background,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: ZzSpace.screen, vertical: ZzSpace.sm),
+      itemCount: children.length,
+      separatorBuilder: (_, _) => const SizedBox(width: ZzSpace.sm),
+      itemBuilder: (_, i) => children[i],
+    ),
+  );
 
   @override
   bool shouldRebuild(covariant _TabsHeader old) => true;

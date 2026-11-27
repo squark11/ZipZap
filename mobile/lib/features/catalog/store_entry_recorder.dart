@@ -18,9 +18,11 @@ class StoreEntryRecorder {
     final src = normalize(source);
     if (src == null || idOrSlug.isEmpty) return false;
     if (!_sent.add('$idOrSlug|$src')) return false;
-    unawaited(_api
-        .post('/catalog/stores/${Uri.encodeComponent(idOrSlug)}/entries', body: {'source': src})
-        .then((_) {}, onError: (_) {}));
+    unawaited(
+      _api
+          .post('/catalog/stores/${Uri.encodeComponent(idOrSlug)}/entries', body: {'source': src})
+          .then((_) {}, onError: (_) {}),
+    );
     return true;
   }
 

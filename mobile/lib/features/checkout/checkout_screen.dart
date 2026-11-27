@@ -18,19 +18,21 @@ import '../../models/store_legal.dart';
 import '../cart/cart_controller.dart';
 
 final zonesProvider = FutureProvider.autoDispose.family<List<DeliveryZone>, String>(
-    (ref, storeId) => ref.read(orderingRepositoryProvider).listZones(storeId));
+  (ref, storeId) => ref.read(orderingRepositoryProvider).listZones(storeId),
+);
 
 final storeLegalProvider = FutureProvider.autoDispose.family<StoreLegal, String>(
-    (ref, storeId) => ref.read(orderingRepositoryProvider).getStoreLegal(storeId));
+  (ref, storeId) => ref.read(orderingRepositoryProvider).getStoreLegal(storeId),
+);
 
-final slotsProvider =
-    FutureProvider.autoDispose.family<List<TimeSlot>, ({String storeId, String zoneId})>(
-        (ref, k) =>
-            ref.read(orderingRepositoryProvider).listSlots(k.storeId, zoneId: k.zoneId));
+final slotsProvider = FutureProvider.autoDispose.family<List<TimeSlot>, ({String storeId, String zoneId})>(
+  (ref, k) => ref.read(orderingRepositoryProvider).listSlots(k.storeId, zoneId: k.zoneId),
+);
 
 /// Najbliższa runda zakupowa sklepu (+ termin graniczny i najwcześniejsza dostawa).
 final roundPreviewProvider = FutureProvider.autoDispose.family<RoundPreview, String>(
-    (ref, storeId) => ref.read(orderingRepositoryProvider).getRoundPreview(storeId));
+  (ref, storeId) => ref.read(orderingRepositoryProvider).getRoundPreview(storeId),
+);
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -51,8 +53,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _idempotencyKey =
-        '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1 << 30)}';
+    _idempotencyKey = '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1 << 30)}';
   }
 
   @override
@@ -76,7 +77,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final round = ref.read(roundPreviewProvider(cart.storeId)).valueOrNull?.round;
     setState(() => _submitting = true);
     try {
-      final order = await ref.read(orderingRepositoryProvider).checkout(
+      final order = await ref
+          .read(orderingRepositoryProvider)
+          .checkout(
             cartId: cart.id,
             cartToken: cart.cartToken,
             deliveryZoneId: _zoneId!,
@@ -106,12 +109,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   /// Pierwszy brakujący warunek złożenia zamówienia (null = można składać).
-  String? _missingReason(StoreLegal? legal,
-      {required bool testerBlocked, required AsyncValue<RoundPreview> round, TimeSlot? slot}) {
+  String? _missingReason(
+    StoreLegal? legal, {
+    required bool testerBlocked,
+    required AsyncValue<RoundPreview> round,
+    TimeSlot? slot,
+  }) {
     if (testerBlocked) return 'Zamówienia w pilotażu są dostępne tylko dla zaproszonych testerów.';
     final preview = round.valueOrNull;
     if (preview == null) {
@@ -148,10 +154,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         // Po odświeżeniu strony koszyk jest jeszcze odtwarzany — nie pokazujemy wtedy „pustego koszyka".
         body: cart.restoring && c == null
             ? const LoadingView(label: 'Wczytywanie koszyka…')
-            : const EmptyView(
-                icon: Icons.shopping_cart_outlined,
-                title: 'Koszyk jest pusty',
-              ),
+            : const EmptyView(icon: Icons.shopping_cart_outlined, title: 'Koszyk jest pusty'),
       );
     }
 
@@ -161,10 +164,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       appBar: AppBar(title: Text(title)),
       body: zones.when(
         loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(
-          message: e.toString(),
-          onRetry: () => ref.invalidate(zonesProvider(c.storeId)),
-        ),
+        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(zonesProvider(c.storeId))),
         data: (zoneList) {
           double fee = 0;
           for (final z in zoneList) {
@@ -177,27 +177,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           final round = ref.watch(roundPreviewProvider(c.storeId));
           TimeSlot? selectedSlot;
           if (_zoneId != null && _slotId != null) {
-            final slots = ref
-                    .watch(slotsProvider((storeId: c.storeId, zoneId: _zoneId!)))
-                    .valueOrNull ??
-                const <TimeSlot>[];
+            final slots =
+                ref.watch(slotsProvider((storeId: c.storeId, zoneId: _zoneId!))).valueOrNull ?? const <TimeSlot>[];
             for (final s in slots) {
               if (s.id == _slotId) selectedSlot = s;
             }
           }
-          final missing = _missingReason(legal,
-              testerBlocked: testerBlocked, round: round, slot: selectedSlot);
+          final missing = _missingReason(legal, testerBlocked: testerBlocked, round: round, slot: selectedSlot);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (testMode) ...[
-                TestOrderBanner(blocked: testerBlocked),
-                const SizedBox(height: 16),
-              ],
-              _RoundCard(
-                round: round,
-                onRetry: () => ref.invalidate(roundPreviewProvider(c.storeId)),
-              ),
+              if (testMode) ...[TestOrderBanner(blocked: testerBlocked), const SizedBox(height: 16)],
+              _RoundCard(round: round, onRetry: () => ref.invalidate(roundPreviewProvider(c.storeId))),
               const SizedBox(height: 16),
               const _Label('Adres dostawy', icon: 'home'),
               TextField(
@@ -248,8 +239,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     dense: true,
                     activeColor: context.zz.brandStrong,
                     title: const Text(
-                        'Akceptuję regulamin i politykę prywatności sklepu',
-                        style: TextStyle(fontSize: 13)),
+                      'Akceptuję regulamin i politykę prywatności sklepu',
+                      style: TextStyle(fontSize: 13),
+                    ),
                   ),
               ],
               const Divider(height: 24),
@@ -268,24 +260,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ? SizedBox(
                         height: 22,
                         width: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
-                    : Text(testMode
-                        ? 'Złóż zamówienie testowe'
-                        : 'Złóż zamówienie i przejdź do płatności'),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand),
+                      )
+                    : Text(testMode ? 'Złóż zamówienie testowe' : 'Złóż zamówienie i przejdź do płatności'),
               ),
               const SizedBox(height: 8),
               Text(
                 missing == null || _submitting
                     ? (testMode
-                        ? 'Nie pobieramy żadnej płatności — to zamówienie testowe pilotażu.'
-                        : 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.')
+                          ? 'Nie pobieramy żadnej płatności — to zamówienie testowe pilotażu.'
+                          : 'Płatność potwierdza dostawca — status zaktualizuje się automatycznie.')
                     : missing,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: missing == null || _submitting
-                        ? context.zz.textMuted
-                        : context.zz.brandStrong,
-                    fontSize: 12),
+                  color: missing == null || _submitting ? context.zz.textMuted : context.zz.brandStrong,
+                  fontSize: 12,
+                ),
               ),
             ],
           );
@@ -308,10 +298,7 @@ class _ZoneDropdown extends StatelessWidget {
       isExpanded: true,
       hint: const Text('Wybierz strefę'),
       items: zones
-          .map((z) => DropdownMenuItem(
-                value: z.id,
-                child: Text('${z.name} · dostawa ${zl(z.deliveryFee)}'),
-              ))
+          .map((z) => DropdownMenuItem(value: z.id, child: Text('${z.name} · dostawa ${zl(z.deliveryFee)}')))
           .toList(),
       onChanged: onChanged,
     );
@@ -324,12 +311,13 @@ class _SlotPicker extends ConsumerWidget {
   final String? value;
   final RoundPreview? round;
   final ValueChanged<String?> onChanged;
-  const _SlotPicker(
-      {required this.storeId,
-      required this.zoneId,
-      required this.value,
-      required this.round,
-      required this.onChanged});
+  const _SlotPicker({
+    required this.storeId,
+    required this.zoneId,
+    required this.value,
+    required this.round,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -342,8 +330,7 @@ class _SlotPicker extends ConsumerWidget {
       error: (e, _) => Text(e.toString(), style: TextStyle(color: context.zz.danger)),
       data: (list) {
         if (list.isEmpty) {
-          return Text('Brak dostępnych terminów w tej strefie.',
-              style: TextStyle(color: context.zz.textMuted));
+          return Text('Brak dostępnych terminów w tej strefie.', style: TextStyle(color: context.zz.textMuted));
         }
         final r = round;
         return Column(
@@ -358,8 +345,8 @@ class _SlotPicker extends ConsumerWidget {
                   tooEarlyNote: r == null || r.allowsSlot(s)
                       ? null
                       : (r.earliestDeliveryLabel == null
-                          ? 'Niedostępny'
-                          : 'Za wcześnie — dostawy od ${r.earliestDeliveryLabel}'),
+                            ? 'Niedostępny'
+                            : 'Za wcześnie — dostawy od ${r.earliestDeliveryLabel}'),
                   onTap: () => onChanged(s.id),
                 ),
               ),
@@ -376,8 +363,7 @@ class _SlotCard extends StatelessWidget {
   final bool selected;
   final String? tooEarlyNote;
   final VoidCallback onTap;
-  const _SlotCard(
-      {required this.slot, required this.selected, required this.onTap, this.tooEarlyNote});
+  const _SlotCard({required this.slot, required this.selected, required this.onTap, this.tooEarlyNote});
 
   @override
   Widget build(BuildContext context) {
@@ -392,36 +378,33 @@ class _SlotCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: selected ? context.zz.brandTint : context.zz.surface,
-            border: Border.all(
-                color: selected ? context.zz.brandStrong : context.zz.border,
-                width: selected ? 1.5 : 1),
+            border: Border.all(color: selected ? context.zz.brandStrong : context.zz.border, width: selected ? 1.5 : 1),
             borderRadius: BorderRadius.circular(ZzRadius.field),
           ),
           child: Row(
             children: [
-              ZzIcon('clock',
-                  size: 18, color: selected ? context.zz.brandStrong : context.zz.textMuted),
+              ZzIcon('clock', size: 18, color: selected ? context.zz.brandStrong : context.zz.textMuted),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(slot.label,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: selected ? context.zz.brandStrong : context.zz.text)),
+                    Text(
+                      slot.label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: selected ? context.zz.brandStrong : context.zz.text,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
-                        tooEarlyNote ??
-                            (soldOut
-                                ? 'Brak wolnych miejsc'
-                                : 'Wolne miejsca: ${slot.remainingCapacity}'),
-                        style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
+                      tooEarlyNote ?? (soldOut ? 'Brak wolnych miejsc' : 'Wolne miejsca: ${slot.remainingCapacity}'),
+                      style: TextStyle(color: context.zz.textMuted, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
-              if (selected)
-                ZzIcon('check_circle', size: 20, color: context.zz.brandStrong),
+              if (selected) ZzIcon('check_circle', size: 20, color: context.zz.brandStrong),
             ],
           ),
         ),
@@ -448,8 +431,10 @@ class _RoundCard extends StatelessWidget {
         context,
         warn: true,
         children: [
-          Text('Nie udało się sprawdzić rundy zakupowej.',
-              style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w600)),
+          Text(
+            'Nie udało się sprawdzić rundy zakupowej.',
+            style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w600),
+          ),
           TextButton(onPressed: onRetry, child: const Text('Spróbuj ponownie')),
         ],
       ),
@@ -461,57 +446,62 @@ class _RoundCard extends StatelessWidget {
             warn: true,
             children: [
               Text(
-                  p.reason == 'store_closed'
-                      ? 'Sklep jest zamknięty'
-                      : 'Brak dostępnej rundy zakupowej',
-                  style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w700)),
+                p.reason == 'store_closed' ? 'Sklep jest zamknięty' : 'Brak dostępnej rundy zakupowej',
+                style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 4),
-              Text(p.message ?? 'Sklep nie przyjmuje teraz zamówień.',
-                  style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+              Text(
+                p.message ?? 'Sklep nie przyjmuje teraz zamówień.',
+                style: TextStyle(color: context.zz.textMuted, fontSize: 13),
+              ),
             ],
           );
         }
         return _box(
           context,
           children: [
-            Text('Zakupy w sklepie: ${r.label}',
-                style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w700)),
+            Text(
+              'Zakupy w sklepie: ${r.label}',
+              style: TextStyle(color: context.zz.text, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 4),
-            Text('Zamów do ${r.cutoffLabel} — później zamówienie trafi do kolejnej rundy.',
-                style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+            Text(
+              'Zamów do ${r.cutoffLabel} — później zamówienie trafi do kolejnej rundy.',
+              style: TextStyle(color: context.zz.textMuted, fontSize: 13),
+            ),
             if (p.earliestDeliveryLabel != null) ...[
               const SizedBox(height: 4),
-              Text('Dostawa najwcześniej: ${p.earliestDeliveryLabel} (termin wybierasz poniżej).',
-                  style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+              Text(
+                'Dostawa najwcześniej: ${p.earliestDeliveryLabel} (termin wybierasz poniżej).',
+                style: TextStyle(color: context.zz.textMuted, fontSize: 13),
+              ),
             ],
             const SizedBox(height: 4),
-            Text('Godziny według czasu polskiego.',
-                style: TextStyle(color: context.zz.textMuted, fontSize: 11)),
+            Text('Godziny według czasu polskiego.', style: TextStyle(color: context.zz.textMuted, fontSize: 11)),
           ],
         );
       },
     );
   }
 
-  Widget _box(BuildContext context, {required List<Widget> children, bool warn = false}) =>
-      Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: warn ? context.zz.surface : context.zz.brandTint,
-          border: Border.all(color: warn ? context.zz.brandStrong : context.zz.brandStrong),
-          borderRadius: BorderRadius.circular(ZzRadius.field),
+  Widget _box(BuildContext context, {required List<Widget> children, bool warn = false}) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: warn ? context.zz.surface : context.zz.brandTint,
+      border: Border.all(color: warn ? context.zz.brandStrong : context.zz.brandStrong),
+      borderRadius: BorderRadius.circular(ZzRadius.field),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ZzIcon(warn ? 'info' : 'cart', size: 20, color: context.zz.brandStrong),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ZzIcon(warn ? 'info' : 'cart', size: 20, color: context.zz.brandStrong),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 /// Klikalne linki do dokumentów prawnych sklepu (otwierane w przeglądarce).
@@ -526,8 +516,7 @@ class _LegalLinks extends StatelessWidget {
     if ((legal.privacyUrl ?? '').isNotEmpty) items.add(('Polityka prywatności', legal.privacyUrl!));
     if ((legal.gdprUrl ?? '').isNotEmpty) items.add(('Informacja RODO', legal.gdprUrl!));
     if (items.isEmpty) {
-      return Text('Sklep nie udostępnił dokumentów.',
-          style: TextStyle(color: context.zz.textMuted, fontSize: 13));
+      return Text('Sklep nie udostępnił dokumentów.', style: TextStyle(color: context.zz.textMuted, fontSize: 13));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,17 +526,22 @@ class _LegalLinks extends StatelessWidget {
             onTap: () => _open(context, it.$2),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(children: [
-                Icon(Icons.open_in_new, size: 16, color: context.zz.brandStrong),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(it.$1,
+              child: Row(
+                children: [
+                  Icon(Icons.open_in_new, size: 16, color: context.zz.brandStrong),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      it.$1,
                       style: TextStyle(
-                          color: context.zz.brandStrong,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline)),
-                ),
-              ]),
+                        color: context.zz.brandStrong,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -561,8 +555,7 @@ class _LegalLinks extends StatelessWidget {
       ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Nie udało się otworzyć dokumentu.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nie udało się otworzyć dokumentu.')));
     }
   }
 }
@@ -573,17 +566,14 @@ class _Label extends StatelessWidget {
   const _Label(this.text, {this.icon});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              ZzIcon(icon!, size: 18, color: context.zz.textMuted),
-              const SizedBox(width: 6),
-            ],
-            Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      children: [
+        if (icon != null) ...[ZzIcon(icon!, size: 18, color: context.zz.textMuted), const SizedBox(width: 6)],
+        Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ],
+    ),
+  );
 }
 
 class _SummaryRow extends StatelessWidget {
@@ -593,24 +583,28 @@ class _SummaryRow extends StatelessWidget {
   const _SummaryRow(this.label, this.value, {this.bold = false});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: bold ? context.zz.text : context.zz.textMuted,
-                    fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-                    fontSize: bold ? 17 : 14)),
-            const SizedBox(width: 12),
-            // Długa wartość (np. „bez opłaty — zamówienie testowe") zawija się zamiast wychodzić poza ekran.
-            Expanded(
-              child: Text(value,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: bold ? 17 : 14)),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: bold ? context.zz.text : context.zz.textMuted,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            fontSize: bold ? 17 : 14,
+          ),
         ),
-      );
+        const SizedBox(width: 12),
+        // Długa wartość (np. „bez opłaty — zamówienie testowe") zawija się zamiast wychodzić poza ekran.
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: bold ? 17 : 14),
+          ),
+        ),
+      ],
+    ),
+  );
 }

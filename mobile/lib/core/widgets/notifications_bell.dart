@@ -33,15 +33,13 @@ class NotificationsBell extends ConsumerWidget {
             top: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: context.zz.brandStrong,
-                borderRadius: BorderRadius.circular(10),
-              ),
+              decoration: BoxDecoration(color: context.zz.brandStrong, borderRadius: BorderRadius.circular(10)),
               constraints: const BoxConstraints(minWidth: 16),
-              child: Text(count > 9 ? '9+' : '$count',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: context.zz.onBrand, fontSize: 11, fontWeight: FontWeight.w700)),
+              child: Text(
+                count > 9 ? '9+' : '$count',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.zz.onBrand, fontSize: 11, fontWeight: FontWeight.w700),
+              ),
             ),
           ),
       ],

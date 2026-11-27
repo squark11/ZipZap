@@ -36,11 +36,11 @@ class AppNotification {
   }
 
   factory AppNotification.fromJson(Map<String, dynamic> j) => AppNotification(
-        id: j['id'].toString(),
-        template: j['template'] ?? '',
-        payload: j['payload']?.toString() ?? '',
-        status: j['status'] ?? '',
-        isRead: j['isRead'] == true,
-        createdAtUtc: DateTime.parse(j['createdAtUtc'].toString()),
-      );
+    id: j['id'].toString(),
+    template: j['template'] ?? '',
+    payload: j['payload']?.toString() ?? '',
+    status: j['status'] ?? '',
+    isRead: j['isRead'] == true,
+    createdAtUtc: DateTime.parse(j['createdAtUtc'].toString()),
+  );
 }

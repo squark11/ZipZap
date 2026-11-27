@@ -47,7 +47,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     }
     setState(() => _sending = true);
     try {
-      await ref.read(feedbackRepositoryProvider).submit(
+      await ref
+          .read(feedbackRepositoryProvider)
+          .submit(
             type: _type,
             message: _message.text,
             contactEmail: _email.text,
@@ -64,8 +66,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     }
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +77,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Co możemy poprawić?',
-              style: Theme.of(context).textTheme.titleMedium),
+          Text('Co możemy poprawić?', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text('Twoja uwaga pomaga nam ulepszać aplikację.',
-              style: TextStyle(color: context.zz.textMuted)),
+          Text('Twoja uwaga pomaga nam ulepszać aplikację.', style: TextStyle(color: context.zz.textMuted)),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -117,10 +116,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             ),
           ),
           if (captchaEnabled)
-            CaptchaField(
-              siteKey: config?.captchaSiteKey,
-              onToken: (t) => setState(() => _captchaToken = t),
-            ),
+            CaptchaField(siteKey: config?.captchaSiteKey, onToken: (t) => setState(() => _captchaToken = t)),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _sending ? null : () => _submit(captchaEnabled),
@@ -128,7 +124,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 ? SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand),
+                  )
                 : const Text('Wyślij uwagę'),
           ),
         ],

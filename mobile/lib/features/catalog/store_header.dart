@@ -37,10 +37,7 @@ class StoreHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Semantics(
-                      header: true,
-                      child: Text(store.name, style: Theme.of(context).textTheme.titleLarge),
-                    ),
+                    Semantics(header: true, child: Text(store.name, style: Theme.of(context).textTheme.titleLarge)),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: ZzSpace.sm,

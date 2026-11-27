@@ -19,10 +19,15 @@ class ZzStoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.zz;
-    final meta = [store.city, if (store.distanceLabel != null) store.distanceLabel!, 'min. ${zl(store.minimumOrderValue)}'];
+    final meta = [
+      store.city,
+      if (store.distanceLabel != null) store.distanceLabel!,
+      'min. ${zl(store.minimumOrderValue)}',
+    ];
     return Semantics(
       button: true,
-      label: '${store.name}, ${store.isAcceptingOrders ? 'otwarte' : 'zamknięte'}, ${meta.join(', ')}'
+      label:
+          '${store.name}, ${store.isAcceptingOrders ? 'otwarte' : 'zamknięte'}, ${meta.join(', ')}'
           '${roundLine == null ? '' : ', $roundLine'}',
       excludeSemantics: true,
       child: Container(
@@ -48,8 +53,12 @@ class ZzStoreCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(store.name,
-                            maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
+                        Text(
+                          store.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
                         const SizedBox(height: ZzSpace.xs),
                         Wrap(
                           spacing: ZzSpace.sm,
@@ -71,9 +80,10 @@ class ZzStoreCard extends StatelessWidget {
                               ),
                               const SizedBox(width: ZzSpace.xs),
                               Expanded(
-                                child: Text(roundLine!,
-                                    style: TextStyle(
-                                        color: p.brandStrong, fontSize: 12, fontWeight: FontWeight.w600)),
+                                child: Text(
+                                  roundLine!,
+                                  style: TextStyle(color: p.brandStrong, fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
                               ),
                             ],
                           ),
@@ -106,8 +116,10 @@ class ZzStatusChip extends StatelessWidget {
         color: open ? p.successTint : p.dangerTint,
         borderRadius: BorderRadius.circular(ZzRadius.pill),
       ),
-      child: Text(open ? 'Otwarte' : (status == 'TemporarilyUnavailable' ? 'Niedostępne' : 'Zamknięte'),
-          style: TextStyle(color: open ? p.success : p.danger, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(
+        open ? 'Otwarte' : (status == 'TemporarilyUnavailable' ? 'Niedostępne' : 'Zamknięte'),
+        style: TextStyle(color: open ? p.success : p.danger, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

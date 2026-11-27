@@ -16,13 +16,13 @@ class CartItem {
   });
 
   factory CartItem.fromJson(Map<String, dynamic> j) => CartItem(
-        productId: j['productId'].toString(),
-        productName: j['productName'] ?? '',
-        unitPrice: (j['unitPrice'] as num?)?.toDouble() ?? 0,
-        unit: (j['unit'] ?? 'szt').toString(),
-        quantity: (j['quantity'] as num?)?.toInt() ?? 0,
-        lineTotal: (j['lineTotal'] as num?)?.toDouble() ?? 0,
-      );
+    productId: j['productId'].toString(),
+    productName: j['productName'] ?? '',
+    unitPrice: (j['unitPrice'] as num?)?.toDouble() ?? 0,
+    unit: (j['unit'] ?? 'szt').toString(),
+    quantity: (j['quantity'] as num?)?.toInt() ?? 0,
+    lineTotal: (j['lineTotal'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 class Cart {
@@ -45,14 +45,11 @@ class Cart {
   int get totalQuantity => items.fold(0, (a, i) => a + i.quantity);
 
   factory Cart.fromJson(Map<String, dynamic> j) => Cart(
-        id: j['id'].toString(),
-        storeId: j['storeId'].toString(),
-        cartToken: j['cartToken'] ?? '',
-        status: j['status'] ?? 'Active',
-        subtotal: (j['subtotal'] as num?)?.toDouble() ?? 0,
-        items: (j['items'] as List?)
-                ?.map((e) => CartItem.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-      );
+    id: j['id'].toString(),
+    storeId: j['storeId'].toString(),
+    cartToken: j['cartToken'] ?? '',
+    status: j['status'] ?? 'Active',
+    subtotal: (j['subtotal'] as num?)?.toDouble() ?? 0,
+    items: (j['items'] as List?)?.map((e) => CartItem.fromJson(e as Map<String, dynamic>)).toList() ?? const [],
+  );
 }

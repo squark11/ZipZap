@@ -63,10 +63,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   padding: const EdgeInsets.fromLTRB(ZzSpace.screen, 0, ZzSpace.screen, ZzSpace.screen),
                   itemCount: found.length,
                   separatorBuilder: (_, _) => const SizedBox(height: ZzSpace.md),
-                  itemBuilder: (_, i) => ZzStoreCard(
-                    store: found[i],
-                    onTap: () => context.push('/stores/${found[i].id}'),
-                  ),
+                  itemBuilder: (_, i) =>
+                      ZzStoreCard(store: found[i], onTap: () => context.push('/stores/${found[i].id}')),
                 );
               },
             ),

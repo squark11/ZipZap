@@ -18,18 +18,17 @@ class PublicConfig {
     this.emailDelivery = 'live',
   });
 
-  bool get captchaEnabled =>
-      (captchaProvider ?? '').isNotEmpty && (captchaSiteKey ?? '').isNotEmpty;
+  bool get captchaEnabled => (captchaProvider ?? '').isNotEmpty && (captchaSiteKey ?? '').isNotEmpty;
 
   bool get isTestOrdering => paymentMode == 'test';
 
   bool get mailIsMock => emailDelivery == 'mock';
 
   factory PublicConfig.fromJson(Map<String, dynamic> j) => PublicConfig(
-        googleClientId: j['googleClientId'] as String?,
-        captchaProvider: j['captchaProvider'] as String?,
-        captchaSiteKey: j['captchaSiteKey'] as String?,
-        paymentMode: (j['paymentMode'] ?? 'online').toString(),
-        emailDelivery: (j['emailDelivery'] ?? 'live').toString(),
-      );
+    googleClientId: j['googleClientId'] as String?,
+    captchaProvider: j['captchaProvider'] as String?,
+    captchaSiteKey: j['captchaSiteKey'] as String?,
+    paymentMode: (j['paymentMode'] ?? 'online').toString(),
+    emailDelivery: (j['emailDelivery'] ?? 'live').toString(),
+  );
 }

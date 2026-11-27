@@ -40,7 +40,10 @@ class ZzMinOrderProgress extends StatelessWidget {
                 Icon(reached ? Icons.check_circle : Icons.shopping_basket_outlined, size: 18, color: color),
                 const SizedBox(width: ZzSpace.sm),
                 Expanded(
-                  child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  child: Text(
+                    text,
+                    style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13.5),
+                  ),
                 ),
               ],
             ),
@@ -122,15 +125,20 @@ class ZzCartItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: p.text)),
+                      Text(
+                        name,
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: p.text),
+                      ),
                       const SizedBox(height: 2),
-                      Text('$quantity × ${zl(unitPrice)} / $unit',
-                          style: TextStyle(color: p.textMuted, fontSize: 13)),
+                      Text('$quantity × ${zl(unitPrice)} / $unit', style: TextStyle(color: p.textMuted, fontSize: 13)),
                     ],
                   ),
                 ),
                 const SizedBox(width: ZzSpace.sm),
-                Text(zl(lineTotal), style: TextStyle(fontWeight: FontWeight.w700, color: p.text)),
+                Text(
+                  zl(lineTotal),
+                  style: TextStyle(fontWeight: FontWeight.w700, color: p.text),
+                ),
               ],
             ),
           ),
@@ -165,7 +173,13 @@ class ZzSummaryRow extends StatelessWidget {
   final String value;
   final bool strong;
   final bool mutedValue;
-  const ZzSummaryRow({super.key, required this.label, required this.value, this.strong = false, this.mutedValue = false});
+  const ZzSummaryRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.strong = false,
+    this.mutedValue = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -186,11 +200,13 @@ class ZzSummaryRow extends StatelessWidget {
           Flexible(child: Text(label, style: style)),
           const SizedBox(width: ZzSpace.md),
           Flexible(
-            child: Text(value,
-                textAlign: TextAlign.right,
-                style: mutedValue
-                    ? TextStyle(color: p.textMuted, fontSize: 13)
-                    : style.copyWith(color: p.text, fontWeight: strong ? FontWeight.w700 : FontWeight.w600)),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: mutedValue
+                  ? TextStyle(color: p.textMuted, fontSize: 13)
+                  : style.copyWith(color: p.text, fontWeight: strong ? FontWeight.w700 : FontWeight.w600),
+            ),
           ),
         ],
       ),

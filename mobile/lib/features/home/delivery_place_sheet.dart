@@ -26,11 +26,11 @@ class DeliveryPlaceSheet extends ConsumerStatefulWidget {
   const DeliveryPlaceSheet({super.key});
 
   static Future<PlacePick?> show(BuildContext context) => showModalBottomSheet<PlacePick>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => const DeliveryPlaceSheet(),
-      );
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => const DeliveryPlaceSheet(),
+  );
 
   @override
   ConsumerState<DeliveryPlaceSheet> createState() => _DeliveryPlaceSheetState();
@@ -63,7 +63,8 @@ class _DeliveryPlaceSheetState extends ConsumerState<DeliveryPlaceSheet> {
     final signedIn = ref.watch(authControllerProvider).isAuthenticated;
     final addresses = signedIn ? ref.watch(addressesProvider).valueOrNull : null;
     final usable = [
-      for (final a in addresses ?? const []) if (normalizePostal(a.postalCode) != null) a,
+      for (final a in addresses ?? const [])
+        if (normalizePostal(a.postalCode) != null) a,
     ];
 
     return SafeArea(
@@ -80,26 +81,31 @@ class _DeliveryPlaceSheetState extends ConsumerState<DeliveryPlaceSheet> {
                 child: Text('Dokąd dowieźć zakupy?', style: Theme.of(context).textTheme.titleLarge),
               ),
               const SizedBox(height: ZzSpace.xs),
-              Text('Pokażemy tylko sklepy, które dowożą pod ten kod pocztowy.',
-                  style: TextStyle(color: p.textMuted, fontSize: 13)),
+              Text(
+                'Pokażemy tylko sklepy, które dowożą pod ten kod pocztowy.',
+                style: TextStyle(color: p.textMuted, fontSize: 13),
+              ),
               const SizedBox(height: ZzSpace.md),
               for (final a in usable)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   minTileHeight: zzMinTouch,
                   leading: ZzIcon('home', size: 22, color: p.brandStrong),
-                  title: Text(a.label.isEmpty ? 'Adres' : a.label,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(a.label.isEmpty ? 'Adres' : a.label, style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(a.oneLine, maxLines: 2, overflow: TextOverflow.ellipsis),
                   trailing: normalizePostal(a.postalCode) == current
                       ? Icon(Icons.check_circle, color: p.brandStrong)
                       : null,
                   onTap: () => Navigator.pop(
-                      context, PlacePick(postal: normalizePostal(a.postalCode), label: a.label.isEmpty ? null : a.label)),
+                    context,
+                    PlacePick(postal: normalizePostal(a.postalCode), label: a.label.isEmpty ? null : a.label),
+                  ),
                 ),
               if (usable.isNotEmpty) const Divider(height: ZzSpace.lg),
-              Text(usable.isEmpty ? 'Kod pocztowy' : 'Inny kod pocztowy',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                usable.isEmpty ? 'Kod pocztowy' : 'Inny kod pocztowy',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: ZzSpace.sm),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

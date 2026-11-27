@@ -23,9 +23,14 @@ import 'package:zipzap/models/store.dart';
 import 'package:zipzap/models/user.dart';
 
 Store _store(String id, String name) => Store.fromJson({
-      'id': id, 'slug': 's-$id', 'name': name, 'city': 'Rabka-Zdrój', 'status': 'Open',
-      'minimumOrderValue': 15, 'isAcceptingOrders': true,
-    });
+  'id': id,
+  'slug': 's-$id',
+  'name': name,
+  'city': 'Rabka-Zdrój',
+  'status': 'Open',
+  'minimumOrderValue': 15,
+  'isAcceptingOrders': true,
+});
 
 class _Catalog extends CatalogRepository {
   _Catalog({this.mode = 'ok'}) : super(_OfflineApi());
@@ -55,9 +60,13 @@ class _Ordering extends OrderingRepository {
     return RoundPreview.fromJson({
       'available': true,
       'round': {
-        'localDate': today, 'localTime': '12:00:00', 'cutoffLocalDate': today, 'cutoffLocalTime': cutoff,
+        'localDate': today,
+        'localTime': '12:00:00',
+        'cutoffLocalDate': today,
+        'cutoffLocalTime': cutoff,
         'timeZone': 'Europe/Warsaw',
-        'startsAtUtc': '${today}T11:00:00Z', 'cutoffAtUtc': '${today}T${storeId == '2' ? '09' : '10'}:30:00Z',
+        'startsAtUtc': '${today}T11:00:00Z',
+        'cutoffAtUtc': '${today}T${storeId == '2' ? '09' : '10'}:30:00Z',
       },
       'earliestDelivery': {'localDate': today, 'localTime': '17:00:00'},
     });
@@ -73,33 +82,50 @@ class _OfflineApi extends ApiClient {
 class _SignedIn extends AuthController {
   @override
   AuthState build() => AuthState(
-      AuthStatus.authenticated, AppUser(id: 'u1', email: 'anna@example.test', fullName: 'Anna Nowak', roles: const []));
+    AuthStatus.authenticated,
+    AppUser(id: 'u1', email: 'anna@example.test', fullName: 'Anna Nowak', roles: const []),
+  );
 }
 
 Address _addr(String id, String label, String postal, {bool def = false}) => Address(
-    id: id, label: label, street: 'Krótka', buildingNo: '1', postalCode: postal, city: 'Kraków', isDefault: def);
+  id: id,
+  label: label,
+  street: 'Krótka',
+  buildingNo: '1',
+  postalCode: postal,
+  city: 'Kraków',
+  isDefault: def,
+);
 
-Future<(_Catalog, _Ordering)> _pump(WidgetTester tester,
-    {bool signedIn = false, bool rounds = true, Size size = const Size(360, 780), String catalogMode = 'ok'}) async {
+Future<(_Catalog, _Ordering)> _pump(
+  WidgetTester tester, {
+  bool signedIn = false,
+  bool rounds = true,
+  Size size = const Size(360, 780),
+  String catalogMode = 'ok',
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final catalog = _Catalog(mode: catalogMode);
   final ordering = _Ordering(available: rounds);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      apiClientProvider.overrideWithValue(_OfflineApi()),
-      catalogRepositoryProvider.overrideWithValue(catalog),
-      orderingRepositoryProvider.overrideWithValue(ordering),
-      if (signedIn) ...[
-        authControllerProvider.overrideWith(_SignedIn.new),
-        addressesProvider.overrideWith((_) async =>
-            [_addr('a1', 'Praca', '31-042'), _addr('a2', 'Dom', '34700', def: true)]),
-        unreadCountProvider.overrideWith((_) async => 0),
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        apiClientProvider.overrideWithValue(_OfflineApi()),
+        catalogRepositoryProvider.overrideWithValue(catalog),
+        orderingRepositoryProvider.overrideWithValue(ordering),
+        if (signedIn) ...[
+          authControllerProvider.overrideWith(_SignedIn.new),
+          addressesProvider.overrideWith(
+            (_) async => [_addr('a1', 'Praca', '31-042'), _addr('a2', 'Dom', '34700', def: true)],
+          ),
+          unreadCountProvider.overrideWith((_) async => 0),
+        ],
       ],
-    ],
-    child: MaterialApp(theme: ZzTheme.light(), home: const HomeScreen()),
-  ));
+      child: MaterialApp(theme: ZzTheme.light(), home: const HomeScreen()),
+    ),
+  );
   await tester.pumpAndSettle();
   return (catalog, ordering);
 }
@@ -158,8 +184,9 @@ void main() {
     expect(catalog.postals.last, isNull);
   });
 
-  testWidgets('runda z API: linia terminu na kartach, baner wskazuje najbliższą; jedno zapytanie na sklep',
-      (tester) async {
+  testWidgets('runda z API: linia terminu na kartach, baner wskazuje najbliższą; jedno zapytanie na sklep', (
+    tester,
+  ) async {
     final (_, ordering) = await _pump(tester);
     expect(find.text('Zamów do 11:30 · dostawa od dziś, 17:00'), findsOneWidget);
     expect(find.text('Zamów do 10:30 · dostawa od dziś, 17:00'), findsOneWidget);
@@ -196,8 +223,13 @@ void main() {
     final p = RoundPreview.fromJson({
       'available': true,
       'round': {
-        'localDate': t, 'localTime': '12:00:00', 'cutoffLocalDate': t, 'cutoffLocalTime': '11:30:00',
-        'timeZone': 'Europe/Warsaw', 'startsAtUtc': '${t}T11:00:00Z', 'cutoffAtUtc': '${t}T10:30:00Z',
+        'localDate': t,
+        'localTime': '12:00:00',
+        'cutoffLocalDate': t,
+        'cutoffLocalTime': '11:30:00',
+        'timeZone': 'Europe/Warsaw',
+        'startsAtUtc': '${t}T11:00:00Z',
+        'cutoffAtUtc': '${t}T10:30:00Z',
       },
       'earliestDelivery': {'localDate': t, 'localTime': '13:00:00'},
     });

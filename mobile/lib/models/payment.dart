@@ -18,10 +18,10 @@ class PaymentInfo {
   bool get isPending => status == 'Pending';
 
   factory PaymentInfo.fromJson(Map<String, dynamic> j) => PaymentInfo(
-        orderId: j['orderId'].toString(),
-        status: j['status'] ?? 'Pending',
-        redirectUrl: j['redirectUrl'],
-        amount: (j['amount'] as num?)?.toDouble() ?? 0,
-        deliveryFee: (j['deliveryFee'] as num?)?.toDouble() ?? 0,
-      );
+    orderId: j['orderId'].toString(),
+    status: j['status'] ?? 'Pending',
+    redirectUrl: j['redirectUrl'],
+    amount: (j['amount'] as num?)?.toDouble() ?? 0,
+    deliveryFee: (j['deliveryFee'] as num?)?.toDouble() ?? 0,
+  );
 }

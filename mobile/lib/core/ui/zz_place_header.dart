@@ -48,16 +48,17 @@ class ZzPlaceHeader extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Flexible(
-                            child: Text(place,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: p.heading, fontSize: 15, fontWeight: FontWeight.w700)),
+                            child: Text(
+                              place,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: p.heading, fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
                           ),
                           Icon(Icons.keyboard_arrow_down, size: 20, color: p.brandStrong),
                         ],
                       ),
-                      if (note != null)
-                        Text(note!, style: TextStyle(color: p.textMuted, fontSize: 12)),
+                      if (note != null) Text(note!, style: TextStyle(color: p.textMuted, fontSize: 12)),
                     ],
                   ),
                 ),

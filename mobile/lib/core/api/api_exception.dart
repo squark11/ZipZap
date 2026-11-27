@@ -5,12 +5,7 @@ class ApiException implements Exception {
   final int? statusCode;
   final String? traceId;
 
-  ApiException({
-    required this.code,
-    required this.message,
-    this.statusCode,
-    this.traceId,
-  });
+  ApiException({required this.code, required this.message, this.statusCode, this.traceId});
 
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden => statusCode == 403;

@@ -90,9 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(uri.toString())}';
       }
       if (loc == '/login' && auth.isAuthenticated) {
-        return safeInternalRedirect(uri.queryParameters['redirect'])
-            ?? ref.read(lastStoreProvider)?.path
-            ?? '/stores';
+        return safeInternalRedirect(uri.queryParameters['redirect']) ?? ref.read(lastStoreProvider)?.path ?? '/stores';
       }
       return null;
     },
@@ -123,7 +121,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/stores/:id',
         builder: (_, s) => ZzPage(maxWidth: 840, child: StoreDetailScreen(storeRef: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/checkout', builder: (_, _) => const ZzPage(child: CheckoutScreen())),
+      GoRoute(
+        path: '/checkout',
+        builder: (_, _) => const ZzPage(child: CheckoutScreen()),
+      ),
       GoRoute(
         path: '/pay/:orderId',
         builder: (_, s) => ZzPage(child: PaymentScreen(orderId: s.pathParameters['orderId']!)),
@@ -132,7 +133,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/orders/:id',
         builder: (_, s) => ZzPage(child: OrderTrackScreen(orderId: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/notifications', builder: (_, _) => const ZzPage(child: NotificationsScreen())),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const ZzPage(child: NotificationsScreen()),
+      ),
       GoRoute(
         path: '/feedback',
         builder: (_, state) => ZzPage(child: FeedbackScreen(screen: state.uri.queryParameters['from'])),
@@ -144,10 +148,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         // E-mail wpisany na ekranie logowania (przekazany w pamięci, nie w adresie).
-        builder: (_, s) => ZzPage(child: ForgotPasswordScreen(initialEmail: s.extra is String ? s.extra as String : null)),
+        builder: (_, s) =>
+            ZzPage(child: ForgotPasswordScreen(initialEmail: s.extra is String ? s.extra as String : null)),
       ),
-      GoRoute(path: '/change-password', builder: (_, _) => const ZzPage(child: ChangePasswordScreen())),
-      GoRoute(path: '/addresses', builder: (_, _) => const ZzPage(child: AddressesScreen())),
+      GoRoute(
+        path: '/change-password',
+        builder: (_, _) => const ZzPage(child: ChangePasswordScreen()),
+      ),
+      GoRoute(
+        path: '/addresses',
+        builder: (_, _) => const ZzPage(child: AddressesScreen()),
+      ),
       // Galeria komponentów Design Systemu — tylko w trybie deweloperskim (kDebugMode), nie w wersji produkcyjnej.
       if (kDebugMode) GoRoute(path: '/dev/ui', builder: (_, _) => const UiGalleryScreen()),
     ],

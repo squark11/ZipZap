@@ -32,19 +32,19 @@ class ZzQtyStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.zz;
     Widget btn(IconData icon, VoidCallback? onTap, String label) => Semantics(
-          button: true,
-          label: label,
-          excludeSemantics: true,
-          child: InkResponse(
-            onTap: onTap,
-            radius: 24,
-            child: SizedBox(
-              width: zzMinTouch,
-              height: zzMinTouch,
-              child: Icon(icon, size: 20, color: onTap == null ? p.textMuted : p.brandStrong),
-            ),
-          ),
-        );
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 24,
+        child: SizedBox(
+          width: zzMinTouch,
+          height: zzMinTouch,
+          child: Icon(icon, size: 20, color: onTap == null ? p.textMuted : p.brandStrong),
+        ),
+      ),
+    );
     Widget value() {
       final text = ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 24),

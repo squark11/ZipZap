@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
@@ -18,46 +19,52 @@ class ApiClient {
   RefreshCallback? _onRefresh;
 
   ApiClient({Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               baseUrl: AppConfig.apiBaseUrl,
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(seconds: 20),
               headers: {'Content-Type': 'application/json'},
-            )) {
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        if (_accessToken != null && !options.headers.containsKey('Authorization')) {
-          options.headers['Authorization'] = 'Bearer $_accessToken';
-        }
-        options.headers['X-Correlation-Id'] = _correlationId();
-        handler.next(options);
-      },
-      onError: (e, handler) async {
-        final req = e.requestOptions;
-        // Nie odświeżamy na endpointach auth (uniknięcie rekurencji refresh→401→refresh).
-        final isAuthEndpoint = req.path.contains('/identity/');
-        final canRetry = e.response?.statusCode == 401 &&
-            !isAuthEndpoint &&
-            _onRefresh != null &&
-            _accessToken != null &&
-            req.extra['retried'] != true;
-        if (canRetry) {
-          final ok = await _onRefresh!.call();
-          if (ok) {
-            req.extra['retried'] = true;
-            req.headers['Authorization'] = 'Bearer $_accessToken';
-            try {
-              final clone = await _dio.fetch(req);
-              return handler.resolve(clone);
-            } on DioException catch (err) {
-              return handler.next(err);
+            ),
+          ) {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (_accessToken != null && !options.headers.containsKey('Authorization')) {
+            options.headers['Authorization'] = 'Bearer $_accessToken';
+          }
+          options.headers['X-Correlation-Id'] = _correlationId();
+          handler.next(options);
+        },
+        onError: (e, handler) async {
+          final req = e.requestOptions;
+          // Nie odświeżamy na endpointach auth (uniknięcie rekurencji refresh→401→refresh).
+          final isAuthEndpoint = req.path.contains('/identity/');
+          final canRetry =
+              e.response?.statusCode == 401 &&
+              !isAuthEndpoint &&
+              _onRefresh != null &&
+              _accessToken != null &&
+              req.extra['retried'] != true;
+          if (canRetry) {
+            final ok = await _onRefresh!.call();
+            if (ok) {
+              req.extra['retried'] = true;
+              req.headers['Authorization'] = 'Bearer $_accessToken';
+              try {
+                final clone = await _dio.fetch(req);
+                return handler.resolve(clone);
+              } on DioException catch (err) {
+                return handler.next(err);
+              }
             }
           }
-        }
-        handler.next(e);
-      },
-    ));
+          handler.next(e);
+        },
+      ),
+    );
   }
 
   void setAccessToken(String? token) => _accessToken = token;
@@ -66,10 +73,14 @@ class ApiClient {
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
       _send(() => _dio.get(path, queryParameters: query));
 
-  Future<dynamic> post(String path,
-          {Object? body, Map<String, dynamic>? query, Map<String, String>? headers}) =>
-      _send(() => _dio.post(path,
-          data: body, queryParameters: query, options: Options(headers: headers)));
+  Future<dynamic> post(String path, {Object? body, Map<String, dynamic>? query, Map<String, String>? headers}) => _send(
+    () => _dio.post(
+      path,
+      data: body,
+      queryParameters: query,
+      options: Options(headers: headers),
+    ),
+  );
 
   Future<dynamic> put(String path, {Object? body, Map<String, dynamic>? query}) =>
       _send(() => _dio.put(path, data: body, queryParameters: query));

@@ -30,9 +30,14 @@ double contrast(Color a, Color b) {
 }
 
 Store _store(String id, String name, String city) => Store.fromJson({
-      'id': id, 'slug': 's-$id', 'name': name, 'city': city, 'status': 'Open',
-      'minimumOrderValue': 15, 'isAcceptingOrders': true,
-    });
+  'id': id,
+  'slug': 's-$id',
+  'name': name,
+  'city': city,
+  'status': 'Open',
+  'minimumOrderValue': 15,
+  'isAcceptingOrders': true,
+});
 
 final _stores = [
   _store('1', 'Rapacz Market — Rabka', 'Rabka-Zdrój'),
@@ -57,17 +62,14 @@ class _OfflineApi extends ApiClient {
 }
 
 Widget _host(Widget child, {double textScale = 1, bool reduceMotion = false, ThemeData? theme}) => MaterialApp(
-      theme: theme ?? ZzTheme.light(),
-      home: Builder(
-        builder: (context) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale),
-            disableAnimations: reduceMotion,
-          ),
-          child: Scaffold(body: Center(child: child)),
-        ),
-      ),
-    );
+  theme: theme ?? ZzTheme.light(),
+  home: Builder(
+    builder: (context) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale), disableAnimations: reduceMotion),
+      child: Scaffold(body: Center(child: child)),
+    ),
+  ),
+);
 
 void main() {
   group('Tokeny (E2-1)', () {
@@ -117,7 +119,12 @@ void main() {
   group('Biel na sztywno (E2-1)', () {
     test('Colors.white tylko tam, gdzie tło jest stałe w obu motywach', () {
       // Biały tekst na brandStrong w trybie ciemnym (#3FD3D4) miałby kontrast ok. 1,8:1 — ma być onBrand.
-      const allowed = ['core/theme/', 'core/ui/zz_cart_bar.dart', 'core/widgets/skeleton.dart', 'core/widgets/zz_logo.dart'];
+      const allowed = [
+        'core/theme/',
+        'core/ui/zz_cart_bar.dart',
+        'core/widgets/skeleton.dart',
+        'core/widgets/zz_logo.dart',
+      ];
       final offenders = Directory('lib')
           .listSync(recursive: true)
           .whereType<File>()
@@ -162,14 +169,27 @@ void main() {
   group('Ruch (E2-5)', () {
     testWidgets('„ogranicz ruch" zeruje czasy animacji', (tester) async {
       late Duration normal, reduced;
-      await tester.pumpWidget(_host(Builder(builder: (c) {
-        normal = ZzMotion.of(c, ZzMotion.base);
-        return const SizedBox();
-      })));
-      await tester.pumpWidget(_host(Builder(builder: (c) {
-        reduced = ZzMotion.of(c, ZzMotion.base);
-        return const SizedBox();
-      }), reduceMotion: true));
+      await tester.pumpWidget(
+        _host(
+          Builder(
+            builder: (c) {
+              normal = ZzMotion.of(c, ZzMotion.base);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        _host(
+          Builder(
+            builder: (c) {
+              reduced = ZzMotion.of(c, ZzMotion.base);
+              return const SizedBox();
+            },
+          ),
+          reduceMotion: true,
+        ),
+      );
       expect(normal, ZzMotion.base);
       expect(reduced, Duration.zero);
       expect(ZzMotion.slow.inMilliseconds, lessThanOrEqualTo(250));
@@ -183,7 +203,9 @@ void main() {
       expect(state.isTicking, isTrue);
       expect(tester.binding.transientCallbackCount, greaterThan(0));
 
-      await tester.pumpWidget(_host(const SizedBox(width: 360, height: 700, child: StoreListSkeleton()), reduceMotion: true));
+      await tester.pumpWidget(
+        _host(const SizedBox(width: 360, height: 700, child: StoreListSkeleton()), reduceMotion: true),
+      );
       await tester.pump();
       final reduced = tester.state(find.byType(ZzShimmer)) as dynamic;
       expect(reduced.isTicking, isFalse);
@@ -196,17 +218,19 @@ void main() {
   group('Komponenty (E2-3)', () {
     testWidgets('licznik: pola dotyku ≥ 48 px, etykiety dla czytnika, działa przy tekście 130 %', (tester) async {
       var qty = 2;
-      await tester.pumpWidget(_host(
-        StatefulBuilder(
-          builder: (_, set) => ZzQtyStepper(
-            itemLabel: 'Jabłka',
-            quantity: qty,
-            onMinus: () => set(() => qty--),
-            onPlus: () => set(() => qty++),
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (_, set) => ZzQtyStepper(
+              itemLabel: 'Jabłka',
+              quantity: qty,
+              onMinus: () => set(() => qty--),
+              onPlus: () => set(() => qty++),
+            ),
           ),
+          textScale: 1.3,
         ),
-        textScale: 1.3,
-      ));
+      );
       final semantics = tester.ensureSemantics();
       final plus = find.bySemanticsLabel('Więcej: Jabłka');
       expect(plus, findsOneWidget);
@@ -223,13 +247,9 @@ void main() {
 
     testWidgets('licznik w koszyku: dotknięcie liczby (wpisanie ilości) ma pole ≥ 48 px', (tester) async {
       var tapped = 0;
-      await tester.pumpWidget(_host(ZzQtyStepper(
-        itemLabel: 'Mleko',
-        quantity: 1,
-        onMinus: () {},
-        onPlus: () {},
-        onValueTap: () => tapped++,
-      )));
+      await tester.pumpWidget(
+        _host(ZzQtyStepper(itemLabel: 'Mleko', quantity: 1, onMinus: () {}, onPlus: () {}, onValueTap: () => tapped++)),
+      );
       final value = find.ancestor(of: find.text('1'), matching: find.byType(InkWell));
       expect(tester.getSize(value).width, greaterThanOrEqualTo(48));
       expect(tester.getSize(value).height, greaterThanOrEqualTo(48));
@@ -237,22 +257,31 @@ void main() {
       expect(tapped, 1);
     });
 
-    testWidgets('karta sklepu, chip kategorii, komunikat i pasek koszyka: tekst 130 % w 320 px bez przepełnień',
-        (tester) async {
+    testWidgets('karta sklepu, chip kategorii, komunikat i pasek koszyka: tekst 130 % w 320 px bez przepełnień', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(320, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(_host(
-        SingleChildScrollView(
-          child: Column(children: [
-            ZzStoreCard(store: _stores.first, onTap: () {}),
-            const ZzCategoryChip(label: 'Pieczywo', icon: 'pieczywo', selected: true),
-            const ZzNotice(kind: ZzNoticeKind.warning, title: 'Pilotaż', message: 'Zamówienie testowe — bez płatności.'),
-            ZzCartBar(count: 3, subtotal: 22.46, missingToMinimum: 5.02, onTap: () {}),
-          ]),
+      await tester.pumpWidget(
+        _host(
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                ZzStoreCard(store: _stores.first, onTap: () {}),
+                const ZzCategoryChip(label: 'Pieczywo', icon: 'pieczywo', selected: true),
+                const ZzNotice(
+                  kind: ZzNoticeKind.warning,
+                  title: 'Pilotaż',
+                  message: 'Zamówienie testowe — bez płatności.',
+                ),
+                ZzCartBar(count: 3, subtotal: 22.46, missingToMinimum: 5.02, onTap: () {}),
+              ],
+            ),
+          ),
+          textScale: 1.3,
         ),
-        textScale: 1.3,
-      ));
+      );
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
       expect(find.textContaining('Brakuje 5,02'), findsOneWidget);
@@ -268,13 +297,17 @@ void main() {
     });
 
     testWidgets('tryb ciemny: komponenty renderują się bez błędów', (tester) async {
-      await tester.pumpWidget(_host(
-        Column(children: [
-          ZzStoreCard(store: _stores.first, onTap: () {}),
-          const ZzNotice(kind: ZzNoticeKind.danger, message: 'Błąd'),
-        ]),
-        theme: ZzTheme.dark(),
-      ));
+      await tester.pumpWidget(
+        _host(
+          Column(
+            children: [
+              ZzStoreCard(store: _stores.first, onTap: () {}),
+              const ZzNotice(kind: ZzNoticeKind.danger, message: 'Błąd'),
+            ],
+          ),
+          theme: ZzTheme.dark(),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
   });
@@ -293,22 +326,26 @@ void main() {
     setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
     for (final (width, sideNav) in [(360.0, false), (768.0, false), (1280.0, true), (1920.0, true)]) {
-      testWidgets('${width.toInt()} px: nawigacja ${sideNav ? 'boczna' : 'dolna'}, 5 zakładek, karty nierozciągnięte',
-          (tester) async {
+      testWidgets('${width.toInt()} px: nawigacja ${sideNav ? 'boczna' : 'dolna'}, 5 zakładek, karty nierozciągnięte', (
+        tester,
+      ) async {
         tester.view.physicalSize = Size(width, 900);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
         tester.binding.platformDispatcher.defaultRouteNameTestValue = '/stores';
-        final c = ProviderContainer(overrides: [
-          apiClientProvider.overrideWithValue(_OfflineApi()),
-          catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
-          connectivityProvider.overrideWith((_) => Stream.value(true)),
-        ]);
+        final c = ProviderContainer(
+          overrides: [
+            apiClientProvider.overrideWithValue(_OfflineApi()),
+            catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
+            connectivityProvider.overrideWith((_) => Stream.value(true)),
+          ],
+        );
         // Zbieramy pełne raporty błędów układu — przy porażce wskazują widżet, który się przelewa.
         final errors = <String>[];
         final previous = FlutterError.onError;
         FlutterError.onError = (d) => errors.add(
-            '${d.exceptionAsString()}\n${d.informationCollector?.call().map((e) => e.toString()).join('\n') ?? ''}');
+          '${d.exceptionAsString()}\n${d.informationCollector?.call().map((e) => e.toString()).join('\n') ?? ''}',
+        );
         await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const ZipZapApp()));
         for (var i = 0; i < 25; i++) {
           await tester.pump(const Duration(milliseconds: 40));
@@ -322,8 +359,11 @@ void main() {
         }
         final cards = find.byType(ZzStoreCard);
         expect(cards, findsNWidgets(3));
-        expect(tester.getSize(cards.first).width, lessThanOrEqualTo(math.min(width, 560)),
-            reason: 'karta sklepu nie rozciąga się na cały ekran');
+        expect(
+          tester.getSize(cards.first).width,
+          lessThanOrEqualTo(math.min(width, 560)),
+          reason: 'karta sklepu nie rozciąga się na cały ekran',
+        );
         // Brak poziomego przewijania: treść mieści się w szerokości okna.
         final content = tester.getRect(find.byType(ZzPage).first);
         expect(content.right, lessThanOrEqualTo(width + 0.5));
@@ -333,7 +373,16 @@ void main() {
     }
 
     // E2-5: całe ekrany (nie tylko komponenty) przy tekście powiększonym do 130 % na wąskim telefonie.
-    for (final route in ['/stores', '/search', '/cart', '/orders', '/account', '/login', '/forgot-password', '/stores/1']) {
+    for (final route in [
+      '/stores',
+      '/search',
+      '/cart',
+      '/orders',
+      '/account',
+      '/login',
+      '/forgot-password',
+      '/stores/1',
+    ]) {
       testWidgets('tekst 130 % przy 360 px: $route bez przepełnień', (tester) async {
         tester.view.physicalSize = const Size(360, 780);
         tester.view.devicePixelRatio = 1;
@@ -341,15 +390,18 @@ void main() {
         addTearDown(tester.view.reset);
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         tester.binding.platformDispatcher.defaultRouteNameTestValue = route;
-        final c = ProviderContainer(overrides: [
-          apiClientProvider.overrideWithValue(_OfflineApi()),
-          catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
-          connectivityProvider.overrideWith((_) => Stream.value(true)),
-        ]);
+        final c = ProviderContainer(
+          overrides: [
+            apiClientProvider.overrideWithValue(_OfflineApi()),
+            catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
+            connectivityProvider.overrideWith((_) => Stream.value(true)),
+          ],
+        );
         final errors = <String>[];
         final previous = FlutterError.onError;
         FlutterError.onError = (d) => errors.add(
-            '${d.exceptionAsString()}\n${d.informationCollector?.call().map((e) => e.toString()).join('\n') ?? ''}');
+          '${d.exceptionAsString()}\n${d.informationCollector?.call().map((e) => e.toString()).join('\n') ?? ''}',
+        );
         await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const ZipZapApp()));
         for (var i = 0; i < 25; i++) {
           await tester.pump(const Duration(milliseconds: 40));
@@ -362,16 +414,20 @@ void main() {
       });
     }
 
-    testWidgets('bezpośrednie wejście na /search: zakładka Szukaj, wpisanie miejscowości filtruje sklepy', (tester) async {
+    testWidgets('bezpośrednie wejście na /search: zakładka Szukaj, wpisanie miejscowości filtruje sklepy', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(375, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       tester.binding.platformDispatcher.defaultRouteNameTestValue = '/search';
-      final c = ProviderContainer(overrides: [
-        apiClientProvider.overrideWithValue(_OfflineApi()),
-        catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
-        connectivityProvider.overrideWith((_) => Stream.value(true)),
-      ]);
+      final c = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(_OfflineApi()),
+          catalogRepositoryProvider.overrideWith((_) => _FakeCatalog()),
+          connectivityProvider.overrideWith((_) => Stream.value(true)),
+        ],
+      );
       await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const ZipZapApp()));
       for (var i = 0; i < 25; i++) {
         await tester.pump(const Duration(milliseconds: 40));
@@ -387,5 +443,4 @@ void main() {
       c.dispose();
     });
   });
-
 }

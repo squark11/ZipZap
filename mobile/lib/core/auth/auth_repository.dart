@@ -7,17 +7,13 @@ class AuthResult {
   final String refreshToken;
   final AppUser user;
 
-  AuthResult({
-    required this.accessToken,
-    required this.refreshToken,
-    required this.user,
-  });
+  AuthResult({required this.accessToken, required this.refreshToken, required this.user});
 
   factory AuthResult.fromJson(Map<String, dynamic> j) => AuthResult(
-        accessToken: j['accessToken'].toString(),
-        refreshToken: j['refreshToken'].toString(),
-        user: AppUser.fromJson(j['user'] as Map<String, dynamic>),
-      );
+    accessToken: j['accessToken'].toString(),
+    refreshToken: j['refreshToken'].toString(),
+    user: AppUser.fromJson(j['user'] as Map<String, dynamic>),
+  );
 }
 
 class AuthRepository {
@@ -25,8 +21,7 @@ class AuthRepository {
   AuthRepository(this._api);
 
   Future<AuthResult> login(String email, String password) async {
-    final data = await _api.post('/identity/login',
-        body: {'email': email, 'password': password});
+    final data = await _api.post('/identity/login', body: {'email': email, 'password': password});
     return AuthResult.fromJson(data as Map<String, dynamic>);
   }
 
@@ -47,12 +42,10 @@ class AuthRepository {
     return AuthResult.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<void> logout(String? refreshToken) =>
-      _api.post('/identity/logout', body: {'refreshToken': refreshToken});
+  Future<void> logout(String? refreshToken) => _api.post('/identity/logout', body: {'refreshToken': refreshToken});
 
   /// Zawsze kończy się sukcesem po stronie backendu (bez enumeracji kont).
-  Future<void> forgotPassword(String email) =>
-      _api.post('/identity/password/forgot', body: {'email': email});
+  Future<void> forgotPassword(String email) => _api.post('/identity/password/forgot', body: {'email': email});
 
   /// Czy adres e-mail zalogowanego konta jest potwierdzony (stan z bazy; null — starsze API bez tego pola).
   Future<bool?> isEmailVerified() async {
@@ -69,6 +62,5 @@ class AuthRepository {
 
   /// Zmiana hasła zalogowanego użytkownika (backend unieważnia pozostałe sesje).
   Future<void> changePassword(String currentPassword, String newPassword) =>
-      _api.post('/identity/password/change',
-          body: {'currentPassword': currentPassword, 'newPassword': newPassword});
+      _api.post('/identity/password/change', body: {'currentPassword': currentPassword, 'newPassword': newPassword});
 }

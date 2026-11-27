@@ -14,10 +14,7 @@ class StoreLogo extends StatelessWidget {
     final fallback = Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: context.zz.brandTint,
-        borderRadius: BorderRadius.circular(ZzRadius.field),
-      ),
+      decoration: BoxDecoration(color: context.zz.brandTint, borderRadius: BorderRadius.circular(ZzRadius.field)),
       alignment: Alignment.center,
       child: ZzIcon('store', size: size * 0.5, color: context.zz.brandStrong),
     );

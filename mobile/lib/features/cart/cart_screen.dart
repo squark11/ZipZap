@@ -45,10 +45,7 @@ class CartScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (last != null) ...[
-                FilledButton(
-                  onPressed: () => context.push(last.path),
-                  child: Text('Wróć do: ${last.name}'),
-                ),
+                FilledButton(onPressed: () => context.push(last.path), child: Text('Wróć do: ${last.name}')),
                 const SizedBox(height: ZzSpace.sm),
               ],
               OutlinedButton(onPressed: () => context.go('/stores'), child: const Text('Przeglądaj sklepy')),
@@ -68,10 +65,7 @@ class CartScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(ZzSpace.screen),
               children: [
-                if (store != null) ...[
-                  _storeLine(context, store),
-                  const SizedBox(height: ZzSpace.md),
-                ],
+                if (store != null) ...[_storeLine(context, store), const SizedBox(height: ZzSpace.md)],
                 if (cart.error != null) ...[
                   ZzNotice(kind: ZzNoticeKind.danger, message: cart.error!),
                   const SizedBox(height: ZzSpace.md),
@@ -106,18 +100,20 @@ class CartScreen extends ConsumerWidget {
 
   /// Sklep, z którego jest koszyk, i powrót do jego oferty.
   Widget _storeLine(BuildContext context, Store store) => Row(
-        children: [
-          Expanded(
-            child: Text(store.name,
-                style: TextStyle(color: context.zz.textMuted, fontWeight: FontWeight.w600)),
-          ),
-          TextButton.icon(
-            onPressed: () => context.push('/stores/${store.id}'),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Dodaj więcej'),
-          ),
-        ],
-      );
+    children: [
+      Expanded(
+        child: Text(
+          store.name,
+          style: TextStyle(color: context.zz.textMuted, fontWeight: FontWeight.w600),
+        ),
+      ),
+      TextButton.icon(
+        onPressed: () => context.push('/stores/${store.id}'),
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Dodaj więcej'),
+      ),
+    ],
+  );
 
   /// Podsumowanie i przejście dalej. Minimum zamówienia z danych sklepu; dopóki nie jest znane — 0 (jak dotąd).
   Widget _footer(BuildContext context, Cart c, Store? store) {
@@ -181,10 +177,7 @@ Future<void> _editQuantity(BuildContext context, int quantity, ValueChanged<int>
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Anuluj')),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text)),
-          child: const Text('OK'),
-        ),
+        FilledButton(onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text)), child: const Text('OK')),
       ],
     ),
   );

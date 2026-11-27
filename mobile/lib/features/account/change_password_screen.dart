@@ -28,8 +28,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     super.dispose();
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Future<void> _submit() async {
     if (_current.text.isEmpty || _next.text.isEmpty) {
@@ -77,8 +76,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           const SizedBox(height: 8),
           Text('Zmień hasło', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
-          Text('Po zmianie zostaniesz wylogowany na pozostałych urządzeniach.',
-              style: TextStyle(color: context.zz.textMuted)),
+          Text(
+            'Po zmianie zostaniesz wylogowany na pozostałych urządzeniach.',
+            style: TextStyle(color: context.zz.textMuted),
+          ),
           const SizedBox(height: 24),
           TextField(
             controller: _current,
@@ -105,7 +106,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ? SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand),
+                  )
                 : const Text('Zapisz nowe hasło'),
           ),
         ],

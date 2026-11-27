@@ -14,8 +14,8 @@ class ZzSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Cienkie paski → pełne zaokrąglenie („pigułka”), żeby nie wyglądały jak linijka tekstu.
-    final radius = borderRadius ??
-        (height <= 20 ? BorderRadius.circular(height / 2) : BorderRadius.circular(ZzRadius.field));
+    final radius =
+        borderRadius ?? (height <= 20 ? BorderRadius.circular(height / 2) : BorderRadius.circular(ZzRadius.field));
     return Container(
       width: width,
       height: height,
@@ -77,10 +77,10 @@ class StoreListSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ZzShimmer(
       child: ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: count,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (_, _) => const _StoreCardSkeleton(),
+        padding: const EdgeInsets.all(16),
+        itemCount: count,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (_, _) => const _StoreCardSkeleton(),
       ),
     );
   }
@@ -126,10 +126,10 @@ class ProductListSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ZzShimmer(
       child: ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: count,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, _) => const _ProductRowSkeleton(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        itemCount: count,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (_, _) => const _ProductRowSkeleton(),
       ),
     );
   }
@@ -175,10 +175,10 @@ class OrderListSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ZzShimmer(
       child: ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: count,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, _) => const _OrderCardSkeleton(),
+        padding: const EdgeInsets.all(16),
+        itemCount: count,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (_, _) => const _OrderCardSkeleton(),
       ),
     );
   }

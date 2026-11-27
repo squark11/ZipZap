@@ -7,10 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// (bez nieobsługiwanych filtrów/stylów), mieć opis dla czytnika ekranu i mieścić się w budżecie wagi.
 /// Pliki nie są jeszcze w `pubspec.yaml` (dołączy je Etap 2), więc test czyta je z dysku.
 void main() {
-  final dirs = {
-    'assets/svg/illustrations': 12 * 1024,
-    'assets/svg/categories': 2 * 1024,
-  };
+  final dirs = {'assets/svg/illustrations': 12 * 1024, 'assets/svg/categories': 2 * 1024};
 
   for (final entry in dirs.entries) {
     final files = Directory(entry.key).listSync().whereType<File>().where((f) => f.path.endsWith('.svg')).toList()

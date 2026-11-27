@@ -23,14 +23,23 @@ import 'package:zipzap/models/store.dart';
 const _sid = '22222222-2222-2222-2222-222222222222';
 
 Cart _cart(List<(String, int, double)> items) => Cart.fromJson({
-      'id': 'c1', 'storeId': _sid, 'cartToken': 't', 'status': 'Active',
-      'subtotal': items.fold<double>(0, (a, i) => a + i.$2 * i.$3),
-      'items': [
-        for (final (name, q, price) in items)
-          {'productId': 'p-$name', 'productName': name, 'unitPrice': price, 'unit': 'szt', 'quantity': q,
-            'lineTotal': q * price},
-      ],
-    });
+  'id': 'c1',
+  'storeId': _sid,
+  'cartToken': 't',
+  'status': 'Active',
+  'subtotal': items.fold<double>(0, (a, i) => a + i.$2 * i.$3),
+  'items': [
+    for (final (name, q, price) in items)
+      {
+        'productId': 'p-$name',
+        'productName': name,
+        'unitPrice': price,
+        'unit': 'szt',
+        'quantity': q,
+        'lineTotal': q * price,
+      },
+  ],
+});
 
 class _FakeCart extends CartController {
   _FakeCart(this.initial);
@@ -58,9 +67,14 @@ class _Catalog extends CatalogRepository {
   _Catalog() : super(_Offline());
   @override
   Future<Store> getStore(String idOrSlug) async => Store.fromJson({
-        'id': _sid, 'slug': 'lewiatan', 'name': 'Lewiatan — Podwawelskie', 'city': 'Kraków', 'status': 'Open',
-        'minimumOrderValue': 15, 'isAcceptingOrders': true,
-      });
+    'id': _sid,
+    'slug': 'lewiatan',
+    'name': 'Lewiatan — Podwawelskie',
+    'city': 'Kraków',
+    'status': 'Open',
+    'minimumOrderValue': 15,
+    'isAcceptingOrders': true,
+  });
 }
 
 class _Ordering extends OrderingRepository {
@@ -71,8 +85,15 @@ class _Ordering extends OrderingRepository {
     final d = '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
     return RoundPreview.fromJson({
       'available': true,
-      'round': {'localDate': d, 'localTime': '16:00:00', 'cutoffLocalDate': d, 'cutoffLocalTime': '15:30:00',
-        'timeZone': 'Europe/Warsaw', 'startsAtUtc': '${d}T15:00:00Z', 'cutoffAtUtc': '${d}T14:30:00Z'},
+      'round': {
+        'localDate': d,
+        'localTime': '16:00:00',
+        'cutoffLocalDate': d,
+        'cutoffLocalTime': '15:30:00',
+        'timeZone': 'Europe/Warsaw',
+        'startsAtUtc': '${d}T15:00:00Z',
+        'cutoffAtUtc': '${d}T14:30:00Z',
+      },
       'earliestDelivery': {'localDate': d, 'localTime': '17:00:00'},
     });
   }
@@ -84,34 +105,53 @@ class _Offline extends ApiClient {
       throw ApiException(code: 'network', message: 'offline');
 }
 
-Future<_FakeCart> _pump(WidgetTester tester, CartState state,
-    {bool lastStore = false, double textScale = 1, bool reduce = false, Size size = const Size(360, 900)}) async {
+Future<_FakeCart> _pump(
+  WidgetTester tester,
+  CartState state, {
+  bool lastStore = false,
+  double textScale = 1,
+  bool reduce = false,
+  Size size = const Size(360, 900),
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final fake = _FakeCart(state);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      apiClientProvider.overrideWithValue(_Offline()),
-      catalogRepositoryProvider.overrideWithValue(_Catalog()),
-      orderingRepositoryProvider.overrideWithValue(_Ordering()),
-      cartControllerProvider.overrideWith(() => fake),
-      lastStoreProvider.overrideWith(lastStore ? _LastStore.new : _NoLastStore.new),
-    ],
-    child: MaterialApp.router(
-      theme: ZzTheme.light(),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale), disableAnimations: reduce),
-        child: child!,
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        apiClientProvider.overrideWithValue(_Offline()),
+        catalogRepositoryProvider.overrideWithValue(_Catalog()),
+        orderingRepositoryProvider.overrideWithValue(_Ordering()),
+        cartControllerProvider.overrideWith(() => fake),
+        lastStoreProvider.overrideWith(lastStore ? _LastStore.new : _NoLastStore.new),
+      ],
+      child: MaterialApp.router(
+        theme: ZzTheme.light(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale), disableAnimations: reduce),
+          child: child!,
+        ),
+        routerConfig: GoRouter(
+          routes: [
+            GoRoute(path: '/', builder: (_, _) => const CartScreen()),
+            GoRoute(
+              path: '/stores',
+              builder: (_, _) => const Scaffold(body: Text('LISTA SKLEPÓW')),
+            ),
+            GoRoute(
+              path: '/s/:slug',
+              builder: (_, s) => Scaffold(body: Text('SKLEP ${s.pathParameters['slug']}')),
+            ),
+            GoRoute(
+              path: '/checkout',
+              builder: (_, _) => const Scaffold(body: Text('CHECKOUT')),
+            ),
+          ],
+        ),
       ),
-      routerConfig: GoRouter(routes: [
-        GoRoute(path: '/', builder: (_, _) => const CartScreen()),
-        GoRoute(path: '/stores', builder: (_, _) => const Scaffold(body: Text('LISTA SKLEPÓW'))),
-        GoRoute(path: '/s/:slug', builder: (_, s) => Scaffold(body: Text('SKLEP ${s.pathParameters['slug']}'))),
-        GoRoute(path: '/checkout', builder: (_, _) => const Scaffold(body: Text('CHECKOUT'))),
-      ]),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
   return fake;
 }
@@ -162,8 +202,10 @@ void main() {
 
   testWidgets('termin rundy z serwera pod pozycjami', (tester) async {
     await _pump(tester, CartState(cart: _cart([('Mleko 2%', 1, 3.49)])));
-    expect(find.text('Zakupy w sklepie: Dziś, 16:00. Zamów do 15:30. Godzinę dostawy wybierzesz w następnym kroku.'),
-        findsOneWidget);
+    expect(
+      find.text('Zakupy w sklepie: Dziś, 16:00. Zamów do 15:30. Godzinę dostawy wybierzesz w następnym kroku.'),
+      findsOneWidget,
+    );
   });
 
   for (final w in [360.0, 768.0]) {
@@ -171,8 +213,12 @@ void main() {
       final errors = <String>[];
       final previous = FlutterError.onError;
       FlutterError.onError = (d) => errors.add(d.exceptionAsString());
-      await _pump(tester, CartState(cart: _cart([('Bardzo długa nazwa produktu z regionu', 12, 1234.5)])),
-          textScale: 1.3, size: Size(w, 900));
+      await _pump(
+        tester,
+        CartState(cart: _cart([('Bardzo długa nazwa produktu z regionu', 12, 1234.5)])),
+        textScale: 1.3,
+        size: Size(w, 900),
+      );
       FlutterError.onError = previous;
       expect(errors, isEmpty);
     });
@@ -180,16 +226,18 @@ void main() {
 
   testWidgets('„ogranicz ruch": pasek postępu bez animacji', (tester) async {
     await _pump(tester, CartState(cart: _cart([('Jabłka', 2, 4.99)])), reduce: true);
-    final tween = tester.widget<TweenAnimationBuilder<double>>(find.descendant(
-        of: find.byType(ZzMinOrderProgress), matching: find.byType(TweenAnimationBuilder<double>)));
+    final tween = tester.widget<TweenAnimationBuilder<double>>(
+      find.descendant(of: find.byType(ZzMinOrderProgress), matching: find.byType(TweenAnimationBuilder<double>)),
+    );
     expect(tween.duration, Duration.zero);
   });
 
   testWidgets('podsumowanie: wartość przy prawej krawędzi także na szerokim ekranie', (tester) async {
     await _pump(tester, CartState(cart: _cart([('Mleko 2%', 1, 3.49)])), size: const Size(640, 900));
     final row = tester.getRect(find.widgetWithText(ZzSummaryRow, 'Razem bez dostawy'));
-    final value = tester.getRect(find.descendant(of: find.widgetWithText(ZzSummaryRow, 'Razem bez dostawy'),
-        matching: find.text(zl(3.49))));
+    final value = tester.getRect(
+      find.descendant(of: find.widgetWithText(ZzSummaryRow, 'Razem bez dostawy'), matching: find.text(zl(3.49))),
+    );
     expect(row.right - value.right, lessThan(1));
   });
 }

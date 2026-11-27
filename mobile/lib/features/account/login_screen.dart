@@ -70,9 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Wracamy tam, skąd przyszło logowanie (tylko ścieżka w aplikacji), a bez wskazanego celu —
       // do oferty ostatnio oglądanego sklepu (np. otwartego z kodu QR), nie na listę wszystkich sklepów.
       if (mounted) {
-        context.go(safeInternalRedirect(widget.redirect)
-            ?? ref.read(lastStoreProvider)?.path
-            ?? '/stores');
+        context.go(safeInternalRedirect(widget.redirect) ?? ref.read(lastStoreProvider)?.path ?? '/stores');
       }
     } on ApiException catch (e) {
       _snack(e.message);
@@ -81,8 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -94,11 +91,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 8),
-          Text(_register ? 'Załóż konto' : 'Zaloguj się',
-              style: Theme.of(context).textTheme.headlineSmall),
+          Text(_register ? 'Załóż konto' : 'Zaloguj się', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
-          Text('Konto potrzebne jest przy składaniu zamówienia.',
-              style: TextStyle(color: context.zz.textMuted)),
+          Text('Konto potrzebne jest przy składaniu zamówienia.', style: TextStyle(color: context.zz.textMuted)),
           const SizedBox(height: 24),
           if (_register) ...[
             TextField(
@@ -123,8 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               helperText: _register ? 'Min. 6 znaków' : null,
               suffixIcon: IconButton(
                 tooltip: _obscure ? 'Pokaż hasło' : 'Ukryj hasło',
-                icon: ZzIcon(_obscure ? 'eye' : 'eye_off',
-                    size: 22, color: context.zz.textMuted),
+                icon: ZzIcon(_obscure ? 'eye' : 'eye_off', size: 22, color: context.zz.textMuted),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
@@ -140,10 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ],
           if (_register && captchaEnabled)
-            CaptchaField(
-              siteKey: config?.captchaSiteKey,
-              onToken: (t) => setState(() => _captchaToken = t),
-            ),
+            CaptchaField(siteKey: config?.captchaSiteKey, onToken: (t) => setState(() => _captchaToken = t)),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _busy ? null : () => _submit(captchaEnabled),
@@ -151,7 +142,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ? SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand),
+                  )
                 : Text(_register ? 'Zarejestruj się' : 'Zaloguj się'),
           ),
           const SizedBox(height: 12),
@@ -166,9 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Center(
             child: TextButton(
               onPressed: () => setState(() => _register = !_register),
-              child: Text(_register
-                  ? 'Masz już konto? Zaloguj się'
-                  : 'Nie masz konta? Zarejestruj się'),
+              child: Text(_register ? 'Masz już konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się'),
             ),
           ),
           if (!_register)

@@ -27,10 +27,13 @@ class ZzPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-        color: context.zz.surface,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: child),
-        ),
-      );
+    color: context.zz.surface,
+    child: Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
+    ),
+  );
 }

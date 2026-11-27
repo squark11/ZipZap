@@ -27,7 +27,8 @@ final storesProvider = FutureProvider.autoDispose<List<Store>>((ref) {
 /// Najbliższa runda zakupowa sklepu (publiczny endpoint). Karta sklepu i baner na Starcie czytają ten sam
 /// wpis, więc na sklep idzie jedno zapytanie.
 final storeRoundProvider = FutureProvider.autoDispose.family<RoundPreview, String>(
-    (ref, storeId) => ref.read(orderingRepositoryProvider).getRoundPreview(storeId));
+  (ref, storeId) => ref.read(orderingRepositoryProvider).getRoundPreview(storeId),
+);
 
 /// „31042" / „31-042" → „31-042"; inaczej null.
 String? normalizePostal(String raw) {

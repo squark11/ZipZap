@@ -145,7 +145,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ? SizedBox(
                       height: 22,
                       width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
+                      child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand),
+                    )
                   : const Text('Wyślij link'),
             ),
             if (_error != null) _ErrorText(_error!),
@@ -206,10 +207,10 @@ class _ErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Semantics(
-          liveRegion: true,
-          child: Text(text, style: TextStyle(color: context.zz.danger)),
-        ),
-      );
+    padding: const EdgeInsets.only(top: 12),
+    child: Semantics(
+      liveRegion: true,
+      child: Text(text, style: TextStyle(color: context.zz.danger)),
+    ),
+  );
 }

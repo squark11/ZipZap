@@ -22,15 +22,25 @@ class _FakeAuth extends AuthRepository {
   }
 }
 
-Future<_FakeAuth> _pump(WidgetTester tester, {String delivery = 'live', ApiException? error, String? initialEmail}) async {
+Future<_FakeAuth> _pump(
+  WidgetTester tester, {
+  String delivery = 'live',
+  ApiException? error,
+  String? initialEmail,
+}) async {
   final auth = _FakeAuth(error);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWith((_) => auth),
-      publicConfigProvider.overrideWith((_) async => PublicConfig(emailDelivery: delivery)),
-    ],
-    child: MaterialApp(theme: ZzTheme.light(), home: ForgotPasswordScreen(initialEmail: initialEmail)),
-  ));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authRepositoryProvider.overrideWith((_) => auth),
+        publicConfigProvider.overrideWith((_) async => PublicConfig(emailDelivery: delivery)),
+      ],
+      child: MaterialApp(
+        theme: ZzTheme.light(),
+        home: ForgotPasswordScreen(initialEmail: initialEmail),
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
   return auth;
 }
@@ -72,14 +82,20 @@ void main() {
   });
 
   testWidgets('rate limit is explained and the form stays', (tester) async {
-    await _pump(tester, error: ApiException(code: 'rate', message: 'x', statusCode: 429));
+    await _pump(
+      tester,
+      error: ApiException(code: 'rate', message: 'x', statusCode: 429),
+    );
     await _send(tester, 'a@example.com');
     expect(find.text('Zbyt wiele prób. Spróbuj ponownie za minutę.'), findsOneWidget);
     expect(find.text('Sprawdź skrzynkę'), findsNothing);
   });
 
   testWidgets('network error is explained and the form stays', (tester) async {
-    await _pump(tester, error: ApiException(code: 'net', message: 'x'));
+    await _pump(
+      tester,
+      error: ApiException(code: 'net', message: 'x'),
+    );
     await _send(tester, 'a@example.com');
     expect(find.textContaining('Nie udało się połączyć z serwerem'), findsOneWidget);
     expect(find.text('Wyślij link'), findsOneWidget);

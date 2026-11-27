@@ -43,15 +43,20 @@ class ZzNotice extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (title != null) ...[
-              Text(title!, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: fg)),
+              Text(
+                title!,
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: fg),
+              ),
               const SizedBox(height: 4),
             ],
-            Text(message,
-                style: TextStyle(
-                  color: title == null ? fg : p.text,
-                  fontWeight: title == null ? FontWeight.w600 : FontWeight.w400,
-                  height: 1.4,
-                )),
+            Text(
+              message,
+              style: TextStyle(
+                color: title == null ? fg : p.text,
+                fontWeight: title == null ? FontWeight.w600 : FontWeight.w400,
+                height: 1.4,
+              ),
+            ),
             if (action != null) ...[const SizedBox(height: 10), action!],
           ],
         ),
@@ -69,11 +74,13 @@ class ZzSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(child: Semantics(header: true, child: Text(title, style: Theme.of(context).textTheme.titleMedium))),
-          if (actionLabel != null) TextButton(onPressed: onAction, child: Text(actionLabel!)),
-        ],
-      );
+    children: [
+      Expanded(
+        child: Semantics(header: true, child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
+      ),
+      if (actionLabel != null) TextButton(onPressed: onAction, child: Text(actionLabel!)),
+    ],
+  );
 }
 
 /// Pole wyszukiwania (pigułka z ikoną lupy).
@@ -85,8 +92,14 @@ class ZzSearchField extends StatelessWidget {
 
   /// Ustawione = pole tylko do odczytu, które po dotknięciu przenosi do wyszukiwarki (np. na Starcie).
   final VoidCallback? onTap;
-  const ZzSearchField(
-      {super.key, this.controller, required this.hint, this.onChanged, this.autofocus = false, this.onTap});
+  const ZzSearchField({
+    super.key,
+    this.controller,
+    required this.hint,
+    this.onChanged,
+    this.autofocus = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -149,10 +162,7 @@ class ZzCategoryChip extends StatelessWidget {
                 curve: ZzMotion.enter,
                 width: 58,
                 height: 58,
-                decoration: BoxDecoration(
-                  color: selected ? p.brandStrong : p.brandTint,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: selected ? p.brandStrong : p.brandTint, shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: SvgPicture.asset(
                   'assets/svg/categories/$icon.svg',
@@ -162,10 +172,12 @@ class ZzCategoryChip extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+              ),
             ],
           ),
         ),

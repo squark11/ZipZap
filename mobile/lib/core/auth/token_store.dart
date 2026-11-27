@@ -6,8 +6,7 @@ class TokenStore {
   static const _kRefresh = 'zz_refresh_token';
   final FlutterSecureStorage _storage;
 
-  TokenStore([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+  TokenStore([FlutterSecureStorage? storage]) : _storage = storage ?? const FlutterSecureStorage();
 
   Future<String?> readRefresh() => _storage.read(key: _kRefresh);
   Future<void> writeRefresh(String value) => _storage.write(key: _kRefresh, value: value);

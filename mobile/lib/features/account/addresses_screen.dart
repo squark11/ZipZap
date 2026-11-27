@@ -7,7 +7,8 @@ import '../../core/theme/zz_theme.dart';
 import '../../models/address.dart';
 
 final addressesProvider = FutureProvider.autoDispose<List<Address>>(
-    (ref) => ref.read(orderingRepositoryProvider).listAddresses());
+  (ref) => ref.read(orderingRepositoryProvider).listAddresses(),
+);
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
@@ -36,11 +37,13 @@ class AddressesScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.home_outlined, size: 56, color: context.zz.textMuted),
                     const SizedBox(height: 12),
-                    const Text('Brak zapisanych adresów',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                    const Text('Brak zapisanych adresów', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                     const SizedBox(height: 4),
-                    Text('Dodaj adres dostawy, aby szybciej składać zamówienia.',
-                        textAlign: TextAlign.center, style: TextStyle(color: context.zz.textMuted)),
+                    Text(
+                      'Dodaj adres dostawy, aby szybciej składać zamówienia.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: context.zz.textMuted),
+                    ),
                   ],
                 ),
               ),
@@ -86,8 +89,10 @@ class _AddressCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: context.zz.brandTint, borderRadius: BorderRadius.circular(6)),
-                    child: Text('Domyślny',
-                        style: TextStyle(color: context.zz.brandStrong, fontSize: 11, fontWeight: FontWeight.w700)),
+                    child: Text(
+                      'Domyślny',
+                      style: TextStyle(color: context.zz.brandStrong, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
                   ),
               ],
             ),
@@ -170,8 +175,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     super.dispose();
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Future<void> _save() async {
     final postalDigits = _postal.text.replaceAll(RegExp(r'\D'), '');
@@ -213,33 +217,63 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.existing == null ? 'Nowy adres' : 'Edytuj adres',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              widget.existing == null ? 'Nowy adres' : 'Edytuj adres',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
-            TextField(controller: _label, decoration: const InputDecoration(labelText: 'Etykieta (np. Dom)')),
+            TextField(
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Etykieta (np. Dom)'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _street, decoration: const InputDecoration(labelText: 'Ulica')),
+            TextField(
+              controller: _street,
+              decoration: const InputDecoration(labelText: 'Ulica'),
+            ),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: TextField(controller: _building, decoration: const InputDecoration(labelText: 'Nr domu'))),
-              const SizedBox(width: 12),
-              Expanded(child: TextField(controller: _apartment, decoration: const InputDecoration(labelText: 'Nr lokalu (opc.)'))),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              SizedBox(
-                width: 130,
-                child: TextField(
-                  controller: _postal,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Kod pocztowy'),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _building,
+                    decoration: const InputDecoration(labelText: 'Nr domu'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: TextField(controller: _city, decoration: const InputDecoration(labelText: 'Miasto'))),
-            ]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _apartment,
+                    decoration: const InputDecoration(labelText: 'Nr lokalu (opc.)'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _notes, decoration: const InputDecoration(labelText: 'Uwagi dla kuriera (opc.)')),
+            Row(
+              children: [
+                SizedBox(
+                  width: 130,
+                  child: TextField(
+                    controller: _postal,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Kod pocztowy'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _city,
+                    decoration: const InputDecoration(labelText: 'Miasto'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notes,
+              decoration: const InputDecoration(labelText: 'Uwagi dla kuriera (opc.)'),
+            ),
             const SizedBox(height: 8),
             CheckboxListTile(
               value: _default,
@@ -255,7 +289,11 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
               child: ElevatedButton(
                 onPressed: _busy ? null : _save,
                 child: _busy
-                    ? SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand))
+                    ? SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: context.zz.onBrand),
+                      )
                     : const Text('Zapisz adres'),
               ),
             ),

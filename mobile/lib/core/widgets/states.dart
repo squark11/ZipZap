@@ -10,17 +10,14 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: context.zz.brandStrong),
-            if (label != null) ...[
-              const SizedBox(height: 12),
-              Text(label!, style: TextStyle(color: context.zz.textMuted)),
-            ],
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircularProgressIndicator(color: context.zz.brandStrong),
+        if (label != null) ...[const SizedBox(height: 12), Text(label!, style: TextStyle(color: context.zz.textMuted))],
+      ],
+    ),
+  );
 }
 
 class ErrorView extends StatelessWidget {
@@ -30,28 +27,30 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset('assets/svg/error.svg', height: 120),
-              const SizedBox(height: 12),
-              Text(message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: context.zz.text, fontSize: 16)),
-              if (onRetry != null) ...[
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Spróbuj ponownie'),
-                ),
-              ],
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset('assets/svg/error.svg', height: 120),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.zz.text, fontSize: 16),
           ),
-        ),
-      );
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Spróbuj ponownie'),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 class EmptyView extends StatelessWidget {
@@ -65,41 +64,38 @@ class EmptyView extends StatelessWidget {
   /// Opcjonalny przycisk pod tekstem (np. „Zobacz sklepy", „Wyczyść wyszukiwanie").
   final Widget? action;
 
-  const EmptyView({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.svgAsset,
-    this.action,
-  });
+  const EmptyView({super.key, required this.icon, required this.title, this.subtitle, this.svgAsset, this.action});
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (svgAsset != null)
-                SvgPicture.asset(svgAsset!, height: 132)
-              else
-                Icon(icon, size: 48, color: context.zz.textMuted),
-              const SizedBox(height: 12),
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-              if (subtitle != null) ...[
-                const SizedBox(height: 6),
-                Text(subtitle!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: context.zz.textMuted)),
-              ],
-              if (action != null) ...[const SizedBox(height: 16), action!],
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (svgAsset != null)
+            SvgPicture.asset(svgAsset!, height: 132)
+          else
+            Icon(icon, size: 48, color: context.zz.textMuted),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
-        ),
-      );
+          if (subtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.zz.textMuted),
+            ),
+          ],
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
+    ),
+  );
 }
 
 /// Kolorowa „pigułka" statusu zamówienia.
@@ -118,8 +114,10 @@ class StatusPill extends StatelessWidget {
         children: [
           ZzIcon(icon, size: 14, color: fg),
           const SizedBox(width: 5),
-          Text(label,
-              style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

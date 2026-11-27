@@ -42,19 +42,19 @@ class Store {
   }
 
   factory Store.fromJson(Map<String, dynamic> j) => Store(
-        id: j['id'].toString(),
-        name: j['name'] ?? '',
-        slug: j['slug'] ?? '',
-        city: j['city'] ?? '',
-        status: j['status'] ?? 'Open',
-        description: j['description'],
-        address: j['address'],
-        phone: j['phone'],
-        minimumOrderValue: (j['minimumOrderValue'] as num?)?.toDouble() ?? 0,
-        isAcceptingOrders: j['isAcceptingOrders'] == true,
-        logoUrl: (j['logoUrl'] as String?)?.isNotEmpty == true ? j['logoUrl'] as String : null,
-        latitude: (j['latitude'] as num?)?.toDouble(),
-        longitude: (j['longitude'] as num?)?.toDouble(),
-        distanceKm: (j['distanceKm'] as num?)?.toDouble(),
-      );
+    id: j['id'].toString(),
+    name: j['name'] ?? '',
+    slug: j['slug'] ?? '',
+    city: j['city'] ?? '',
+    status: j['status'] ?? 'Open',
+    description: j['description'],
+    address: j['address'],
+    phone: j['phone'],
+    minimumOrderValue: (j['minimumOrderValue'] as num?)?.toDouble() ?? 0,
+    isAcceptingOrders: j['isAcceptingOrders'] == true,
+    logoUrl: (j['logoUrl'] as String?)?.isNotEmpty == true ? j['logoUrl'] as String : null,
+    latitude: (j['latitude'] as num?)?.toDouble(),
+    longitude: (j['longitude'] as num?)?.toDouble(),
+    distanceKm: (j['distanceKm'] as num?)?.toDouble(),
+  );
 }

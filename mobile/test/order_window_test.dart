@@ -4,11 +4,11 @@ import 'package:zipzap/models/order.dart';
 String _pad(int n) => n.toString().padLeft(2, '0');
 
 Map<String, dynamic> _base() => {
-      'id': 'o1',
-      'storeId': 's1',
-      'status': 'Confirmed',
-      'placedAtUtc': '2026-09-10T12:00:00Z',
-    };
+  'id': 'o1',
+  'storeId': 's1',
+  'status': 'Confirmed',
+  'placedAtUtc': '2026-09-10T12:00:00Z',
+};
 
 void main() {
   test('deliveryWindowLabel = "Dziś, 14:00–16:00" for today', () {

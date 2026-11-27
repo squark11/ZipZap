@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/zz_theme.dart';
 
-bool _isOnline(List<ConnectivityResult> results) =>
-    results.any((r) => r != ConnectivityResult.none);
+bool _isOnline(List<ConnectivityResult> results) => results.any((r) => r != ConnectivityResult.none);
 
 /// `true` = jest połączenie, `false` = offline. Zaczyna od bieżącego stanu,
 /// potem śledzi zmiany interfejsów sieciowych.
@@ -28,9 +27,7 @@ class OfflineBar extends ConsumerWidget {
       duration: ZzMotion.of(context, ZzMotion.base),
       curve: Curves.easeOut,
       alignment: Alignment.topCenter,
-      child: online
-          ? const SizedBox(width: double.infinity)
-          : const _OfflineContent(),
+      child: online ? const SizedBox(width: double.infinity) : const _OfflineContent(),
     );
   }
 }
@@ -51,9 +48,10 @@ class _OfflineContent extends StatelessWidget {
             children: [
               Icon(Icons.cloud_off, color: context.zz.onBrand, size: 16),
               SizedBox(width: 8),
-              Text('Brak połączenia z internetem',
-                  style: TextStyle(
-                      color: context.zz.onBrand, fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(
+                'Brak połączenia z internetem',
+                style: TextStyle(color: context.zz.onBrand, fontWeight: FontWeight.w600, fontSize: 13),
+              ),
             ],
           ),
         ),

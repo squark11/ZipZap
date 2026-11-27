@@ -15,14 +15,7 @@ import '../../core/widgets/zz_icon.dart';
 import '../../models/order.dart';
 
 /// Kolejność statusów w osi czasu zamówienia.
-const _statusFlow = [
-  'Placed',
-  'Confirmed',
-  'Picking',
-  'ReadyForPickup',
-  'InDelivery',
-  'Delivered',
-];
+const _statusFlow = ['Placed', 'Confirmed', 'Picking', 'ReadyForPickup', 'InDelivery', 'Delivered'];
 
 const _statusLabels = {
   'Placed': 'Złożone',
@@ -96,16 +89,13 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Zamówienie'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => context.go('/stores'),
-        ),
+        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => context.go('/stores')),
       ),
       body: _loading
           ? const LoadingView()
           : _error != null
-              ? ErrorView(message: _error!, onRetry: _load)
-              : _body(_order!),
+          ? ErrorView(message: _error!, onRetry: _load)
+          : _body(_order!),
     );
   }
 
@@ -124,19 +114,14 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
         children: [
           Row(
             children: [
-              Text('Nr ${o.id.substring(0, 8)}',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text('Nr ${o.id.substring(0, 8)}', style: Theme.of(context).textTheme.titleMedium),
               const Spacer(),
               StatusPill(o.status),
             ],
           ),
-          if (o.isTestOrder) ...[
-            const SizedBox(height: 12),
-            const TestOrderBanner(placed: true),
-          ],
+          if (o.isTestOrder) ...[const SizedBox(height: 12), const TestOrderBanner(placed: true)],
           const SizedBox(height: 4),
-          Text('Złożono ${shortDateTime(o.placedAtUtc)}',
-              style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
+          Text('Złożono ${shortDateTime(o.placedAtUtc)}', style: TextStyle(color: context.zz.textMuted, fontSize: 13)),
           const SizedBox(height: 20),
           if (cancelled)
             const ZzNotice(kind: ZzNoticeKind.danger, message: 'To zamówienie zostało anulowane.')
@@ -145,15 +130,17 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
           const SizedBox(height: 24),
           Text('Produkty', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          ...o.items.map((it) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Expanded(child: Text('${it.quantity} × ${it.productName}')),
-                    Text(zl(it.lineTotal)),
-                  ],
-                ),
-              )),
+          ...o.items.map(
+            (it) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(child: Text('${it.quantity} × ${it.productName}')),
+                  Text(zl(it.lineTotal)),
+                ],
+              ),
+            ),
+          ),
           const Divider(height: 24),
           _row('Wartość produktów', zl(o.subtotal)),
           _row('Opłata za dostawę', zl(o.deliveryFee)),
@@ -167,8 +154,7 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
               children: [
                 ZzIcon('clock', size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 6),
-                Text('Termin: ${o.deliveryWindowLabel}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text('Termin: ${o.deliveryWindowLabel}', style: const TextStyle(fontWeight: FontWeight.w600)),
               ],
             ),
             const SizedBox(height: 6),
@@ -179,36 +165,42 @@ class _OrderTrackScreenState extends ConsumerState<OrderTrackScreen> {
                 ZzIcon('cart', size: 16, color: context.zz.brandStrong),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text('Zakupy w sklepie: ${o.purchasingRound!.label}',
-                      style: TextStyle(color: context.zz.textMuted)),
+                  child: Text(
+                    'Zakupy w sklepie: ${o.purchasingRound!.label}',
+                    style: TextStyle(color: context.zz.textMuted),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
           ],
           Text(o.deliveryAddress),
-          Text('tel. ${o.contactPhone}',
-              style: TextStyle(color: context.zz.textMuted)),
+          Text('tel. ${o.contactPhone}', style: TextStyle(color: context.zz.textMuted)),
         ],
       ),
     );
   }
 
   Widget _row(String label, String value, {bool bold = false}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: bold ? context.zz.text : context.zz.textMuted,
-                    fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-                    fontSize: bold ? 17 : 14)),
-            Text(value,
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: bold ? 17 : 14)),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: bold ? context.zz.text : context.zz.textMuted,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            fontSize: bold ? 17 : 14,
+          ),
         ),
-      );
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: bold ? 17 : 14),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Oś statusów zamówienia (ilustrowana ikonami kroków; aktywny „pulsuje”).
@@ -218,8 +210,7 @@ class OrderTimeline extends StatelessWidget {
   /// Znaczniki czasu przejść (status → kiedy). Pokazywane przy zrobionych krokach.
   final Map<String, DateTime> timestamps;
 
-  const OrderTimeline(
-      {super.key, required this.currentStatus, this.timestamps = const {}});
+  const OrderTimeline({super.key, required this.currentStatus, this.timestamps = const {}});
 
   @override
   Widget build(BuildContext context) {
@@ -235,12 +226,8 @@ class OrderTimeline extends StatelessWidget {
         final reached = done || current;
         final isLast = i == _statusFlow.length - 1;
 
-        final fill = current
-            ? context.zz.brandStrong
-            : (done ? context.zz.success : context.zz.surface);
-        final border = current
-            ? context.zz.brandStrong
-            : (done ? context.zz.success : context.zz.border);
+        final fill = current ? context.zz.brandStrong : (done ? context.zz.success : context.zz.surface);
+        final border = current ? context.zz.brandStrong : (done ? context.zz.success : context.zz.border);
         final iconColor = reached ? context.zz.onBrand : context.zz.textMuted;
         final ts = timestamps[step];
 
@@ -258,12 +245,7 @@ class OrderTimeline extends StatelessWidget {
                     pulse: current,
                   ),
                   if (!isLast)
-                    Expanded(
-                      child: Container(
-                        width: 2,
-                        color: done ? context.zz.success : context.zz.border,
-                      ),
-                    ),
+                    Expanded(child: Container(width: 2, color: done ? context.zz.success : context.zz.border)),
                 ],
               ),
               const SizedBox(width: 14),
@@ -276,22 +258,18 @@ class OrderTimeline extends StatelessWidget {
                       _statusLabels[step]!,
                       style: TextStyle(
                         fontWeight: reached ? FontWeight.w600 : FontWeight.w400,
-                        color: current
-                            ? context.zz.brandStrong
-                            : (done ? context.zz.text : context.zz.textMuted),
+                        color: current ? context.zz.brandStrong : (done ? context.zz.text : context.zz.textMuted),
                       ),
                     ),
                     if (done && ts != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(shortTime(ts),
-                            style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
+                        child: Text(shortTime(ts), style: TextStyle(color: context.zz.textMuted, fontSize: 12)),
                       ),
                     if (current)
                       Padding(
                         padding: EdgeInsets.only(top: 2),
-                        child: Text('W trakcie',
-                            style: TextStyle(color: context.zz.brandStrong, fontSize: 12)),
+                        child: Text('W trakcie', style: TextStyle(color: context.zz.brandStrong, fontSize: 12)),
                       ),
                   ],
                 ),
@@ -323,8 +301,7 @@ class _StatusNode extends StatefulWidget {
   State<_StatusNode> createState() => _StatusNodeState();
 }
 
-class _StatusNodeState extends State<_StatusNode>
-    with TickerProviderStateMixin {
+class _StatusNodeState extends State<_StatusNode> with TickerProviderStateMixin {
   AnimationController? _c;
 
   // Zegar pulsu powstaje tylko, gdy węzeł jest bieżący i system nie ogranicza ruchu; przy „ogranicz ruch”

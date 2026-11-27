@@ -19,12 +19,8 @@ class CartState {
 
   const CartState({this.cart, this.busy = false, this.error, this.restoring = false});
 
-  CartState copyWith({Cart? cart, bool? busy, String? error, bool? restoring}) => CartState(
-        cart: cart ?? this.cart,
-        busy: busy ?? this.busy,
-        error: error,
-        restoring: restoring ?? this.restoring,
-      );
+  CartState copyWith({Cart? cart, bool? busy, String? error, bool? restoring}) =>
+      CartState(cart: cart ?? this.cart, busy: busy ?? this.busy, error: error, restoring: restoring ?? this.restoring);
 
   int get count => cart?.totalQuantity ?? 0;
   double get subtotal => cart?.subtotal ?? 0;
@@ -43,9 +39,11 @@ class CartController extends Notifier<CartState> {
 
   @override
   CartState build() {
-    unawaited(_restore().whenComplete(() {
-      if (state.restoring) state = state.copyWith(restoring: false);
-    }));
+    unawaited(
+      _restore().whenComplete(() {
+        if (state.restoring) state = state.copyWith(restoring: false);
+      }),
+    );
     return const CartState(restoring: true);
   }
 
@@ -79,8 +77,7 @@ class CartController extends Notifier<CartState> {
 
   void _setCart(Cart cart) {
     state = CartState(cart: cart);
-    unawaited(ref.read(appStorageProvider)
-        .write(storageKey, jsonEncode({'id': cart.id, 'token': cart.cartToken})));
+    unawaited(ref.read(appStorageProvider).write(storageKey, jsonEncode({'id': cart.id, 'token': cart.cartToken})));
   }
 
   Future<void> _forget() => ref.read(appStorageProvider).delete(storageKey);
@@ -179,5 +176,4 @@ class CartController extends Notifier<CartState> {
   }
 }
 
-final cartControllerProvider =
-    NotifierProvider<CartController, CartState>(CartController.new);
+final cartControllerProvider = NotifierProvider<CartController, CartState>(CartController.new);

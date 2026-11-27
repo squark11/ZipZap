@@ -26,18 +26,18 @@ class Address {
   });
 
   factory Address.fromJson(Map<String, dynamic> j) => Address(
-        id: j['id'].toString(),
-        label: (j['label'] ?? '').toString(),
-        street: (j['street'] ?? '').toString(),
-        buildingNo: (j['buildingNo'] ?? '').toString(),
-        apartmentNo: j['apartmentNo']?.toString(),
-        postalCode: (j['postalCode'] ?? '').toString(),
-        city: (j['city'] ?? '').toString(),
-        notes: j['notes']?.toString(),
-        latitude: (j['latitude'] as num?)?.toDouble(),
-        longitude: (j['longitude'] as num?)?.toDouble(),
-        isDefault: j['isDefault'] == true,
-      );
+    id: j['id'].toString(),
+    label: (j['label'] ?? '').toString(),
+    street: (j['street'] ?? '').toString(),
+    buildingNo: (j['buildingNo'] ?? '').toString(),
+    apartmentNo: j['apartmentNo']?.toString(),
+    postalCode: (j['postalCode'] ?? '').toString(),
+    city: (j['city'] ?? '').toString(),
+    notes: j['notes']?.toString(),
+    latitude: (j['latitude'] as num?)?.toDouble(),
+    longitude: (j['longitude'] as num?)?.toDouble(),
+    isDefault: j['isDefault'] == true,
+  );
 
   /// Adres w jednej linii (do listy i checkoutu).
   String get oneLine {

@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zipzap/core/widgets/states.dart';
 import 'package:zipzap/core/widgets/zz_icon.dart';
 
-Widget _host(Widget child) => MaterialApp(home: Scaffold(body: Center(child: child)));
+Widget _host(Widget child) => MaterialApp(
+  home: Scaffold(body: Center(child: child)),
+);
 
 void main() {
   testWidgets('ZzIcon renders an SvgPicture from the icons folder', (tester) async {

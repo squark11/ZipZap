@@ -10,7 +10,8 @@ import '../../core/widgets/states.dart';
 import '../../models/order.dart';
 
 final myOrdersProvider = FutureProvider.autoDispose<List<Order>>(
-    (ref) => ref.read(orderingRepositoryProvider).listMyOrders());
+  (ref) => ref.read(orderingRepositoryProvider).listMyOrders(),
+);
 
 class MyOrdersScreen extends ConsumerWidget {
   const MyOrdersScreen({super.key});
@@ -22,8 +23,7 @@ class MyOrdersScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Moje zamówienia')),
       body: orders.when(
         loading: () => const OrderListSkeleton(),
-        error: (e, _) =>
-            ErrorView(message: e.toString(), onRetry: () => ref.invalidate(myOrdersProvider)),
+        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(myOrdersProvider)),
         data: (list) {
           if (list.isEmpty) {
             return const EmptyView(
@@ -45,11 +45,11 @@ class MyOrdersScreen extends ConsumerWidget {
                 return Card(
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    title: Text('Nr ${o.id.substring(0, 8)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    title: Text('Nr ${o.id.substring(0, 8)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text(
-                        '${shortDateTime(o.placedAtUtc)} · ${zl(o.total)}',
-                        style: TextStyle(color: context.zz.textMuted)),
+                      '${shortDateTime(o.placedAtUtc)} · ${zl(o.total)}',
+                      style: TextStyle(color: context.zz.textMuted),
+                    ),
                     trailing: StatusPill(o.status),
                     onTap: () => context.push('/orders/${o.id}'),
                   ),

@@ -12,12 +12,18 @@ class CatalogRepository {
     // Z kodem pocztowym: tylko sklepy dowożące pod ten kod (endpoint zasięgu).
     if (digits.length == 5) {
       final q = <String, dynamic>{'postalCode': postalCode};
-      if (lat != null && lng != null) { q['lat'] = lat; q['lng'] = lng; }
+      if (lat != null && lng != null) {
+        q['lat'] = lat;
+        q['lng'] = lng;
+      }
       final data = await _api.get('/stores/serving', query: q);
       return (data as List).map((e) => Store.fromJson(e as Map<String, dynamic>)).toList();
     }
     final query = <String, dynamic>{'onlyActive': onlyActive};
-    if (lat != null && lng != null) { query['lat'] = lat; query['lng'] = lng; }
+    if (lat != null && lng != null) {
+      query['lat'] = lat;
+      query['lng'] = lng;
+    }
     final data = await _api.get('/catalog/stores', query: query);
     return (data as List).map((e) => Store.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -36,8 +42,10 @@ class CatalogRepository {
   }
 
   Future<List<Product>> listProducts(String storeId, {String? categoryId}) async {
-    final data = await _api.get('/catalog/stores/$storeId/products',
-        query: categoryId == null ? null : {'categoryId': categoryId});
+    final data = await _api.get(
+      '/catalog/stores/$storeId/products',
+      query: categoryId == null ? null : {'categoryId': categoryId},
+    );
     return (data as List).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

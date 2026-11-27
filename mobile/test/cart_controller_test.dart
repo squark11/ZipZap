@@ -30,23 +30,20 @@ class _FakeOrderingRepo extends OrderingRepository {
   }
 
   Cart _cartOf(String cartId, List<String> items) => Cart(
-        id: cartId,
-        storeId: 's1',
-        cartToken: 't',
-        status: 'Active',
-        subtotal: items.length.toDouble(),
-        items: items
-            .map((p) => CartItem(
-                productId: p, productName: p, unitPrice: 1, unit: 'szt', quantity: 1, lineTotal: 1))
-            .toList(),
-      );
+    id: cartId,
+    storeId: 's1',
+    cartToken: 't',
+    status: 'Active',
+    subtotal: items.length.toDouble(),
+    items: items
+        .map((p) => CartItem(productId: p, productName: p, unitPrice: 1, unit: 'szt', quantity: 1, lineTotal: 1))
+        .toList(),
+  );
 }
 
 void main() {
   test('concurrent adds are serialized (no stale overwrite)', () async {
-    final container = ProviderContainer(overrides: [
-      orderingRepositoryProvider.overrideWithValue(_FakeOrderingRepo()),
-    ]);
+    final container = ProviderContainer(overrides: [orderingRepositoryProvider.overrideWithValue(_FakeOrderingRepo())]);
     addTearDown(container.dispose);
 
     final controller = container.read(cartControllerProvider.notifier);
@@ -58,7 +55,6 @@ void main() {
     await Future.wait([f1, f2]);
 
     final state = container.read(cartControllerProvider);
-    expect(state.cart!.items.length, 2,
-        reason: 'Oba produkty muszą zostać w koszyku mimo wyścigu odpowiedzi.');
+    expect(state.cart!.items.length, 2, reason: 'Oba produkty muszą zostać w koszyku mimo wyścigu odpowiedzi.');
   });
 }

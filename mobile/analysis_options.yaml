@@ -9,6 +9,10 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# Szerokość linii 120 (tak pisany jest kod projektu) — `dart format` i hook formatowania czytają ją stąd.
+formatter:
+  page_width: 120
+
 analyzer:
   exclude:
     - build/**

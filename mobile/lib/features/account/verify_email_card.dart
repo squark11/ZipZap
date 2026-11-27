@@ -99,8 +99,10 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_sent ? 'Link wysłany' : 'Potwierdź adres e-mail',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: accent)),
+          Text(
+            _sent ? 'Link wysłany' : 'Potwierdź adres e-mail',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: accent),
+          ),
           const SizedBox(height: 6),
           Text(
             _sent
@@ -114,16 +116,21 @@ class _VerifyEmailCardState extends ConsumerState<VerifyEmailCard> {
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_error!, style: TextStyle(color: context.zz.danger))),
+            Semantics(
+              liveRegion: true,
+              child: Text(_error!, style: TextStyle(color: context.zz.danger)),
+            ),
           ],
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: _busy || _cooldown > 0 ? null : _resend,
-            child: Text(_busy
-                ? 'Wysyłanie…'
-                : _cooldown > 0
-                    ? 'Wyślij ponownie za $_cooldown s'
-                    : 'Wyślij link ponownie'),
+            child: Text(
+              _busy
+                  ? 'Wysyłanie…'
+                  : _cooldown > 0
+                  ? 'Wyślij ponownie za $_cooldown s'
+                  : 'Wyślij link ponownie',
+            ),
           ),
         ],
       ),

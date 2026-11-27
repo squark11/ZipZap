@@ -42,12 +42,16 @@ class _UiGalleryScreenState extends State<UiGalleryScreen> {
   @override
   Widget build(BuildContext context) {
     Widget section(String title, List<Widget> children) => Padding(
-          padding: const EdgeInsets.only(bottom: ZzSpace.xxl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [ZzSectionHeader(title: title), const SizedBox(height: ZzSpace.sm), ...children],
-          ),
-        );
+      padding: const EdgeInsets.only(bottom: ZzSpace.xxl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ZzSectionHeader(title: title),
+          const SizedBox(height: ZzSpace.sm),
+          ...children,
+        ],
+      ),
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Komponenty')),
       body: ZzPage(
@@ -68,36 +72,42 @@ class _UiGalleryScreenState extends State<UiGalleryScreen> {
               const SizedBox(height: ZzSpace.md),
               const TextField(decoration: InputDecoration(labelText: 'E-mail')),
               const SizedBox(height: ZzSpace.md),
-              const TextField(decoration: InputDecoration(labelText: 'Kod pocztowy', errorText: 'Kod ma 5 cyfr, np. 31-042.')),
+              const TextField(
+                decoration: InputDecoration(labelText: 'Kod pocztowy', errorText: 'Kod ma 5 cyfr, np. 31-042.'),
+              ),
             ]),
             section('Kategorie', [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: Row(children: [
-                  for (final e in _categories.entries)
-                    ZzCategoryChip(
-                      label: e.value,
-                      icon: e.key,
-                      selected: _category == e.key,
-                      onTap: () => setState(() => _category = e.key),
-                    ),
-                ]),
+                child: Row(
+                  children: [
+                    for (final e in _categories.entries)
+                      ZzCategoryChip(
+                        label: e.value,
+                        icon: e.key,
+                        selected: _category == e.key,
+                        onTap: () => setState(() => _category = e.key),
+                      ),
+                  ],
+                ),
               ),
             ]),
             section('Karta sklepu i licznik', [
               ZzStoreCard(store: _store, onTap: () {}),
               const SizedBox(height: ZzSpace.md),
-              Row(children: [
-                ZzQtyStepper(
-                  itemLabel: 'Jabłka',
-                  quantity: _qty,
-                  valueText: '$_qty kg',
-                  onMinus: _qty > 1 ? () => setState(() => _qty--) : null,
-                  onPlus: () => setState(() => _qty++),
-                ),
-                const SizedBox(width: ZzSpace.md),
-                const ZzStatusChip(open: false),
-              ]),
+              Row(
+                children: [
+                  ZzQtyStepper(
+                    itemLabel: 'Jabłka',
+                    quantity: _qty,
+                    valueText: '$_qty kg',
+                    onMinus: _qty > 1 ? () => setState(() => _qty--) : null,
+                    onPlus: () => setState(() => _qty++),
+                  ),
+                  const SizedBox(width: ZzSpace.md),
+                  const ZzStatusChip(open: false),
+                ],
+              ),
             ]),
             section('Komunikaty', const [
               ZzNotice(kind: ZzNoticeKind.info, message: 'Zamów do 15:30 — dostawa dziś od 17:00.'),
@@ -109,20 +119,28 @@ class _UiGalleryScreenState extends State<UiGalleryScreen> {
               ZzNotice(kind: ZzNoticeKind.danger, message: 'Ten termin właśnie się zapełnił. Wybierz inny.'),
             ]),
             section('Statusy zamówienia', [
-              const Wrap(spacing: ZzSpace.sm, runSpacing: ZzSpace.sm, children: [
-                StatusPill('Placed'),
-                StatusPill('Picking'),
-                StatusPill('InDelivery'),
-                StatusPill('Delivered'),
-                StatusPill('Cancelled'),
-              ]),
+              const Wrap(
+                spacing: ZzSpace.sm,
+                runSpacing: ZzSpace.sm,
+                children: [
+                  StatusPill('Placed'),
+                  StatusPill('Picking'),
+                  StatusPill('InDelivery'),
+                  StatusPill('Delivered'),
+                  StatusPill('Cancelled'),
+                ],
+              ),
             ]),
             section('Ładowanie', const [ZzSkeleton(height: 18), SizedBox(height: ZzSpace.sm), ZzSkeleton(width: 200)]),
             section('Ilustracje', [
-              Wrap(spacing: ZzSpace.md, runSpacing: ZzSpace.md, children: [
-                for (final n in const ['mascot', 'state_empty_cart', 'state_error', 'state_offline', 'state_success'])
-                  SvgPicture.asset('assets/svg/illustrations/$n.svg', height: 96),
-              ]),
+              Wrap(
+                spacing: ZzSpace.md,
+                runSpacing: ZzSpace.md,
+                children: [
+                  for (final n in const ['mascot', 'state_empty_cart', 'state_error', 'state_offline', 'state_success'])
+                    SvgPicture.asset('assets/svg/illustrations/$n.svg', height: 96),
+                ],
+              ),
             ]),
             ZzCartBar(count: 3, subtotal: 22.46, missingToMinimum: 0, onTap: () {}),
           ],

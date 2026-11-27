@@ -4,10 +4,8 @@ class ProductUnitOption {
   final double price;
   const ProductUnitOption(this.unit, this.price);
 
-  factory ProductUnitOption.fromJson(Map<String, dynamic> j) => ProductUnitOption(
-        (j['unit'] ?? 'szt').toString(),
-        (j['price'] as num?)?.toDouble() ?? 0,
-      );
+  factory ProductUnitOption.fromJson(Map<String, dynamic> j) =>
+      ProductUnitOption((j['unit'] ?? 'szt').toString(), (j['price'] as num?)?.toDouble() ?? 0);
 }
 
 class Product {

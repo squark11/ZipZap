@@ -4,11 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zipzap/core/widgets/connectivity_banner.dart';
 
 Widget _host(bool online) => ProviderScope(
-      overrides: [
-        connectivityProvider.overrideWith((ref) => Stream.value(online)),
-      ],
-      child: const MaterialApp(home: Scaffold(body: OfflineBar())),
-    );
+  overrides: [connectivityProvider.overrideWith((ref) => Stream.value(online))],
+  child: const MaterialApp(home: Scaffold(body: OfflineBar())),
+);
 
 const _text = 'Brak połączenia z internetem';
 

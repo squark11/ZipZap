@@ -23,13 +23,7 @@ void main() {
     });
 
     test('empty items default to zero quantity', () {
-      final cart = Cart.fromJson({
-        'id': 'c1',
-        'storeId': 's1',
-        'cartToken': 'tok',
-        'status': 'Active',
-        'subtotal': 0,
-      });
+      final cart = Cart.fromJson({'id': 'c1', 'storeId': 's1', 'cartToken': 'tok', 'status': 'Active', 'subtotal': 0});
       expect(cart.totalQuantity, 0);
     });
   });

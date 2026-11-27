@@ -40,16 +40,16 @@ class TestOrderBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(blocked ? Icons.lock_outline : Icons.science_outlined,
-                color: context.zz.brandStrong, size: 22),
+            Icon(blocked ? Icons.lock_outline : Icons.science_outlined, color: context.zz.brandStrong, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, color: context.zz.brandStrong)),
+                  Text(
+                    title,
+                    style: TextStyle(fontWeight: FontWeight.w700, color: context.zz.brandStrong),
+                  ),
                   const SizedBox(height: 4),
                   Text(body, style: TextStyle(color: context.zz.text, fontSize: 13)),
                 ],

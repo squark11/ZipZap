@@ -7,9 +7,7 @@ class NotificationsRepository {
 
   Future<List<AppNotification>> listMine({int take = 50}) async {
     final data = await _api.get('/notifications/mine', query: {'take': take});
-    return (data as List)
-        .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return (data as List).map((e) => AppNotification.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<void> markRead(String id) => _api.post('/notifications/$id/read');

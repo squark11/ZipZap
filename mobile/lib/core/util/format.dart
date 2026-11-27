@@ -1,7 +1,6 @@
 import 'package:intl/intl.dart';
 
-final NumberFormat _zl =
-    NumberFormat.currency(locale: 'pl_PL', symbol: 'zł', decimalDigits: 2);
+final NumberFormat _zl = NumberFormat.currency(locale: 'pl_PL', symbol: 'zł', decimalDigits: 2);
 
 /// Formatuje kwotę w złotych, np. `23,50 zł`.
 String zl(num value) => _zl.format(value);

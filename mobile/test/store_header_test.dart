@@ -3,27 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zipzap/features/catalog/store_header.dart';
 import 'package:zipzap/models/store.dart';
 
-Store _store({
-  bool open = true,
-  String status = 'Open',
-  String? description,
-  String? phone,
-}) =>
-    Store(
-      id: 's',
-      name: 'Piekarnia Poranek',
-      slug: 'p',
-      city: 'Koło',
-      status: status,
-      description: description,
-      address: null,
-      phone: phone,
-      minimumOrderValue: 15,
-      isAcceptingOrders: open,
-    );
+Store _store({bool open = true, String status = 'Open', String? description, String? phone}) => Store(
+  id: 's',
+  name: 'Piekarnia Poranek',
+  slug: 'p',
+  city: 'Koło',
+  status: status,
+  description: description,
+  address: null,
+  phone: phone,
+  minimumOrderValue: 15,
+  isAcceptingOrders: open,
+);
 
-Widget _host(Store s) =>
-    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: StoreHeader(store: s))));
+Widget _host(Store s) => MaterialApp(
+  home: Scaffold(
+    body: SingleChildScrollView(child: StoreHeader(store: s)),
+  ),
+);
 
 void main() {
   testWidgets('shows name, city, min order, status and delivery note', (tester) async {

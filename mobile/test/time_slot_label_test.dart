@@ -5,16 +5,16 @@ String _iso(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 TimeSlot _slot(String date) => TimeSlot(
-      id: 's',
-      storeId: 'st',
-      deliveryZoneId: 'z',
-      date: date,
-      startTime: '14:00:00',
-      endTime: '16:00:00',
-      maxOrders: 5,
-      reservedCount: 2,
-      remainingCapacity: 3,
-    );
+  id: 's',
+  storeId: 'st',
+  deliveryZoneId: 'z',
+  date: date,
+  startTime: '14:00:00',
+  endTime: '16:00:00',
+  maxOrders: 5,
+  reservedCount: 2,
+  remainingCapacity: 3,
+);
 
 void main() {
   final now = DateTime.now();

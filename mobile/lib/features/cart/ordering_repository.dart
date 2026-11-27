@@ -23,20 +23,21 @@ class OrderingRepository {
   Future<Cart> addItem(String cartId, String token, String productId, int quantity, {String? unit}) async {
     final body = <String, dynamic>{'productId': productId, 'quantity': quantity};
     if (unit != null) body['unit'] = unit;
-    final data = await _api.post('/ordering/carts/$cartId/items',
-        query: {'token': token}, body: body);
+    final data = await _api.post('/ordering/carts/$cartId/items', query: {'token': token}, body: body);
     return Cart.fromJson(data as Map<String, dynamic>);
   }
 
   Future<Cart> setQuantity(String cartId, String token, String productId, int quantity) async {
-    final data = await _api.put('/ordering/carts/$cartId/items/$productId',
-        query: {'token': token}, body: {'quantity': quantity});
+    final data = await _api.put(
+      '/ordering/carts/$cartId/items/$productId',
+      query: {'token': token},
+      body: {'quantity': quantity},
+    );
     return Cart.fromJson(data as Map<String, dynamic>);
   }
 
   Future<Cart> removeItem(String cartId, String token, String productId) async {
-    final data =
-        await _api.delete('/ordering/carts/$cartId/items/$productId', query: {'token': token});
+    final data = await _api.delete('/ordering/carts/$cartId/items/$productId', query: {'token': token});
     return Cart.fromJson(data as Map<String, dynamic>);
   }
 
@@ -75,18 +76,20 @@ class OrderingRepository {
     bool consentAccepted = false,
     DateTime? expectedRoundStartsAtUtc,
   }) async {
-    final data = await _api.post('/ordering/carts/$cartId/checkout',
-        headers: {'Idempotency-Key': idempotencyKey},
-        body: {
-          'token': cartToken,
-          'deliveryZoneId': deliveryZoneId,
-          'timeSlotId': timeSlotId,
-          'deliveryAddress': deliveryAddress,
-          'contactPhone': contactPhone,
-          'consentAccepted': consentAccepted,
-          // Runda pokazana klientowi — gdy termin graniczny minie, serwer odrzuca (409) zamiast przesuwać po cichu.
-          'expectedRoundStartsAtUtc': ?expectedRoundStartsAtUtc?.toUtc().toIso8601String(),
-        });
+    final data = await _api.post(
+      '/ordering/carts/$cartId/checkout',
+      headers: {'Idempotency-Key': idempotencyKey},
+      body: {
+        'token': cartToken,
+        'deliveryZoneId': deliveryZoneId,
+        'timeSlotId': timeSlotId,
+        'deliveryAddress': deliveryAddress,
+        'contactPhone': contactPhone,
+        'consentAccepted': consentAccepted,
+        // Runda pokazana klientowi — gdy termin graniczny minie, serwer odrzuca (409) zamiast przesuwać po cichu.
+        'expectedRoundStartsAtUtc': ?expectedRoundStartsAtUtc?.toUtc().toIso8601String(),
+      },
+    );
     return Order.fromJson(data as Map<String, dynamic>);
   }
 
@@ -116,6 +119,5 @@ class OrderingRepository {
 
   Future<void> deleteAddress(String id) => _api.delete('/ordering/addresses/$id');
 
-  Future<void> setDefaultAddress(String id) =>
-      _api.post('/ordering/addresses/$id/default', body: const {});
+  Future<void> setDefaultAddress(String id) => _api.post('/ordering/addresses/$id/default', body: const {});
 }

@@ -95,8 +95,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       body: _loading
           ? const LoadingView(label: 'Przygotowuję płatność…')
           : _error != null
-              ? ErrorView(message: _error!, onRetry: _load)
-              : _body(),
+          ? ErrorView(message: _error!, onRetry: _load)
+          : _body(),
     );
   }
 
@@ -116,14 +116,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const SizedBox(height: 8),
           Text('Do zapłaty', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text(zl(p.amount),
-              style: Theme.of(context)
-                  .textTheme
-                  .displaySmall
-                  ?.copyWith(color: context.zz.brandStrong)),
+          Text(zl(p.amount), style: Theme.of(context).textTheme.displaySmall?.copyWith(color: context.zz.brandStrong)),
           const SizedBox(height: 6),
-          Text('w tym dostawa ${zl(p.deliveryFee)}',
-              style: TextStyle(color: context.zz.textMuted)),
+          Text('w tym dostawa ${zl(p.deliveryFee)}', style: TextStyle(color: context.zz.textMuted)),
           const SizedBox(height: 28),
           ElevatedButton.icon(
             onPressed: p.redirectUrl == null ? null : _pay,
@@ -133,10 +128,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: context.zz.surface,
-              borderRadius: BorderRadius.circular(ZzRadius.field),
-            ),
+            decoration: BoxDecoration(color: context.zz.surface, borderRadius: BorderRadius.circular(ZzRadius.field)),
             child: Row(
               children: [
                 SizedBox(
@@ -172,12 +164,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-              success ? 'assets/svg/success.svg' : 'assets/svg/error.svg',
-              height: 128),
+          SvgPicture.asset(success ? 'assets/svg/success.svg' : 'assets/svg/error.svg', height: 128),
           const SizedBox(height: 16),
-          Text(success ? 'Płatność potwierdzona' : 'Płatność nieudana',
-              style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            success ? 'Płatność potwierdzona' : 'Płatność nieudana',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 8),
           Text(
             success
@@ -195,10 +187,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           else ...[
             ElevatedButton(onPressed: _pay, child: const Text('Spróbuj ponownie')),
             const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: () => context.go('/stores'),
-              child: const Text('Wróć do sklepów'),
-            ),
+            OutlinedButton(onPressed: () => context.go('/stores'), child: const Text('Wróć do sklepów')),
           ],
         ],
       ),

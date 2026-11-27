@@ -17,29 +17,33 @@ import 'storage/app_storage.dart';
 // --- Infrastruktura ---
 final tokenStoreProvider = Provider<TokenStore>((ref) => TokenStore());
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+
 /// Trwały magazyn (koszyk, ostatni sklep) — przeżywa odświeżenie strony w wersji web.
 final appStorageProvider = Provider<AppStorage>((ref) => AppStorage());
+
 /// Pomiar wejść z kodów QR (raz na sesję dla sklepu i źródła).
-final storeEntryRecorderProvider =
-    Provider<StoreEntryRecorder>((ref) => StoreEntryRecorder(ref.read(apiClientProvider)));
+final storeEntryRecorderProvider = Provider<StoreEntryRecorder>(
+  (ref) => StoreEntryRecorder(ref.read(apiClientProvider)),
+);
 
 // --- Auth ---
-final authRepositoryProvider =
-    Provider<AuthRepository>((ref) => AuthRepository(ref.read(apiClientProvider)));
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(ref.read(apiClientProvider)));
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(AuthController.new);
 
 // --- Repozytoria domenowe ---
-final catalogRepositoryProvider =
-    Provider<CatalogRepository>((ref) => CatalogRepository(ref.read(apiClientProvider)));
-final orderingRepositoryProvider =
-    Provider<OrderingRepository>((ref) => OrderingRepository(ref.read(apiClientProvider)));
-final paymentsRepositoryProvider =
-    Provider<PaymentsRepository>((ref) => PaymentsRepository(ref.read(apiClientProvider)));
-final notificationsRepositoryProvider =
-    Provider<NotificationsRepository>((ref) => NotificationsRepository(ref.read(apiClientProvider)));
-final feedbackRepositoryProvider =
-    Provider<FeedbackRepository>((ref) => FeedbackRepository(ref.read(apiClientProvider)));
+final catalogRepositoryProvider = Provider<CatalogRepository>((ref) => CatalogRepository(ref.read(apiClientProvider)));
+final orderingRepositoryProvider = Provider<OrderingRepository>(
+  (ref) => OrderingRepository(ref.read(apiClientProvider)),
+);
+final paymentsRepositoryProvider = Provider<PaymentsRepository>(
+  (ref) => PaymentsRepository(ref.read(apiClientProvider)),
+);
+final notificationsRepositoryProvider = Provider<NotificationsRepository>(
+  (ref) => NotificationsRepository(ref.read(apiClientProvider)),
+);
+final feedbackRepositoryProvider = Provider<FeedbackRepository>(
+  (ref) => FeedbackRepository(ref.read(apiClientProvider)),
+);
 
 /// Publiczna konfiguracja (captcha/Google) — pobierana raz, łagodny fallback przy błędzie.
 final publicConfigProvider = FutureProvider<PublicConfig>((ref) async {

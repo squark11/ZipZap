@@ -17,12 +17,12 @@ class OrderItem {
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(
-        productId: j['productId'].toString(),
-        productName: j['productName'] ?? '',
-        unitPrice: (j['unitPrice'] as num?)?.toDouble() ?? 0,
-        quantity: (j['quantity'] as num?)?.toInt() ?? 0,
-        lineTotal: (j['lineTotal'] as num?)?.toDouble() ?? 0,
-      );
+    productId: j['productId'].toString(),
+    productName: j['productName'] ?? '',
+    unitPrice: (j['unitPrice'] as num?)?.toDouble() ?? 0,
+    quantity: (j['quantity'] as num?)?.toInt() ?? 0,
+    lineTotal: (j['lineTotal'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 class OrderStatusChange {
@@ -30,17 +30,13 @@ class OrderStatusChange {
   final String toStatus;
   final DateTime changedAtUtc;
 
-  OrderStatusChange({
-    required this.fromStatus,
-    required this.toStatus,
-    required this.changedAtUtc,
-  });
+  OrderStatusChange({required this.fromStatus, required this.toStatus, required this.changedAtUtc});
 
   factory OrderStatusChange.fromJson(Map<String, dynamic> j) => OrderStatusChange(
-        fromStatus: j['fromStatus']?.toString(),
-        toStatus: j['toStatus']?.toString() ?? '',
-        changedAtUtc: DateTime.parse(j['changedAtUtc'].toString()),
-      );
+    fromStatus: j['fromStatus']?.toString(),
+    toStatus: j['toStatus']?.toString() ?? '',
+    changedAtUtc: DateTime.parse(j['changedAtUtc'].toString()),
+  );
 }
 
 class Order {
@@ -107,33 +103,28 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
-        id: j['id'].toString(),
-        storeId: j['storeId'].toString(),
-        status: j['status'] ?? '',
-        subtotal: (j['subtotal'] as num?)?.toDouble() ?? 0,
-        commissionAmount: (j['commissionAmount'] as num?)?.toDouble() ?? 0,
-        deliveryFee: (j['deliveryFee'] as num?)?.toDouble() ?? 0,
-        total: (j['total'] as num?)?.toDouble() ?? 0,
-        currency: j['currency'] ?? 'PLN',
-        deliveryZoneId: j['deliveryZoneId'].toString(),
-        timeSlotId: j['timeSlotId'].toString(),
-        deliveryAddress: j['deliveryAddress'] ?? '',
-        contactPhone: j['contactPhone'] ?? '',
-        placedAtUtc: DateTime.parse(j['placedAtUtc'].toString()),
-        items: (j['items'] as List?)
-                ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        history: (j['history'] as List?)
-                ?.map((e) => OrderStatusChange.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        deliveryDate: j['deliveryDate']?.toString(),
-        deliveryStartTime: j['deliveryStartTime']?.toString(),
-        deliveryEndTime: j['deliveryEndTime']?.toString(),
-        paymentMode: (j['paymentMode'] ?? 'online').toString(),
-        purchasingRound: j['purchasingRound'] is Map<String, dynamic>
-            ? PurchasingRound.fromJson(j['purchasingRound'] as Map<String, dynamic>)
-            : null,
-      );
+    id: j['id'].toString(),
+    storeId: j['storeId'].toString(),
+    status: j['status'] ?? '',
+    subtotal: (j['subtotal'] as num?)?.toDouble() ?? 0,
+    commissionAmount: (j['commissionAmount'] as num?)?.toDouble() ?? 0,
+    deliveryFee: (j['deliveryFee'] as num?)?.toDouble() ?? 0,
+    total: (j['total'] as num?)?.toDouble() ?? 0,
+    currency: j['currency'] ?? 'PLN',
+    deliveryZoneId: j['deliveryZoneId'].toString(),
+    timeSlotId: j['timeSlotId'].toString(),
+    deliveryAddress: j['deliveryAddress'] ?? '',
+    contactPhone: j['contactPhone'] ?? '',
+    placedAtUtc: DateTime.parse(j['placedAtUtc'].toString()),
+    items: (j['items'] as List?)?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList() ?? const [],
+    history:
+        (j['history'] as List?)?.map((e) => OrderStatusChange.fromJson(e as Map<String, dynamic>)).toList() ?? const [],
+    deliveryDate: j['deliveryDate']?.toString(),
+    deliveryStartTime: j['deliveryStartTime']?.toString(),
+    deliveryEndTime: j['deliveryEndTime']?.toString(),
+    paymentMode: (j['paymentMode'] ?? 'online').toString(),
+    purchasingRound: j['purchasingRound'] is Map<String, dynamic>
+        ? PurchasingRound.fromJson(j['purchasingRound'] as Map<String, dynamic>)
+        : null,
+  );
 }

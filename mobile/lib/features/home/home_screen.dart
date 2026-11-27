@@ -73,8 +73,10 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Semantics(
                     header: true,
-                    child: Text(firstName.isEmpty ? 'Co dziś kupujemy?' : 'Co dziś kupujemy, $firstName?',
-                        style: Theme.of(context).textTheme.headlineSmall),
+                    child: Text(
+                      firstName.isEmpty ? 'Co dziś kupujemy?' : 'Co dziś kupujemy, $firstName?',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                   ),
                   const SizedBox(height: ZzSpace.md),
                   ZzSearchField(hint: 'Szukaj sklepu albo miejscowości', onTap: () => context.go('/search')),
@@ -145,8 +147,9 @@ class _PlaceHeader extends ConsumerWidget {
       final loc = await _locationService.current();
       if (loc == null) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Nie udało się ustalić lokalizacji. Sprawdź zgodę na lokalizację.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Nie udało się ustalić lokalizacji. Sprawdź zgodę na lokalizację.')),
+          );
         }
         return;
       }
@@ -231,10 +234,10 @@ String? _line(AsyncValue<RoundPreview> v) {
 String _lowerFirst(String s) => s.isEmpty ? s : s[0].toLowerCase() + s.substring(1);
 
 Widget _noStores(bool filtered) => EmptyView(
-      svgAsset: 'assets/svg/illustrations/state_no_stores.svg',
-      icon: Icons.storefront_outlined,
-      title: filtered ? 'Brak sklepów dowożących' : 'Brak sklepów',
-      subtitle: filtered
-          ? 'Żaden sklep nie dowozi jeszcze pod ten kod pocztowy. Zmień kod w nagłówku albo spróbuj później.'
-          : 'W Twojej okolicy nie ma jeszcze aktywnych sklepów.',
-    );
+  svgAsset: 'assets/svg/illustrations/state_no_stores.svg',
+  icon: Icons.storefront_outlined,
+  title: filtered ? 'Brak sklepów dowożących' : 'Brak sklepów',
+  subtitle: filtered
+      ? 'Żaden sklep nie dowozi jeszcze pod ten kod pocztowy. Zmień kod w nagłówku albo spróbuj później.'
+      : 'W Twojej okolicy nie ma jeszcze aktywnych sklepów.',
+);

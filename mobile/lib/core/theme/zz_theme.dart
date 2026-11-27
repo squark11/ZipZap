@@ -200,30 +200,29 @@ class ZzPalette extends ThemeExtension<ZzPalette> {
     List<BoxShadow>? shadowSm,
     List<BoxShadow>? shadowMd,
     List<BoxShadow>? shadowFloat,
-  }) =>
-      ZzPalette(
-        surface: surface ?? this.surface,
-        card: card ?? this.card,
-        border: border ?? this.border,
-        text: text ?? this.text,
-        textMuted: textMuted ?? this.textMuted,
-        heading: heading ?? this.heading,
-        brandStrong: brandStrong ?? this.brandStrong,
-        onBrand: onBrand ?? this.onBrand,
-        brandTint: brandTint ?? this.brandTint,
-        success: success ?? this.success,
-        successTint: successTint ?? this.successTint,
-        danger: danger ?? this.danger,
-        dangerTint: dangerTint ?? this.dangerTint,
-        warning: warning ?? this.warning,
-        warningTint: warningTint ?? this.warningTint,
-        info: info ?? this.info,
-        infoTint: infoTint ?? this.infoTint,
-        skeleton: skeleton ?? this.skeleton,
-        shadowSm: shadowSm ?? this.shadowSm,
-        shadowMd: shadowMd ?? this.shadowMd,
-        shadowFloat: shadowFloat ?? this.shadowFloat,
-      );
+  }) => ZzPalette(
+    surface: surface ?? this.surface,
+    card: card ?? this.card,
+    border: border ?? this.border,
+    text: text ?? this.text,
+    textMuted: textMuted ?? this.textMuted,
+    heading: heading ?? this.heading,
+    brandStrong: brandStrong ?? this.brandStrong,
+    onBrand: onBrand ?? this.onBrand,
+    brandTint: brandTint ?? this.brandTint,
+    success: success ?? this.success,
+    successTint: successTint ?? this.successTint,
+    danger: danger ?? this.danger,
+    dangerTint: dangerTint ?? this.dangerTint,
+    warning: warning ?? this.warning,
+    warningTint: warningTint ?? this.warningTint,
+    info: info ?? this.info,
+    infoTint: infoTint ?? this.infoTint,
+    skeleton: skeleton ?? this.skeleton,
+    shadowSm: shadowSm ?? this.shadowSm,
+    shadowMd: shadowMd ?? this.shadowMd,
+    shadowFloat: shadowFloat ?? this.shadowFloat,
+  );
 
   @override
   ZzPalette lerp(ZzPalette? other, double t) {
@@ -283,9 +282,20 @@ class ZzTheme {
           titleMedium: h(FontWeight.w600, 17),
           bodyLarge: const TextStyle(fontFamily: ZzFonts.body, fontSize: 16, height: 1.5),
           bodyMedium: const TextStyle(fontFamily: ZzFonts.body, fontSize: 14, height: 1.45),
-          bodySmall: TextStyle(fontFamily: ZzFonts.body, fontSize: 13, height: 1.4, fontWeight: FontWeight.w500, color: p.textMuted),
+          bodySmall: TextStyle(
+            fontFamily: ZzFonts.body,
+            fontSize: 13,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+            color: p.textMuted,
+          ),
           labelLarge: const TextStyle(fontFamily: ZzFonts.body, fontSize: 15, fontWeight: FontWeight.w600),
-          labelSmall: const TextStyle(fontFamily: ZzFonts.body, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+          labelSmall: const TextStyle(
+            fontFamily: ZzFonts.body,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
         )
         .apply(bodyColor: p.text, displayColor: p.heading);
 
@@ -308,9 +318,9 @@ class ZzTheme {
     final pill = RoundedRectangleBorder(borderRadius: BorderRadius.circular(ZzRadius.pill));
     const buttonText = TextStyle(fontFamily: ZzFonts.body, fontWeight: FontWeight.w700, fontSize: 16);
     OutlineInputBorder field(Color c, [double w = 1.5]) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZzRadius.field),
-          borderSide: BorderSide(color: c, width: w),
-        );
+      borderRadius: BorderRadius.circular(ZzRadius.field),
+      borderSide: BorderSide(color: c, width: w),
+    );
 
     return base.copyWith(
       colorScheme: scheme,
@@ -404,7 +414,9 @@ class ZzTheme {
         checkColor: WidgetStatePropertyAll(p.onBrand),
       ),
       radioTheme: RadioThemeData(
-        fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? p.brandStrong : p.textMuted),
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? p.brandStrong : p.textMuted,
+        ),
       ),
       dividerTheme: DividerThemeData(color: p.border, thickness: 1),
       snackBarTheme: SnackBarThemeData(
@@ -429,26 +441,36 @@ class ZzTheme {
         surfaceTintColor: Colors.transparent,
         indicatorColor: p.brandTint,
         height: 68,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
-              fontFamily: ZzFonts.body,
-              fontSize: 11, // 12 px łamało „Zamówienia" na dwa wiersze przy 360 px
-              letterSpacing: 0,
-              fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w600,
-              color: states.contains(WidgetState.selected) ? p.brandStrong : p.textMuted,
-            )),
-        iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
-              color: states.contains(WidgetState.selected) ? p.brandStrong : p.textMuted,
-            )),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontFamily: ZzFonts.body,
+            fontSize: 11, // 12 px łamało „Zamówienia" na dwa wiersze przy 360 px
+            letterSpacing: 0,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w600,
+            color: states.contains(WidgetState.selected) ? p.brandStrong : p.textMuted,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(color: states.contains(WidgetState.selected) ? p.brandStrong : p.textMuted),
+        ),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: p.card,
         indicatorColor: p.brandTint,
         selectedIconTheme: IconThemeData(color: p.brandStrong),
         unselectedIconTheme: IconThemeData(color: p.textMuted),
-        selectedLabelTextStyle:
-            TextStyle(fontFamily: ZzFonts.body, fontWeight: FontWeight.w700, fontSize: 13, color: p.brandStrong),
-        unselectedLabelTextStyle:
-            TextStyle(fontFamily: ZzFonts.body, fontWeight: FontWeight.w600, fontSize: 13, color: p.textMuted),
+        selectedLabelTextStyle: TextStyle(
+          fontFamily: ZzFonts.body,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+          color: p.brandStrong,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          fontFamily: ZzFonts.body,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          color: p.textMuted,
+        ),
       ),
     );
   }
