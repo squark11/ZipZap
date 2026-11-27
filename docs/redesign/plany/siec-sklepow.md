@@ -1,6 +1,6 @@
 # Plan: sieć sklepów — jedna oferta dla klienta, lokalizacja dobierana automatycznie
 
-Status: **projekt do przeglądu Codexa (runda 2)**. Decyzje właściciela 2026-11-27 (wiążące):
+Status: **zatwierdzony przez Codexa** (4 rundy, 2026-11-27; przebieg: `raporty/siec-sklepow-plan-codex.md`). Przed kodowaniem. Decyzje właściciela 2026-11-27 (wiążące):
 
 1. Klient wybiera **jeden sklep „Rapacz Market"**; nie musi wiedzieć, z której lokalizacji jest zamówienie. Która
    lokalizacja je przygotowuje — informacja **dla sklepów** (panel).
@@ -23,12 +23,14 @@ Zakres: serwer (Catalog, Ordering, Identity — zakresy uprawnień, Payments, De
 - **Lokalizacja** = `Store` z `ParentStoreId` = witryna: adres, współrzędne, strefy, terminy, zespół, rundy,
   kompletacja, dostawy. Bez własnego katalogu. **Niewidoczna dla klienta** (pkt 4).
 - Ograniczenia: FK `ParentStoreId → stores.Id`, `ParentStoreId <> Id`, **jeden poziom** (rodzic nie może mieć
-  rodzica — walidacja w serwisie + test), rodzic musi być witryną (nie lokalizacją). Nowe pole `FulfillmentPriority int`
+  rodzica — walidacja w serwisie + test), rodzic musi być witryną (nie lokalizacją). **`ParentStoreId` niezmienne
+  po utworzeniu** (ustawiane tylko przy „+ Lokalizacja"; próba zmiany → 400, test) — autoryzacja przez projekcję
+  (`ManagesViaChain`) nie może więc zostawić dostępu poprzedniemu właścicielowi. Nowe pole `FulfillmentPriority int`
   (kolejność z panelu, pkt 3 decyzji). Sklep pojedynczy: `ParentStoreId = null`, brak dzieci — zachowanie jak dziś.
 - Zamówienie: **`orders.StoreId` = witryna** (bez zmiany znaczenia — koszyk, produkty, dokumenty, płatność, księga
   prowizji, faktura, `OrderDto.StoreId`), nowe **`orders.FulfillmentStoreId uuid null`** = lokalizacja realizująca.
-  Stare zamówienia: backfill `FulfillmentStoreId = StoreId` w migracji (dla nich witryna = lokalizacja); po migracji
-  pole wymagane w kodzie dla nowych zamówień.
+  Stare zamówienia: backfill `FulfillmentStoreId = StoreId` w tej samej migracji, potem `ALTER … SET NOT NULL`
+  (każde zamówienie ma lokalizację realizującą; dla sklepu pojedynczego = `StoreId`).
 - Migracje addytywne: Catalog (`ParentStoreId`, `FulfillmentPriority`), Ordering (`orders.FulfillmentStoreId` +
   backfill + indeks; projekcja `catalog_stores` + `ParentStoreId`, `Latitude`, `Longitude`, `FulfillmentPriority`).
 - Zdarzenia: `StoreRegistered/StoreUpdated` + `ParentStoreId`, `Latitude`, `Longitude`, `FulfillmentPriority`
@@ -36,6 +38,10 @@ Zakres: serwer (Catalog, Ordering, Identity — zakresy uprawnień, Payments, De
   (istniejący) odświeża projekcję. Kontrakt zdarzeń zamówienia: `OrderPlaced` niesie `StoreId` = witryna (płatność,
   księga) **i** `FulfillmentStoreId`; `OrderReadyForPickup` i `OrderDelivered` niosą `FulfillmentStoreId` — Delivery
   zapisuje dostawę pod lokalizacją (tablica dostaw i uprawnienia kierowców lokalizacji jak dziś).
+- **Prowizja po dostarczeniu:** handler `OrderDelivered` w Payments bierze sklep do księgi z **`Payment.StoreId`**
+  (rekord płatności zamówienia = witryna), nie z `e.StoreId` zdarzenia dostawy. Brak płatności dla zamówienia → jak
+  dziś (zachowanie bez zmian dla sklepów pojedynczych, test). **Stare zdarzenia z outboxu** bez `FulfillmentStoreId`
+  (sprzed wdrożenia): konsumenci przyjmują `FulfillmentStoreId ?? StoreId` (dla nich witryna = lokalizacja).
 
 ## 2. Przydział i checkout (serwer, Ordering)
 
@@ -51,10 +57,13 @@ Zakres: serwer (Catalog, Ordering, Identity — zakresy uprawnień, Payments, De
   nazwy lokalizacji (nazwa strefy klienta: „Dostawa"); `id` strefy i slotu to zwykłe id encji (nie ujawniają
   lokalizacji — z nich nie da się odczytać adresu, bo publiczne odczyty lokalizacji są zamknięte, pkt 4).
 - Checkout `POST /ordering/carts/{cartId}/checkout` (koszyk na witrynie): nowe pola **`postalCode`** (00-000)
-  i opcjonalne `latitude/longitude`. Serwer: normalizuje kod, sprawdza, że **kod występuje w tekście adresu**
-  (spójność adresu i kodu — odrzuca 400 „Kod pocztowy nie zgadza się z adresem"), liczy przydział ponownie,
-  sprawdza, że wybrana strefa i termin należą do **tej** lokalizacji (inaczej 409 „Zmieniła się lokalizacja
-  realizująca — wybierz termin ponownie"), runda = lokalizacji, zapisuje `FulfillmentStoreId` i kod w zamówieniu.
+  i opcjonalne `latitude/longitude`. Adres jest strukturą po stronie aplikacji: osobne pola „Ulica i numer",
+  „Kod pocztowy", „Miejscowość"; aplikacja składa `deliveryAddress` jako „{ulica}, {kod} {miejscowość}", więc kod
+  w tekście i w polu jest ten sam z konstrukcji. Serwer **sprawdza format kodu** (bez geokodowania — nie potwierdza
+  fizycznego położenia, nie udaje, że to robi), liczy przydział ponownie, sprawdza, że wybrana strefa należy do
+  **tej** lokalizacji i obejmuje kod, a **termin należy do wybranej strefy** (warunek z dzisiejszego kodu zostaje),
+  inaczej 409 „Zmieniła się lokalizacja realizująca — wybierz termin ponownie"; runda = lokalizacji; zapisuje
+  `FulfillmentStoreId` i kod w zamówieniu.
 - Witryna sieci bez `postalCode` w żądaniu (stare APK) → 400 `update_required` z komunikatem o aktualizacji (decyzja 5).
   Sklep pojedynczy bez `postalCode` → jak dziś (strefa/slot sklepu, `FulfillmentStoreId = StoreId`).
 - Rundy i kompletacja: `EnsureRoundAsync(FulfillmentStoreId, …)`; `RoundPickingService` filtruje po
@@ -64,16 +73,19 @@ Zakres: serwer (Catalog, Ordering, Identity — zakresy uprawnień, Payments, De
 ## 3. Uprawnienia (Identity + serwisy)
 
 - Zakresy egzekwowane na serwerze, nie tylko w UI:
-  - **pracownik witryny**: oferta sieci (katalog, import, kategorie), ustawienia witryny; **odczyt** zamówień,
-    rund i dostaw wszystkich lokalizacji (z kolumną „Realizuje"); zarządzanie lokalizacjami (tworzenie, strefy,
-    terminy, kolejność) — bo to właściciel sieci;
+  - **pracownik witryny** (= właściciel sieci, np. Kinga i Paweł Rapacz): oferta sieci (katalog, import,
+    kategorie), ustawienia witryny, **pełna obsługa wszystkich swoich lokalizacji** — odczyt i zapisy operacyjne
+    (kompletacja, przydział kierowcy, statusy) oraz konfiguracja (tworzenie lokalizacji, strefy, terminy,
+    kolejność). **Zamierzone** — to jego sklepy; decyzja zapisana jawnie;
   - **pracownik lokalizacji**: zamówienia, rundy, kompletacja, dostawy, strefy i terminy **swojej** lokalizacji;
     **bez** edycji oferty sieci.
 - Implementacja: `ICurrentUser.ManagesStore(id)` bez zmian dla bezpośrednich przypisań; nowe
-  `CanReadAsChain(locationId)` = użytkownik zarządza witryną-rodzicem lokalizacji (rozwiązywane przez projekcję/
-  port Catalog, bez dopisywania claimów dzieci do tokenu). Wszystkie odczyty zamówień/rund/dostaw lokalizacji
-  akceptują `ManagesStore(location) || CanReadAsChain(location)`; zapisy operacyjne (kompletacja, przydział kierowcy)
-  — `ManagesStore(location) || ManagesStore(parent)`; edycja katalogu lokalizacji — zabroniona (katalog jest w witrynie).
+  `ManagesViaChain(locationId)` = użytkownik zarządza witryną-rodzicem lokalizacji (rozwiązywane przez projekcję/
+  port Catalog, bez dopisywania claimów dzieci do tokenu). Odczyty i zapisy operacyjne oraz konfiguracja lokalizacji:
+  `ManagesStore(location) || ManagesViaChain(location)`; edycja katalogu i ustawień witryny: tylko
+  `ManagesStore(witryna)` (pracownik lokalizacji — 403); katalog lokalizacji nie istnieje (404).
+- `GET /api/catalog/admin/store-tree`: admin — wszystko; pracownik witryny — witryna + jej lokalizacje; **pracownik
+  lokalizacji — tylko jego lokalizacja(e)** (+ nazwa witryny tylko do odczytu, jako kontekst w panelu).
 - Testy autoryzacji dla każdej pary rola × zasób (pkt 7).
 
 ## 4. Ukrycie lokalizacji przed klientem
@@ -83,12 +95,21 @@ Zamknięte wszystkie publiczne ścieżki, nie tylko lista:
   router zwraca lokalizację dla kodu);
 - `GET /catalog/stores/{idOrSlug}` dla lokalizacji → **odpowiedź witryny** (to samo co wejście na witrynę; adres
   lokalizacji nie wycieka); `/categories` i `/products` lokalizacji → 404 (lokalizacja nie ma katalogu);
-- publiczne `GET /ordering/stores/{locationId}/zones|slots|purchasing-round` dla lokalizacji → 404 (dostęp tylko
-  przez `delivery-options` witryny); dla sklepów pojedynczych bez zmian (stara aplikacja);
+- `GET /ordering/stores/{locationId}/zones|slots|purchasing-round` dla lokalizacji: **anonimowo i dla obcych → 404**
+  (klient korzysta z `delivery-options` witryny); **zalogowany pracownik z zakresem** (`ManagesStore(location) ||
+  ManagesViaChain(location)`) → dane jak dziś (panel: onboarding, strefy, terminy). Dla sklepów pojedynczych bez
+  zmian (stara aplikacja). Testy: anonim 404, obcy pracownik 404, pracownik lokalizacji 200, właściciel sieci 200;
+- `GET /catalog/products/{id}` dla produktu należącego do lokalizacji → 404 (lokalizacje nie mają katalogu; dotyczy
+  produktów sprzed przepięcia) — test na istniejącym produkcie lokalizacji;
 - stare QR `/s/{slugLokalizacji}` → aplikacja dostaje witrynę (jak wyżej) i otwiera „Rapacz Market"; wejście
   zliczane dla lokalizacji z kodu (statystyka dla sklepu — informacja dla sklepów), przydział i tak wg adresu;
-- panel (zalogowany) dostaje drzewo przez nowy `GET /api/catalog/admin/store-tree` (pracownik witryny: witryna +
-  dzieci; admin: wszystko) zamiast publicznej listy.
+- `GET /api/stores/{storeId}/legal` (publiczny) dla lokalizacji → **dokumenty witryny** (spójnie ze szczegółami
+  sklepu); test;
+- **odpowiedzi zamówień dla klienta bez lokalizacji:** `checkout`, `GET /ordering/orders/mine`, `GET /ordering/orders/{id}`
+  zwracają `CustomerOrderDto` **bez** `FulfillmentStoreId` i nazwy/adresu lokalizacji (osobny DTO, nie „pole
+  ignorowane przez aplikację"); panel dostaje `StoreOrderDto` z `FulfillmentStoreId` i nazwą lokalizacji
+  („Realizuje"). Test: odpowiedź JSON dla klienta nie zawiera tych pól;
+- panel (zalogowany) dostaje drzewo przez `GET /api/catalog/admin/store-tree` (pkt 3) zamiast publicznej listy.
 
 ## 5. Panel
 
@@ -110,6 +131,19 @@ Zamknięte wszystkie publiczne ścieżki, nie tylko lista:
   `postalCode`, `latitude/longitude`; niezmiennik 2.3 — nowy odczyt `delivery-options` zastępuje `zones`/`slots`/
   `purchasing-round` dla witryny sieci. Aktualizacja planu E3-4 + ponowny przegląd Codexa przed kodowaniem.
 
+## 6a. Dane Rapacza
+
+`seed-rapacz.mjs` przebudowany na model sieci: witryna „Rapacz Market" (katalog i kategorie **tylko w witrynie**,
+logo; opłata 9,90 zł w strefach lokalizacji) + 4 lokalizacje podrzędne (adresy, współrzędne, strefy bez nakładania,
+terminy, kolejność przydziału). Idempotentny; po przebiegu lokalizacje nie są publicznymi sklepami (test: lista
+klienta = tylko witryna). Wyszukiwanie istniejących lokalizacji przez **`GET /api/catalog/admin/store-tree`** (lista
+publiczna ich nie zwraca) — kolejne uruchomienie nie tworzy duplikatów. Stare samodzielne sklepy `rapacz-*`
+z poprzedniej wersji skryptu: przepinane jako lokalizacje (rodzic ustawiany raz, przy przepięciu — jedyny wyjątek od
+niezmienności, wykonywany przez administratora przed pierwszym użyciem) **tylko jeśli nie mają zamówień ani płatności**
+— wtedy usuwany jest ich przykładowy katalog. Sklep z zamówieniami → skrypt przerywa z komunikatem „Sklep ma
+historię zamówień — przepięcie wymaga osobnej migracji danych". Historycznych zamówień i księgi skrypt nie migruje;
+dotyczy wyłącznie baz lokalnych/testowych.
+
 ## 7. Testy
 
 - Serwer: model (FK, jeden poziom, rodzic nie-lokalizacja, strefa bez kodów zabroniona w lokalizacji); router
@@ -118,7 +152,10 @@ Zamknięte wszystkie publiczne ścieżki, nie tylko lista:
   lokalizacji/witryny → 409/404; zmiana przydziału → 409; stary klient bez `postalCode` do sieci → 400
   `update_required`; sklep pojedynczy bez `postalCode` → jak dziś; `FulfillmentStoreId` zapisany; płatność z
   `StoreId` witryny; księga i faktura sieci); kompletacja i zamienniki z katalogu witryny; dostawa pod lokalizacją;
-  widoczność (lista, szczegóły lokalizacji → witryna, produkty/kategorie/strefy/sloty lokalizacji → 404);
+  widoczność (lista, szczegóły i dokumenty lokalizacji → witryna, produkty/kategorie lokalizacji → 404, strefy/sloty/rundy lokalizacji → 404 dla anonima i obcego pracownika,
+  200 dla pracownika lokalizacji i właściciela sieci,
+  odpowiedzi zamówień klienta bez `FulfillmentStoreId`); prowizja po dostarczeniu w księdze witryny (z `Payment.StoreId`);
+  stare zdarzenie bez `FulfillmentStoreId` przetworzone (`?? StoreId`); po migracji `FulfillmentStoreId` NOT NULL;
   uprawnienia (pracownik lokalizacji: swoje zamówienia tak, cudze nie, oferta nie; pracownik witryny: odczyt
   wszystkich lokalizacji tak, oferta tak; obcy sklep nie); migracje addytywne + backfill; projekcja po resync.
 - Panel: build + test ręczny drzewa i zamówień z kolumną „Realizuje".
