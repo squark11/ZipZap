@@ -8,8 +8,8 @@ Stan na 2026-11-24.
 | F-2 | Paleta: turkus marki + mocny turkus `#097778` na przyciski + słoneczny akcent `#FFB703` | **Przyjęte** 2026-11-14 („akceptuję kierunek") | — |
 | F-3 | Figma | otwarte | Makiety powstały na płótnie projektowym Claude: https://claude.ai/artifact/U4EWEdpwyYuvHgDuvi8ymj (kopie w `makiety/`). Figma niepotrzebna, chyba że właściciel zechce. |
 | F-4 | Biblioteka animacji (Lottie/Rive) | rekomendacja: nie teraz | Animacje wbudowane we Flutter (design-system.md §6). |
-| F-5 | Okładka sklepu oraz sposób i termin dostawy na karcie (nowe pola w API i panelu) | **Przyjęte** 2026-11-14 | Zrobione w E3-1b (`a486d3c`), cofnięte z `main` (`ff3f30c`) do czasu kopii bazy i zgody na wdrożenie. |
-| F-6 | Wspólna lista kategorii platformy obok kategorii sklepu | **Przyjęte** 2026-11-14 | 12 kategorii z ikonami (`assets/svg/categories/`), zarządzanie w panelu. Zrobione w E3-1b (`a486d3c`), cofnięte z `main` (`ff3f30c`) do czasu kopii bazy i zgody. |
+| F-5 | Okładka sklepu oraz sposób i termin dostawy na karcie (nowe pola w API i panelu) | **Przyjęte** 2026-11-14 | Zrobione w E3-1b (`a486d3c`), przywrócone i wdrożone 2026-11-27 (zgoda właściciela, kopia bazy przed wdrożeniem). |
+| F-6 | Wspólna lista kategorii platformy obok kategorii sklepu | **Przyjęte** 2026-11-14 | 12 kategorii z ikonami (`assets/svg/categories/`), zarządzanie w panelu. Zrobione w E3-1b (`a486d3c`), przywrócone i wdrożone 2026-11-27 (zgoda właściciela). |
 | F-7 | Wyszukiwarka produktów we wszystkich sklepach; ulubione | **Rozstrzygnięte** 2026-11-24: **nie** | Właściciel: klienci mają robić całe zakupy w jednym sklepie. Zakładka Szukaj znajduje sklepy; produkty szuka się w ofercie sklepu (E3-2). Bez nowego endpointu. Ulubione — później. |
 | F-8 | Baner promocyjny i „Zamów ponownie" | otwarte | Makiety używają banera najbliższej rundy (dane są w API); baner promocyjny z panelu — do decyzji. |
 | F-9 | Płatny Render (~7 USD/mies.), koniec usypiania API | otwarte | Rekomendacja: tak przed publicznym startem. |

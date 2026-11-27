@@ -18,11 +18,12 @@ import 'package:zipzap/features/home/home_providers.dart';
 import 'package:zipzap/features/home/home_screen.dart';
 import 'package:zipzap/core/widgets/notifications_bell.dart';
 import 'package:zipzap/models/address.dart';
+import 'package:zipzap/models/platform_category.dart';
 import 'package:zipzap/models/purchasing_round.dart';
 import 'package:zipzap/models/store.dart';
 import 'package:zipzap/models/user.dart';
 
-Store _store(String id, String name) => Store.fromJson({
+Store _store(String id, String name, {List<String> cats = const [], String? note, String? cover}) => Store.fromJson({
   'id': id,
   'slug': 's-$id',
   'name': name,
@@ -30,19 +31,37 @@ Store _store(String id, String name) => Store.fromJson({
   'status': 'Open',
   'minimumOrderValue': 15,
   'isAcceptingOrders': true,
+  'platformCategories': cats,
+  'deliveryNote': note,
+  'coverUrl': cover,
 });
 
 class _Catalog extends CatalogRepository {
   _Catalog({this.mode = 'ok'}) : super(_OfflineApi());
-  final String mode; // ok | empty | error
+  final String mode; // ok | empty | error | cats
   final postals = <String?>[];
   @override
   Future<List<Store>> listStores({bool onlyActive = true, double? lat, double? lng, String? postalCode}) async {
     postals.add(postalCode);
     if (mode == 'error') throw ApiException(code: 'network', message: 'Brak połączenia z serwerem.');
     if (mode == 'empty') return [];
+    if (mode == 'cats') {
+      return [
+        _store('1', 'Rapacz Market — Rabka', cats: ['owoce', 'pieczywo'], note: 'Dostawa autem sklepu'),
+        _store('2', 'Piekarnia Poranek', cats: ['pieczywo']),
+      ];
+    }
     return [_store('1', 'Rapacz Market — Rabka'), _store('2', 'Piekarnia Poranek')];
   }
+
+  @override
+  Future<List<PlatformCategory>> listPlatformCategories() async => mode == 'cats'
+      ? const [
+          PlatformCategory(key: 'owoce', name: 'Owoce'),
+          PlatformCategory(key: 'warzywa', name: 'Warzywa'),
+          PlatformCategory(key: 'pieczywo', name: 'Pieczywo'),
+        ]
+      : const [];
 }
 
 String _iso(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -254,5 +273,79 @@ void main() {
     await tester.tap(find.text('Spróbuj ponownie'));
     await tester.pumpAndSettle();
     expect(catalog.postals.length, before + 1);
+  });
+
+  testWidgets('kategorie (F-6): chipy tylko z kategorii obecnych w sklepach, wybór filtruje listę', (tester) async {
+    await _pump(tester, catalogMode: 'cats');
+    expect(find.byType(ZzCategoryChip), findsNWidgets(3), reason: 'Wszystko + Owoce + Pieczywo; bez pustych „Warzyw"');
+    expect(find.text('Warzywa'), findsNothing);
+    expect(find.byType(ZzStoreCard), findsNWidgets(2));
+
+    await tester.tap(find.text('Owoce'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sklepy: Owoce'), findsOneWidget);
+    expect(find.byType(ZzStoreCard), findsOneWidget);
+    expect(find.text('Rapacz Market — Rabka'), findsOneWidget);
+
+    await tester.tap(find.text('Owoce')); // drugie dotknięcie = wszystkie
+    await tester.pumpAndSettle();
+    expect(find.byType(ZzStoreCard), findsNWidgets(2));
+  });
+
+  testWidgets('bez przypiętych kategorii: brak rzędu chipów', (tester) async {
+    await _pump(tester);
+    expect(find.byType(ZzCategoryChip), findsNothing);
+  });
+
+  testWidgets('sposób dostawy (F-5) na karcie i w etykiecie dla czytnika', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, catalogMode: 'cats');
+    expect(find.text('Dostawa autem sklepu'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Rapacz Market — Rabka, otwarte, .*Dostawa autem sklepu')), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('okładka, która się nie wczyta, znika — karta zostaje z logo', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ZzTheme.light(),
+        home: Scaffold(
+          body: ZzStoreCard(
+            store: _store('9', 'Sklep z okładką', cover: 'https://example.test/brak.jpg'),
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('store-cover')), findsOneWidget);
+    expect(
+      find.byType(Image),
+      findsNWidgets(1),
+      reason: 'tylko widżet okładki (sklep bez logo ma ikonę zamiast obrazka)',
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('Sklep z okładką'), findsOneWidget);
+  });
+
+  test('model: nowe pola sklepu i ikona zapasowa kategorii', () {
+    final s = Store.fromJson({
+      'id': 1,
+      'name': 'A',
+      'slug': 'a',
+      'city': 'B',
+      'coverUrl': ' ',
+      'deliveryNote': ' Autem ',
+      'platformCategories': ['owoce'],
+    });
+    expect(s.coverUrl, isNull);
+    expect(s.deliveryNote, 'Autem');
+    expect(s.platformCategories, ['owoce']);
+    expect(Store.fromJson({'id': 2}).platformCategories, isEmpty, reason: 'starsze API bez pola');
+    expect(const PlatformCategory(key: 'kosmetyki', name: 'Kosmetyki').icon, 'wszystko');
+    expect(const PlatformCategory(key: 'ryby', name: 'Ryby').icon, 'ryby');
   });
 }

@@ -83,6 +83,10 @@ namespace ZipZap.Modules.Catalog.Infrastructure.Migrations
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("PlatformCategoryKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 
@@ -94,6 +98,107 @@ namespace ZipZap.Modules.Catalog.Infrastructure.Migrations
                     b.HasIndex("StoreId", "ParentId", "SortOrder");
 
                     b.ToTable("categories", "catalog");
+                });
+
+            modelBuilder.Entity("ZipZap.Modules.Catalog.Domain.PlatformCategory", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("platform_categories", "catalog");
+
+                    b.HasData(
+                        new
+                        {
+                            Key = "owoce",
+                            IsActive = true,
+                            Name = "Owoce",
+                            SortOrder = 10
+                        },
+                        new
+                        {
+                            Key = "warzywa",
+                            IsActive = true,
+                            Name = "Warzywa",
+                            SortOrder = 20
+                        },
+                        new
+                        {
+                            Key = "pieczywo",
+                            IsActive = true,
+                            Name = "Pieczywo",
+                            SortOrder = 30
+                        },
+                        new
+                        {
+                            Key = "nabial",
+                            IsActive = true,
+                            Name = "Nabiał",
+                            SortOrder = 40
+                        },
+                        new
+                        {
+                            Key = "mieso",
+                            IsActive = true,
+                            Name = "Mięso i wędliny",
+                            SortOrder = 50
+                        },
+                        new
+                        {
+                            Key = "ryby",
+                            IsActive = true,
+                            Name = "Ryby",
+                            SortOrder = 60
+                        },
+                        new
+                        {
+                            Key = "mrozonki",
+                            IsActive = true,
+                            Name = "Mrożonki",
+                            SortOrder = 70
+                        },
+                        new
+                        {
+                            Key = "napoje",
+                            IsActive = true,
+                            Name = "Napoje",
+                            SortOrder = 80
+                        },
+                        new
+                        {
+                            Key = "slodycze",
+                            IsActive = true,
+                            Name = "Słodycze i przekąski",
+                            SortOrder = 90
+                        },
+                        new
+                        {
+                            Key = "chemia",
+                            IsActive = true,
+                            Name = "Chemia i higiena",
+                            SortOrder = 100
+                        },
+                        new
+                        {
+                            Key = "dziecko",
+                            IsActive = true,
+                            Name = "Dla dziecka",
+                            SortOrder = 110
+                        });
                 });
 
             modelBuilder.Entity("ZipZap.Modules.Catalog.Domain.Product", b =>
@@ -172,8 +277,16 @@ namespace ZipZap.Modules.Catalog.Infrastructure.Migrations
                     b.Property<decimal>("CommissionRate")
                         .HasColumnType("numeric(5,4)");
 
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeliveryNote")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");

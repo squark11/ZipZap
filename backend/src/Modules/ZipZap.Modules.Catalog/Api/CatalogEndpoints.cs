@@ -52,6 +52,10 @@ public static class CatalogEndpoints
         group.MapGet("/stores/{storeId:guid}/categories", async (Guid storeId, CatalogService svc, CancellationToken ct) =>
             Results.Ok(await svc.ListCategoriesAsync(storeId, ct)));
 
+        // Wspólne kategorie platformy (F-6) — chipy na Starcie aplikacji; tylko aktywne.
+        group.MapGet("/platform-categories", async (CatalogService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListPlatformCategoriesAsync(false, ct)));
+
         group.MapGet("/stores/{storeId:guid}/products", async (Guid storeId, Guid? categoryId, CatalogService svc, CancellationToken ct) =>
             Results.Ok(await svc.ListProductsAsync(storeId, categoryId, ct)));
 
@@ -73,6 +77,20 @@ public static class CatalogEndpoints
                 : Problem(result.Error);
         }).RequireAuthorization("Admin");
 
+        // Kategorie platformy: pełna lista (także ukryte) i zmiana nazwy/kolejności/widoczności — tylko administrator.
+        group.MapGet("/admin/platform-categories", async (CatalogService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListPlatformCategoriesAsync(true, ct))).RequireAuthorization("Admin");
+
+        group.MapPatch("/admin/platform-categories/{key}", async (string key, UpdatePlatformCategoryRequest req,
+            CatalogService svc, IAuditLogger audit, CancellationToken ct) =>
+        {
+            var result = await svc.UpdatePlatformCategoryAsync(key, req.Name, req.SortOrder, req.IsActive, ct);
+            if (result.IsSuccess)
+                await audit.LogAsync("catalog.platform_category.updated", "platform_category", key, null,
+                    new { req.Name, req.SortOrder, req.IsActive }, ct);
+            return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+        }).RequireAuthorization("Admin");
+
         group.MapPost("/stores", async (CreateStoreRequest req, CatalogService svc, CancellationToken ct) =>
         {
             var result = await svc.CreateStoreAsync(
@@ -84,10 +102,11 @@ public static class CatalogEndpoints
         group.MapPatch("/stores/{storeId:guid}", async (Guid storeId, UpdateStoreRequest req, CatalogService svc, IAuditLogger audit, CancellationToken ct) =>
         {
             var result = await svc.UpdateStoreAsync(storeId, req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, ct,
-                req.LogoUrl, req.Latitude, req.Longitude);
+                req.LogoUrl, req.Latitude, req.Longitude, req.CoverUrl, req.DeliveryNote);
             if (result.IsSuccess)
                 await audit.LogAsync("store.updated", "store", storeId.ToString(), storeId,
-                    new { req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, req.LogoUrl, req.Latitude, req.Longitude }, ct);
+                    new { req.CommissionRate, req.IsActive, req.Status, req.MinimumOrderValue, req.LogoUrl, req.Latitude, req.Longitude,
+                        req.CoverUrl, req.DeliveryNote }, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 
@@ -95,7 +114,15 @@ public static class CatalogEndpoints
 
         group.MapPost("/stores/{storeId:guid}/categories", async (Guid storeId, CreateCategoryRequest req, CatalogService svc, CancellationToken ct) =>
         {
-            var result = await svc.CreateCategoryAsync(storeId, req.Name, req.SortOrder, req.ParentId, ct);
+            var result = await svc.CreateCategoryAsync(storeId, req.Name, req.SortOrder, req.ParentId, ct, req.PlatformCategoryKey);
+            return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+        }).RequireAuthorization("StoreEmployee");
+
+        // Przypięcie kategorii sklepu do kategorii platformy (F-6) — obsługa tego sklepu albo administrator.
+        group.MapPut("/categories/{categoryId:guid}/platform-category", async (Guid categoryId, SetCategoryPlatformRequest req,
+            CatalogService svc, CancellationToken ct) =>
+        {
+            var result = await svc.SetCategoryPlatformAsync(categoryId, req.Key, ct);
             return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
         }).RequireAuthorization("StoreEmployee");
 

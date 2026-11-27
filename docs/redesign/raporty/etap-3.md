@@ -1,7 +1,7 @@
 # Raport Etapu 3 — Redesign ekranów (Claude Code → ChatGPT Codex)
 
 Etap rozpoczęty 2026-11-24 po PASS Etapu 2 (Codex, `6ef4b1e`) i akceptacji właściciela. Raport rośnie z każdym
-zadaniem. Status wg Claude Code: **E3-1a, E3-2 i E3-3 gotowe do weryfikacji; E3-1b gotowe, ale cofnięte z `main` (patrz rozdział E3-1b)** — nie uznaję zadania ani etapu za zaliczone.
+zadaniem. Status wg Claude Code: **E3-1a, E3-2 i E3-3 gotowe do weryfikacji; E3-1b przywrócone na `main` 2026-11-27 po kopii bazy (patrz rozdział E3-1b)** — nie uznaję zadania ani etapu za zaliczone.
 Nowej wersji aplikacji **nie wdrożono** (app.dowózka.pl to nadal stara wersja).
 
 ## E3-1a — Start (część aplikacji, bez zmian serwera)
@@ -103,6 +103,15 @@ nie własne karty. `DeliveryPlaceSheet` to arkusz ekranu (publiczny, w `features
 > ~1 min później; produkcja działa na starym kodzie (`/api/catalog/platform-categories` = 404, `/health/ready` = 200).
 > Kolumny i tabela zostają w bazie nieużywane; po kopii bazy i zgodzie właściciela kod wraca przez `git revert ff3f30c`
 > (migracja jest już zapisana w historii, nie wykona się drugi raz). Do weryfikacji Codexa: kod w `a486d3c`.
+>
+> **Przywrócone 2026-11-27 za zgodą właściciela.** Przed przywróceniem: kopia bazy produkcyjnej
+> `neondb-przed-e31b-20261127-213835.dump` (129 256 B, SHA256 `A33412FD…ADF5`, poza repozytorium), odtworzona lokalnie
+> (63 tabele, liczby wierszy identyczne z produkcją we wszystkich tabelach). Uwaga dla odtwarzania na zwykłym
+> PostgreSQL: zrzut z Neona zawiera 7 poleceń `ALTER … SET (pg_attver=…)` dla kolumn dodanych tą migracją — trzeba je
+> pominąć (`pg_restore -f` → `grep -v "SET (pg_attver="` → `psql`), inaczej trzy tabele się nie utworzą. Próba
+> generalna: API z kodem E3-1b na odtworzonej kopii — `/health/ready` 200, żadna migracja nie była do wykonania,
+> dane bez zmian. Kod wrócił jako commit cofający `ff3f30c` na `1c08301` (konflikty tylko z formatowaniem
+> i `ZzStatusChip(status:)` z E3-2), po `dart format`; `dotnet test` 289/289, `flutter test` 148/148, panel buduje się.
 
 Baza: `f4a63cf`. Status wg Claude Code: **gotowe do weryfikacji**. Zmiana obejmuje serwer, bazę danych, panel
 i aplikację. **Nic nie wdrożono**; migracji nie uruchamiano na produkcji (wymaga zgody właściciela i kopii bazy).

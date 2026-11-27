@@ -57,18 +57,43 @@ public sealed class CatalogService
         if (lat is not (>= -90 and <= 90) || lng is not (>= -180 and <= 180))
         {
             // Brak/nieprawidłowe współrzędne → sortowanie alfabetyczne (zachowanie domyślne).
-            return await query.OrderBy(s => s.Name).Select(s => StoreDto.From(s, null)).ToListAsync(ct);
+            var sorted = await query.OrderBy(s => s.Name).ToListAsync(ct);
+            return await WithPlatformCategoriesAsync(sorted.Select(s => (s, (double?)null)).ToList(), ct);
         }
         double refLat = lat.Value, refLng = lng.Value;
 
         var stores = await query.ToListAsync(ct);
-        return stores
+        var ordered = stores
             .Select(s => (store: s, dist: s.Latitude.HasValue && s.Longitude.HasValue
                 ? Math.Round(Haversine(refLat, refLng, s.Latitude.Value, s.Longitude.Value), 1)
                 : (double?)null))
             .OrderBy(x => x.dist ?? double.MaxValue).ThenBy(x => x.store.Name)
-            .Select(x => StoreDto.From(x.store, x.dist))
             .ToList();
+        return await WithPlatformCategoriesAsync(ordered, ct);
+    }
+
+    /// <summary>
+    /// Dokleja do sklepów klucze kategorii platformy (F-6), w których sklep ma co najmniej jeden dostępny produkt —
+    /// jedno zapytanie na całą listę, kolejność kluczy wg kolejności kategorii platformy; tylko aktywne kategorie.
+    /// </summary>
+    private async Task<IReadOnlyList<StoreDto>> WithPlatformCategoriesAsync(
+        IReadOnlyList<(Store store, double? dist)> stores, CancellationToken ct)
+    {
+        var ids = stores.Select(x => x.store.Id).ToList();
+        var pairs = await (
+                from c in _db.Categories.IgnoreQueryFilters()
+                where c.PlatformCategoryKey != null && ids.Contains(c.StoreId)
+                join p in _db.Products.IgnoreQueryFilters() on c.Id equals p.CategoryId
+                where p.IsAvailable
+                select new { c.StoreId, Key = c.PlatformCategoryKey! })
+            .Distinct()
+            .ToListAsync(ct);
+        var active = await _db.PlatformCategories.AsNoTracking().Where(c => c.IsActive)
+            .OrderBy(c => c.SortOrder).Select(c => c.Key).ToListAsync(ct);
+        var byStore = pairs.GroupBy(x => x.StoreId).ToDictionary(
+            g => g.Key, g => (IReadOnlyList<string>)active.Where(k => g.Any(x => x.Key == k)).ToList());
+        return stores.Select(x => StoreDto.From(x.store, x.dist,
+            byStore.TryGetValue(x.store.Id, out var keys) ? keys : Array.Empty<string>())).ToList();
     }
 
     /// <summary>Odległość po wielkim okręgu (km) między dwoma punktami.</summary>
@@ -90,7 +115,8 @@ public sealed class CatalogService
             ? await query.FirstOrDefaultAsync(s => s.Id == id, ct)
             : await query.FirstOrDefaultAsync(s => s.Slug == idOrSlug, ct);
 
-        return store is null ? Error.NotFound("Sklep nie istnieje.") : StoreDto.From(store);
+        if (store is null) return Error.NotFound("Sklep nie istnieje.");
+        return (await WithPlatformCategoriesAsync(new[] { (store, (double?)null) }, ct))[0];
     }
 
     // ---------- Wejścia na kartę sklepu (pomiar źródeł, np. kodów QR) ----------
@@ -289,7 +315,8 @@ public sealed class CatalogService
 
     public async Task<Result<StoreDto>> UpdateStoreAsync(
         Guid storeId, decimal? commissionRate, bool? isActive, string? status, decimal? minimumOrderValue, CancellationToken ct,
-        string? logoUrl = null, double? latitude = null, double? longitude = null)
+        string? logoUrl = null, double? latitude = null, double? longitude = null,
+        string? coverUrl = null, string? deliveryNote = null)
     {
         var guard = EnsureCanManageStore(storeId);
         if (guard.IsFailure) return guard.Error;
@@ -319,6 +346,19 @@ public sealed class CatalogService
         }
         // logoUrl != null => ustaw (pusty łańcuch = wyczyść); współrzędne ustawiamy parami.
         if (logoUrl is not null) store.SetLogoUrl(logoUrl);
+        // Okładka i opis dostawy (F-5): null = bez zmian, pusty łańcuch = wyczyść.
+        if (coverUrl is not null)
+        {
+            if (coverUrl.Trim().Length > 0 && !IsHttpUrl(coverUrl))
+                return Error.Validation("Okładka musi być adresem https:// (lub http://) do zdjęcia.");
+            store.SetCoverUrl(coverUrl);
+        }
+        if (deliveryNote is not null)
+        {
+            if (deliveryNote.Trim().Length > Store.DeliveryNoteMaxLength)
+                return Error.Validation($"Opis dostawy może mieć najwyżej {Store.DeliveryNoteMaxLength} znaków.");
+            store.SetDeliveryNote(deliveryNote);
+        }
         if (latitude.HasValue && longitude.HasValue)
         {
             var loc = TrySetLocation(store, latitude, longitude);
@@ -379,15 +419,76 @@ public sealed class CatalogService
         }
     }
 
+    private static bool IsHttpUrl(string value)
+        => Uri.TryCreate(value.Trim(), UriKind.Absolute, out var u)
+           && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp);
+
+    // ---------- Kategorie platformy (F-6) ----------
+
+    /// <summary>Lista kategorii platformy; dla klienta tylko aktywne, dla administratora wszystkie.</summary>
+    public async Task<IReadOnlyList<PlatformCategoryDto>> ListPlatformCategoriesAsync(bool includeInactive, CancellationToken ct)
+    {
+        var q = _db.PlatformCategories.AsNoTracking();
+        if (!includeInactive) q = q.Where(c => c.IsActive);
+        var list = await q.OrderBy(c => c.SortOrder).ThenBy(c => c.Key).ToListAsync(ct);
+        return list.Select(PlatformCategoryDto.From).ToList();
+    }
+
+    /// <summary>Administrator: nazwa, kolejność, widoczność. Klucza (= ikony w aplikacji) nie zmienia się.</summary>
+    public async Task<Result<PlatformCategoryDto>> UpdatePlatformCategoryAsync(
+        string key, string? name, int? sortOrder, bool? isActive, CancellationToken ct)
+    {
+        var c = await _db.PlatformCategories.FirstOrDefaultAsync(x => x.Key == key, ct);
+        if (c is null) return Error.NotFound("Kategoria platformy nie istnieje.");
+        if (name is not null)
+        {
+            var n = name.Trim();
+            if (n.Length == 0 || n.Length > PlatformCategory.NameMaxLength)
+                return Error.Validation($"Nazwa jest wymagana (najwyżej {PlatformCategory.NameMaxLength} znaków).");
+            c.Rename(n);
+        }
+        if (sortOrder.HasValue) c.Reorder(sortOrder.Value);
+        if (isActive.HasValue) c.SetActive(isActive.Value);
+        await _db.SaveChangesAsync(ct);
+        return PlatformCategoryDto.From(c);
+    }
+
+    /// <summary>Sklep przypina swoją kategorię do kategorii platformy (pusty klucz = odepnij).</summary>
+    public async Task<Result<CategoryDto>> SetCategoryPlatformAsync(Guid categoryId, string? key, CancellationToken ct)
+    {
+        var category = await _db.Categories.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == categoryId, ct);
+        if (category is null) return Error.NotFound("Kategoria nie istnieje.");
+        var guard = EnsureCanManageStore(category.StoreId);
+        if (guard.IsFailure) return guard.Error;
+        var (ok, resolved, error) = await ResolvePlatformKeyAsync(key, ct);
+        if (!ok) return error!;
+        category.SetPlatformCategory(resolved);
+        await _db.SaveChangesAsync(ct);
+        return CategoryDto.From(category);
+    }
+
+    /// <summary>Pusty → null; inaczej klucz musi istnieć i być aktywny.</summary>
+    private async Task<(bool Ok, string? Key, Error? Error)> ResolvePlatformKeyAsync(string? key, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return (true, null, null);
+        var k = key.Trim().ToLowerInvariant();
+        if (!await _db.PlatformCategories.AnyAsync(c => c.Key == k && c.IsActive, ct))
+            return (false, null, Error.Validation($"Nieznana kategoria platformy „{key}”."));
+        return (true, k, null);
+    }
+
     public async Task<Result<CategoryDto>> CreateCategoryAsync(
-        Guid storeId, string name, int sortOrder, Guid? parentId, CancellationToken ct)
+        Guid storeId, string name, int sortOrder, Guid? parentId, CancellationToken ct, string? platformCategoryKey = null)
     {
         var guard = EnsureCanManageStore(storeId);
         if (guard.IsFailure) return guard.Error;
         if (string.IsNullOrWhiteSpace(name)) return Error.Validation("Nazwa kategorii jest wymagana.");
         if (!await StoreExists(storeId, ct)) return Error.NotFound("Sklep nie istnieje.");
+        var (ok, platformKey, error) = await ResolvePlatformKeyAsync(platformCategoryKey, ct);
+        if (!ok) return error!;
 
         var category = new Category(storeId, name, sortOrder, parentId);
+        category.SetPlatformCategory(platformKey);
         _db.Categories.Add(category);
         await _db.SaveChangesAsync(ct);
         return CategoryDto.From(category);
